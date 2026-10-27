@@ -30,7 +30,7 @@ jobs:
           submodules: recursive
 
       - name: Install Pandoc, ImageMagick and SVG renderer
-        timeout-minutes: 5
+        timeout-minutes: 20
         run: |
           if ! sudo apt-get install -y --no-install-recommends pandoc imagemagick librsvg2-bin; then
             sudo apt-get update -o Acquire::Retries=2 -o Acquire::http::Timeout=20
