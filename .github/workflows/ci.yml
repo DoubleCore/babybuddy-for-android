@@ -82,12 +82,15 @@ jobs:
         run: |
           ./gradlew --no-daemon --stacktrace :app:assembleDebug :app:testDebugUnitTest -PskipIntegrationTests
 
-      - name: Run post-build checks
+      - name: Verify Simplified Chinese translations
         run: |
-          bash tools/workflows/check-translations.sh
+          make -f help.makefile
+          python3 tools/verify-translation-file.py app/src/main/res/values/strings.xml app/src/main/res/values-zh/strings.xml
+          python3 tools/verify-translation-file.py app/src/main/res/values/help_strings.xml app/src/main/res/values-zh/help_strings.xml
 
       - name: Upload installable debug APK
         id: apk
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
           name: babybuddy-debug-apk-${{ github.run_number }}
