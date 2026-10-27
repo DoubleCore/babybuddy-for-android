@@ -78,11 +78,11 @@ class Utils(val mainActivity: MainActivity) {
                     if (message == null) {
                         if (error is RequestCodeFailure) {
                             if ((error.code >= 401) || (error.code < 600)) {
-                                promise.failed("Authentication failed (http response: ${error.code})")
+                                promise.failed(mainActivity.getString(R.string.login_authentication_failed, error.code))
                                 return
                             }
                         }
-                        promise.failed("Failed")
+                        promise.failed(mainActivity.getString(R.string.login_request_failed))
                     } else {
                         promise.failed(message)
                     }
@@ -90,14 +90,14 @@ class Utils(val mainActivity: MainActivity) {
 
                 override fun response(r: Array<Child?>?) {
                     if (r == null || r.any { it == null }) {
-                        promise.failed("Invalid children list")
+                        promise.failed(mainActivity.getString(R.string.login_invalid_children_list))
                     } else {
                         promise.succeeded(Any())
                     }
                 }
             })
         } else {
-            promise.failed("No app token found.")
+            promise.failed(mainActivity.getString(R.string.login_token_missing))
         }
     }
 

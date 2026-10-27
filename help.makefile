@@ -13,6 +13,7 @@ target_image_list := $(foreach x,$(help_image_list),$(TARGET_PATH)/$(x))
 HELP_POSTFIXES := \
 	-nl \
 	-de-rDE \
+	-zh \
 
 xml_files := app/src/main/res/values/help_strings.xml $(foreach x,$(HELP_POSTFIXES),app/src/main/res/values$(x)/help_strings.xml)
 

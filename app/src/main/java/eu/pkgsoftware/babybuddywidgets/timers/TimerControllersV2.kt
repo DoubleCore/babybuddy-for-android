@@ -246,7 +246,7 @@ abstract class GenericLoggingController(
                 fragment.requireContext(),
                 R.string.activity_store_failure_server_error
             )
-                .put("message", "Error while storing activity")
+                .put("message", fragment.getString(R.string.activity_store_failure_server_error_general))
                 .put("server_message", error.jsonErrorMessages().joinToString(", "))
                 .format().toString()
         }

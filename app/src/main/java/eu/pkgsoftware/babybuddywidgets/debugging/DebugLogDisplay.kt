@@ -41,7 +41,7 @@ class DebugLogDisplay : BaseFragment() {
                 "BabyBuddy Debug Data", fragment.debugTextArea.text
             ))
 
-            Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, R.string.debug_logs_copied, Toast.LENGTH_SHORT).show()
         }
 
         return fragment.root

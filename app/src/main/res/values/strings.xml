@@ -31,6 +31,10 @@
     <string name="about_text">This Android application is Open Source software created by &lt;a href=\'http://www.craftware.info\'&gt;Paul Konstantin Gerke&lt;/a&gt; and licensed under the MIT License (see below).\n\nThe source code of the application is available at &lt;a href=\'https://github.com/babybuddy/babybuddy-for-android/\'&gt;https://github.com/babybuddy/babybuddy-for-android/&lt;/a&gt;.\n\nThe application uses third-party media under attribution licenes listed below.</string>
     <string name="about_external_media_resources_title">Third party media</string>
     <string name="about_external_libraries_title">Third party libraries</string>
+    <string name="about_license_title">The MIT License (MIT)</string>
+    <string name="about_library_source">Source: {url}</string>
+    <string name="about_icons_credit">Images based on or derived from works from:\n{title}</string>
+    <string name="about_icons_open_website">Open creator\'s website</string>
 
     <!-- Translations for all events and activities using their activity name as keys without capitalization -->
     <string name="activity_singular_sleep">sleep</string>
@@ -79,6 +83,16 @@
     <string name="server_address_hint">Server Address</string>
     <string name="login_text_hint">Login Name</string>
     <string name="login_password_hint">Login Password</string>
+    <string name="login_authentication_failed">Authentication failed (HTTP status: %1$d)</string>
+    <string name="login_request_failed">Login request failed</string>
+    <string name="login_invalid_children_list">Invalid children list returned by server</string>
+    <string name="login_token_missing">Login token not found</string>
+    <string name="login_invalid_credentials">Invalid username or password</string>
+    <string name="login_server_error">The server could not complete the login</string>
+    <string name="login_server_csrf_missing">The server did not provide a CSRF token</string>
+    <string name="login_profile_unavailable">Could not open the user profile page</string>
+    <string name="login_user_settings_unavailable">Could not open the user settings page</string>
+    <string name="login_api_key_not_found">API key section not found on the server</string>
 
     <string name="login_http_warning_title">Insecure connection</string>
     <string name="login_http_warning_message">
@@ -200,6 +214,7 @@
     <string name="export_debug_logs_title">Export Debug Logs</string>
     <string name="export_debug_logs_menu_item">Export Debug Logs</string>
     <string name="export_debug_logs_menu_item_copy_to_clipboard">Copy to clipboard</string>
+    <string name="debug_logs_copied">Copied to clipboard</string>
 
     <!-- Send message screen -->
     <string name="send_message_info">Send
@@ -217,6 +232,8 @@
     <!-- Settings screen -->
     <string name="setting_dark_light_mode">Dark/Light mode</string>
     <string name="timeline_title_line_title">Timeline</string>
+    <string name="login_failed_title">Login failed</string>
+    <string name="login_internal_error">Internal error: {error}</string>
     <array name="setting_dark_light_mode_options">
         <item>Follow system</item>
         <item>Light</item>
