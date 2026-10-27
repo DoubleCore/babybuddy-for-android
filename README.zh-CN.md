@@ -35,6 +35,14 @@ python3 tools/verify-translation-file.py \
   app/src/main/res/values-zh/strings.xml
 ```
 
+## GitHub Actions 自动编译 APK
+
+仓库包含 [Android APK Build](.github/workflows/ci.yml) 工作流：向 `main`、`master` 或 `feat/**` 分支推送代码、向主分支发起 Pull Request 时，自动构建 Debug APK 并执行单元测试和翻译检查。合并工作流到默认分支后，也可以在 GitHub 的 **Actions → Android APK Build → Run workflow** 中手动编译。
+
+构建成功后，在对应的 Actions 运行页面下载名为 `babybuddy-debug-apk-<运行编号>` 的 Artifact（保留 30 天）。这是使用 Android 调试证书签名的**测试安装包**，不能直接作为应用商店的正式发布包。
+
+如果 Actions 页面没有显示运行记录，请先在 GitHub 仓库的 **Settings → Actions → General** 中检查是否允许执行工作流；从上游 Fork 创建的仓库可能需要先手动启用 Actions。
+
 ## 许可证与原作者
 
 Android 客户端源代码采用 [MIT 许可证](LICENSE.md)，并非 Baby Buddy 服务端项目的 BSD-2-Clause 许可证。仓库中部分图标和媒体素材另有署名及再分发条件，详见 [ATTRIBUTIONS.md](ATTRIBUTIONS.md) 与 [3RDPARTY.md](3RDPARTY.md)。二次开发、发布 APK 或上架商店时应继续保留相关版权与许可信息。
