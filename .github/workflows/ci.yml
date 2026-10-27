@@ -58,8 +58,12 @@ jobs:
 
       - name: Install Android 17 preview platform and NDK
         run: |
-          sdkmanager --list --channel=3 | grep -E 'platforms;android-(37|CinnamonBun)' || true
-          sdkmanager --install 'platforms;android-37' 'ndk;27.3.13750724' --channel=3
+          sdkmanager --install 'platforms;android-37.0' 'ndk;27.3.13750724' --channel=3
+          # AGP 8.x may resolve compileSdk 37 as android-37, while the SDK
+          # manager installs Android 17 as android-37.0.
+          if [[ ! -e "$ANDROID_HOME/platforms/android-37" ]]; then
+            ln -s android-37.0 "$ANDROID_HOME/platforms/android-37"
+          fi
 
       - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v6
