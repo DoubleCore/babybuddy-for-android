@@ -29,10 +29,15 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install Pandoc and other system requirements
+      - name: Install Pandoc and ImageMagick
+        timeout-minutes: 5
         run: |
-          sudo apt-get update
-          sudo apt-get install -y pandoc make gcc g++ imagemagick jq cmake ninja-build
+          if ! sudo apt-get install -y --no-install-recommends pandoc imagemagick; then
+            sudo apt-get update -o Acquire::Retries=2 -o Acquire::http::Timeout=20
+            sudo apt-get install -y --no-install-recommends pandoc imagemagick
+          fi
+          pandoc --version
+          convert --version
 
       - name: Set up Python
         uses: actions/setup-python@v5.1.0
