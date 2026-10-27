@@ -1,24 +1,44 @@
-name: CI checks
+name: Android APK Build
 
 on:
   push:
     branches:
       - master
       - main
+      - 'feat/**'
   pull_request:
     branches:
-      - '*'
+      - main
+      - master
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-build-v2-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
-      - name: Install Pandoc and other system requirements
+      - name: Checkout code and ZXing submodule
+        uses: actions/checkout@v4.2.2
+        with:
+          submodules: recursive
+
+      - name: Install Pandoc, ImageMagick and SVG renderer
+        timeout-minutes: 20
         run: |
-          sudo apt-get update
-          sudo apt-get install -y pandoc make gcc g++ imagemagick
+          if ! sudo apt-get install -y --no-install-recommends pandoc imagemagick librsvg2-bin; then
+            sudo apt-get update -o Acquire::Retries=2 -o Acquire::http::Timeout=20
+            sudo apt-get install -y --no-install-recommends pandoc imagemagick librsvg2-bin
+          fi
+          pandoc --version
+          convert --version
+          rsvg-convert --version
 
       - name: Set up Python
         uses: actions/setup-python@v5.1.0
@@ -31,28 +51,56 @@ jobs:
           pip install pipenv
           pip install cython
 
-      - name: Checkout code
-        uses: actions/checkout@v4.2.2
-        with:
-          submodules: true
-
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@v4.5.0
         with:
-          java-version: '17'
-          distribution: 'temurin' # Note to self: This IS OpenJDK
+          java-version: '21'
+          distribution: temurin
       
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3.2.2
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools'
+
+      - name: Install Android 17 preview platform and NDK
+        run: |
+          sdkmanager --install 'platforms;android-37.0' 'ndk;27.3.13750724' --channel=3
+          # AGP 8.x may resolve compileSdk 37 as android-37, while the SDK
+          # manager installs Android 17 as android-37.0.
+          if [[ ! -e "$ANDROID_HOME/platforms/android-37" ]]; then
+            ln -s android-37.0 "$ANDROID_HOME/platforms/android-37"
+          fi
+
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Check build prerequisites
         run: |
           bash check-build-prerequisites.sh
 
-      - name: Run gradle build
+      - name: Build debug APK and run unit tests
         run: |
-          ./gradlew --no-daemon build -PskipIntegrationTests
+          ./gradlew --no-daemon --stacktrace :app:assembleDebug :app:testDebugUnitTest -PskipIntegrationTests
 
-      - name: Run post-build checks
+      - name: Verify Simplified Chinese translations
         run: |
-          bash tools/workflows/check-translations.sh
+          make -f help.makefile
+          python3 tools/verify-translation-file.py app/src/main/res/values/strings.xml app/src/main/res/values-zh/strings.xml
+          python3 tools/verify-translation-file.py app/src/main/res/values/help_strings.xml app/src/main/res/values-zh/help_strings.xml
+
+      - name: Upload installable debug APK
+        id: apk
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: babybuddy-debug-apk-${{ github.run_number }}
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Write build summary
+        run: |
+          echo '### Debug APK' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Build completed. The APK is signed with the Android debug key (not a production release).' >> "$GITHUB_STEP_SUMMARY"
+          echo '[Download APK artifact](${{ steps.apk.outputs.artifact-url }})' >> "$GITHUB_STEP_SUMMARY"
+          sha256sum app/build/outputs/apk/debug/*.apk >> "$GITHUB_STEP_SUMMARY"

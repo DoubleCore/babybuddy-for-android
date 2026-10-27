@@ -231,7 +231,7 @@ class Help : BaseFragment() {
 
     override fun onResume() {
         super.onResume()
-        mainActivity.setTitle("Help");
+        mainActivity.setTitle(getString(R.string.help_title))
         mainActivity.enableBackNavigationButton(true)
     }
 

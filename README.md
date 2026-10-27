@@ -1,3 +1,5 @@
+[简体中文说明 / 简体中文使用与构建指南](README.zh-CN.md)
+
 # Development temporarily on hold due to my move to a new house
 
 Dear visitor. I was hoping to be able to resume development of the app further a bit sooner. However, I am still not finished with moving into my new place. Because this entire app is kept afloat as a hobby project next to my 9-5 job, I have to officially declare that development is on hold until my move is finished. Most importantly my PC has to move to its final location and I need to unpack my Android testing devices.

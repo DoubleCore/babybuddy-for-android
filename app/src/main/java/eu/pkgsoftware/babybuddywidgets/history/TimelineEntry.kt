@@ -119,7 +119,7 @@ class TimelineEntry(private val fragment: BaseFragment, private var _entry: Time
         val opt_time_range = if (time_diff < 30) start_time else "$start_time - $end_time ($time_diff_string)"
 
         return phrase
-            .putOptional("type", entry!!.appType)
+            .putOptional("type", fragment.translateActivityName(entry!!.appType))
             .putOptional("start_date", DATE_FORMAT.format(local_start_time))
             .putOptional("start_time", TIME_FORMAT.format(local_start_time))
             .putOptional("end_date", DATE_FORMAT.format(local_end_time))

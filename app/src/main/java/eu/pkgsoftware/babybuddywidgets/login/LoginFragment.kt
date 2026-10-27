@@ -17,6 +17,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import androidx.navigation.Navigation.findNavController
+import com.squareup.phrase.Phrase
 import eu.pkgsoftware.babybuddywidgets.BaseFragment
 import eu.pkgsoftware.babybuddywidgets.R
 import eu.pkgsoftware.babybuddywidgets.databinding.LoginFragmentBinding
@@ -159,9 +160,26 @@ class LoginFragment : BaseFragment() {
         showProgress(getString(R.string.logging_in_message))
     }
 
+    /** 将旧版登录客户端的固定英文异常转换为当前设备语言。 */
+    private fun localizedLoginError(message: String?): String {
+        val original = message ?: return getString(R.string.login_request_failed)
+        val resource = when {
+            original.startsWith("Invalid username or password") -> R.string.login_invalid_credentials
+            original.startsWith("Login failed for unknown reason") ||
+                original.startsWith("Baby Buddy login/ response") -> R.string.login_server_error
+            original == "csrftoken missing" || original == "csrfmiddlewaretoken missing" -> R.string.login_server_csrf_missing
+            original == "Cannot access profile page" -> R.string.login_profile_unavailable
+            original == "Cannot access user settings" -> R.string.login_user_settings_unavailable
+            original == "Cannot find api-key section" -> R.string.login_api_key_not_found
+            original == "Token not found" -> R.string.login_token_missing
+            else -> return original // 服务器返回的详细错误保留原文，便于排查。
+        }
+        return getString(resource)
+    }
+
     override fun onResume() {
         super.onResume()
-        mainActivity.setTitle("Login to Baby Buddy")
+        mainActivity.setTitle(getString(R.string.first_fragment_label))
         mainActivity.addMenuProvider(menu)
         val b = arguments
         if (b != null) {
@@ -219,11 +237,14 @@ class LoginFragment : BaseFragment() {
                 token = try {
                     grabToken(AsyncGrabAppToken(URL(addressEdit.text.toString())))
                 } catch (e: IOException) {
-                    showError(true, "Login failed", e.message)
+                    showError(true, getString(R.string.login_failed_title), localizedLoginError(e.message))
                     return@cancelParallel
                 } catch (e: Exception) {
                     e.printStackTrace()
-                    showError(true, "Login failed", "Internal error message: " + e.message)
+                    val message = Phrase.from(requireContext(), R.string.login_internal_error)
+                        .put("error", localizedLoginError(e.message))
+                        .format().toString()
+                    showError(true, getString(R.string.login_failed_title), message)
                     return@cancelParallel
                 }
                 credStore.storeAppToken(token)
@@ -234,7 +255,7 @@ class LoginFragment : BaseFragment() {
                     }
                 } catch (e: AsyncPromiseFailure) {
                     mainActivity.logout()
-                    showError(true, "Login failed", e.value.toString())
+                    showError(true, getString(R.string.login_failed_title), e.value.toString())
                     return@cancelParallel
                 }
                 moveToLoggedIn()

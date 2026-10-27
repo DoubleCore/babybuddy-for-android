@@ -22,7 +22,7 @@
             android:id="@+id/aboutLicenseTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/autostring_about_license_title"
+            android:text="@string/about_license_title"
             android:textAppearance="@style/TextAppearance.AppCompat.Large" />
 
         <TextView
