@@ -19,7 +19,7 @@
         android:layout_marginStart="16dp"
         android:layout_weight="10"
         android:ems="10"
-        android:hint="None"
+        android:hint="@string/store_feeding_amount_none"
         android:inputType="numberDecimal"
         android:selectAllOnFocus="true"
         android:textAlignment="center" />

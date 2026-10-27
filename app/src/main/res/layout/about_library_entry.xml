@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
@@ -12,7 +13,7 @@
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:paddingStart="10pt"
-        android:text="Caption"
+        tools:text="Caption"
         android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
 
     <TextView
@@ -22,6 +23,6 @@
         android:layout_weight="1"
         android:paddingVertical="5pt"
         android:paddingStart="10pt"
-        android:text="url"
+        tools:text="Source URL"
         android:textAppearance="@style/TextAppearance.AppCompat.Body1" />
 </LinearLayout>

@@ -97,7 +97,8 @@ class AboutFragment : BaseFragment() {
             val entryBinding = AboutLibraryEntryBinding.inflate(layoutInflater)
             entryBinding.caption.setText(licenseEntry.title)
             entryBinding.url.setText(
-                Phrase.from("Source: {url}").put("url", licenseEntry.url).format().toString()
+                Phrase.from(requireContext(), R.string.about_library_source)
+                    .put("url", licenseEntry.url).format().toString()
             )
             val folding =
                 FoldingText(requireActivity(), licenseEntry.shortText, licenseEntry.longText)
@@ -172,11 +173,11 @@ class AboutFragment : BaseFragment() {
         tv.movementMethod = LinkMovementMethod.getInstance()
         TextViewCompat.setTextAppearance(tv, R.style.TextAppearance_AppCompat_Body1)
         val rawText = Phrase.from(
-            "Images based on or derived from works from:\n{title}"
+            requireContext(), R.string.about_icons_credit
         ).put(
             "title", iconData.title
         ).format().toString()
-        val spanText = SpannableString("$rawText\nOpen creator's website")
+        val spanText = SpannableString("$rawText\n${getString(R.string.about_icons_open_website)}")
         spanText.setSpan(
             object : ClickableSpan() {
                 override fun onClick(view: View) {

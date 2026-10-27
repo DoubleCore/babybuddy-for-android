@@ -244,7 +244,7 @@ class QRCodeLoginFragment : BaseFragment() {
                     progressDialog.hide()
                     binding.qrcodeCancelButton.performClick()
                     mainActivity.logout()
-                    showError(true, "Login failed", e.value.toString())
+                    showError(true, getString(R.string.login_failed_title), e.value.toString())
                     return@cancelParallel
                 }
 
