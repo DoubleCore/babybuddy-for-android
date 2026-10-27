@@ -1,42 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Allows unlocking your device and activating its screen so UI tests can succeed -->
-    <uses-permission android:name="android.permission.DISABLE_KEYGUARD"/>
-    <uses-permission android:name="android.permission.WAKE_LOCK"/>
-
-    <!-- Allows for storing and retrieving screenshots -->
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-
-    <!-- Allows changing locales -->
-    <uses-permission android:name="android.permission.CHANGE_CONFIGURATION" />
-
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission
-        android:name="android.permission.CAMERA" />
-    <uses-feature
-        android:name="android.hardware.camera"
-        android:required="false" />
-
-
-    <application
-        android:allowBackup="true"
-        android:icon="@mipmap/pkg_app_icon"
-        android:label="@string/app_name"
-        android:roundIcon="@mipmap/pkg_app_icon"
-        android:supportsRtl="true"
-        android:usesCleartextTraffic="true"
-        android:theme="@style/Theme.BabyBuddyWidgets">
-
-        <activity
-            android:name=".MainActivity"
-            android:exported="true"
-            android:theme="@style/Theme.BabyBuddyWidgets">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-    </application>
-</manifest>
+<!-- Debug builds must use the same offline launcher and privacy rules as release.
+     No network permission, legacy login launcher or debug-only data backup. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" />
