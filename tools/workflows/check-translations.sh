@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 make -f help.makefile
 if [[ $? -ne 0 ]] ; then
@@ -8,7 +9,7 @@ fi
 set -e
 for xml in strings.xml help_strings.xml; do
   echo "Checking $xml .."
-  find app/src/main/res/ -name "$xml" | grep -E "/values-[a-z]*/" | while read txml ; do
+  find app/src/main/res/ -name "$xml" | grep -E "/values-[^/]+/" | while read txml ; do
     set +e
     echo ".. against '${txml##*/res/}'"
     python3 tools/verify-translation-file.py "app/src/main/res/values/$xml" "${txml}" > output.txt

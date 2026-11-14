@@ -5,8 +5,7 @@ plugins {
 
 android {
     compileSdk 37
-    // ndk version 25 is known to support c++20 (see #386)
-    // ndkVersion '25.1.8937393'
+    ndkVersion '27.3.13750724'
 
     defaultConfig {
         minSdkVersion 21

@@ -2,57 +2,68 @@ name: CI checks
 
 on:
   push:
-    branches:
-      - master
-      - main
+    branches: [main, master, 'feat/**', 'ci/**']
   pull_request:
-    branches:
-      - '*'
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-
+    name: Build, unit tests and translations
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
     steps:
-      - name: Install Pandoc and other system requirements
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y pandoc make gcc g++ imagemagick
-
-      - name: Set up Python
-        uses: actions/setup-python@v5.1.0
+      - uses: actions/checkout@v4.2.2
         with:
-          python-version: 3.12
-
-      - name: Install python packages
+          submodules: recursive
+          persist-credentials: false
+      - uses: ./.github/actions/setup-build
+      - name: Build debug APK, run unit tests and lint
+        run: ./gradlew --no-daemon --stacktrace :app:assembleDebug :app:testDebugUnitTest :app:lintDebug -PskipIntegrationTests
+      - name: Verify release signing and bundle build with a disposable test key
+        env:
+          SIGNING_STORE_FILE: ${{ runner.temp }}/signing-smoke.jks
+          SIGNING_STORE_PASSWORD: android
+          SIGNING_KEY_ALIAS: signing-smoke
+          SIGNING_KEY_PASSWORD: android
         run: |
-          python -m pip install --upgrade pip
-          pip install pipenv
-          pip install cython
-
-      - name: Checkout code
-        uses: actions/checkout@v4.2.2
+          keytool -genkeypair -keystore "$SIGNING_STORE_FILE" -alias "$SIGNING_KEY_ALIAS" -keyalg RSA -keysize 2048 -validity 1 -storepass:env SIGNING_STORE_PASSWORD -keypass:env SIGNING_KEY_PASSWORD -dname 'CN=CI verification only'
+          ./gradlew --no-daemon --stacktrace :app:assembleRelease :app:bundleRelease -PskipIntegrationTests
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose app/build/outputs/apk/release/app-release.apk
+          jarsigner -verify app/build/outputs/bundle/release/app-release.aab
+      - name: Verify translations
+        run: bash tools/workflows/check-translations.sh
+      - name: Upload installable test APK
+        id: apk
+        uses: actions/upload-artifact@v4
         with:
-          submodules: true
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4.5.0
+          name: babybuddy-debug-${{ github.run_number }}
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload test and lint reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
         with:
-          java-version: '17'
-          distribution: 'temurin' # Note to self: This IS OpenJDK
-      
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3.2.2
-
-      - name: Check build prerequisites
+          name: reports-${{ github.run_number }}
+          path: |
+            app/build/reports/
+            app/build/test-results/
+          retention-days: 14
+      - name: Remove disposable signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/signing-smoke.jks"
+      - name: Write build summary
+        env:
+          ARTIFACT_URL: ${{ steps.apk.outputs.artifact-url }}
         run: |
-          bash check-build-prerequisites.sh
-
-      - name: Run gradle build
-        run: |
-          ./gradlew --no-daemon build -PskipIntegrationTests
-
-      - name: Run post-build checks
-        run: |
-          bash tools/workflows/check-translations.sh
+          echo '### Build verified' >> "$GITHUB_STEP_SUMMARY"
+          echo "[Download debug APK]($ARTIFACT_URL)" >> "$GITHUB_STEP_SUMMARY"
+          echo 'Debug signing is for testing. Lint findings are reported; the existing Gradle lint policy is non-blocking.' >> "$GITHUB_STEP_SUMMARY"
+          sha256sum app/build/outputs/apk/debug/*.apk >> "$GITHUB_STEP_SUMMARY"
