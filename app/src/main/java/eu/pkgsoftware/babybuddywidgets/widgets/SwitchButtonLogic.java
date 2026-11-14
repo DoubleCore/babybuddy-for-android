@@ -10,11 +10,11 @@ public class SwitchButtonLogic {
         void call(boolean state, boolean userClick);
     }
 
-    private ImageButton onButton, offButton;
+    private View onButton, offButton;
     private boolean state;
     private ArrayList<StateCallback> callbacks = new ArrayList<>();
 
-    public SwitchButtonLogic(ImageButton onButton, ImageButton offButton, boolean state) {
+    public SwitchButtonLogic(View onButton, View offButton, boolean state) {
         this.onButton = onButton;
         this.offButton = offButton;
         this.state = state;

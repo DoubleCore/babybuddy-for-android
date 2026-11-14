@@ -1,49 +1,81 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="purple_200">#FFBB86FC</color>
-    <color name="purple_500">#FF6200EE</color>
-    <color name="purple_700">#FF3700B3</color>
-    <color name="teal_200">#FF03DAC5</color>
-    <color name="teal_700">#FF018786</color>
+    <color name="purple_200">#FFF2A694</color>
+    <color name="purple_500">#FFE07A5F</color>
+    <color name="purple_700">#FFC8644B</color>
+    <color name="teal_200">#FF81B29A</color>
+    <color name="teal_700">#FF5B8E77</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="light_blue_50">#FFE1F5FE</color>
-    <color name="light_blue_200">#FF81D4FA</color>
-    <color name="light_blue_600">#FF039BE5</color>
-    <color name="light_blue_900">#FF01579B</color>
-    <color name="fixed_color_button_text_color">#FF404040</color>
+
+    <color name="light_blue_50">#FFFFF5F0</color>
+    <color name="light_blue_200">#FFF4B8A8</color>
+    <color name="light_blue_400">#FFE68A73</color>
+    <color name="light_blue_600">#FFE07A5F</color>
+    <color name="light_blue_900">#FF9E4733</color>
+
+    <!-- Warm Nursery Surface & Typography Palette -->
+    <color name="surface_background">#FFFFFAF5</color>
+    <color name="card_surface">#FFFFFFFF</color>
+    <color name="card_surface_elevated">#FFFFF5ED</color>
+    <color name="card_stroke">#FFF0E4DA</color>
+    <color name="card_stroke_active">#FFE07A5F</color>
+    <color name="chip_surface">#FFF7EFE8</color>
+    <color name="text_primary_warm">#FF2D2522</color>
+    <color name="text_secondary_warm">#FF7A6B65</color>
+    <color name="text_muted_warm">#FFA69790</color>
+    <color name="danger_soft_bg">#FFFFECEA</color>
+    <color name="danger_soft_fg">#FFD9534F</color>
+
+    <color name="fixed_color_button_text_color">#FF3D322E</color>
     <color name="help_background">#FF444444</color>
     <color name="help_text_background">#EEFFFFFF</color>
-    <color name="light_tutorial_highlight">#C8FFB8</color>
-    <color name="dark_tutorial_highlight">#273527</color>
-    <color name="semi_transparent_dark_background">#CC000000</color>
-    <color name="semi_transparent_darkred_background">#CC800000</color>
+    <color name="light_tutorial_highlight">#FFE8D6</color>
+    <color name="dark_tutorial_highlight">#3A2C27</color>
+    <color name="semi_transparent_dark_background">#CC2D2522</color>
+    <color name="semi_transparent_darkred_background">#CCB83B3B</color>
     <color name="semi_transparent_light_background">#CCFFFFFF</color>
-    <color name="semi_transparent_lightred_background">#CCFFAAAA</color>
-    <color name="semi_transparent_darkgreen_background">#CC008000</color>
-    <color name="semi_transparent_lightgreen_background">#CCAAFFAA</color>
-    <color name="very_transparent_dark_background">#44000000</color>
-    <color name="very_transparent_light_background">#44FFFFFF</color>
+    <color name="semi_transparent_lightred_background">#CCFFCCCC</color>
+    <color name="semi_transparent_darkgreen_background">#CC3D8B68</color>
+    <color name="semi_transparent_lightgreen_background">#FFC8F0DC</color>
+    <color name="very_transparent_dark_background">#222D2522</color>
+    <color name="very_transparent_light_background">#33FFFFFF</color>
 
-    <color name="primary_color">#6200EE</color>
-    <color name="primary_bg_color">#A466FF</color>
+    <color name="primary_color">#FFE07A5F</color>
+    <color name="primary_bg_color">#FFC8644B</color>
+    <color name="primary_color_dark">#FF2A2321</color>
+    <color name="primary_bg_color_dark">#FF181514</color>
 
-    <color name="primary_color_dark">#4800B8</color>
-    <color name="primary_bg_color_dark">#27006A</color>
+    <!-- Soft Pastel Activity Palette -->
+    <color name="timer_button_disabled">#FFF4ECE6</color>
+    <color name="feeding_enabled">#FFFFDFDA</color>
+    <color name="feeding_accent">#FFE06D5A</color>
+    <color name="sleep_enabled">#FFDCE8FF</color>
+    <color name="sleep_accent">#FF5B7FD1</color>
+    <color name="diaper_enabled">#FFFFF0C7</color>
+    <color name="diaper_accent">#FFD99B26</color>
+    <color name="tummy_time_enabled">#FFD8F3E2</color>
+    <color name="tummy_time_accent">#FF469E70</color>
+    <color name="pumping_enabled">#FFF2DCF9</color>
+    <color name="pumping_accent">#FFA05EB8</color>
+    <color name="notes_enabled">#FFD7F2F5</color>
+    <color name="notes_accent">#FF3B97A5</color>
+    <color name="temperature_enabled">#FFFFE4CE</color>
+    <color name="temperature_accent">#FFE67E22</color>
+    <color name="weight_enabled">#FFDDF3E4</color>
+    <color name="weight_accent">#FF3D9970</color>
+    <color name="height_enabled">#FFDCEEFF</color>
+    <color name="height_accent">#FF4A89DC</color>
+    <color name="head_circumference_enabled">#FFEDE2FF</color>
+    <color name="head_circumference_accent">#FF7E57C2</color>
+    <color name="bmi_enabled">#FFFCE4EC</color>
+    <color name="bmi_accent">#FFD85B84</color>
 
-    <color name="timer_button_disabled">#FFDDDDDD</color>
-    <color name="diaper_enabled">#FFFFFFBB</color>
-    <color name="sleep_enabled">#FFBBBBFF</color>
-    <color name="feeding_enabled">#FFFFBBBB</color>
-    <color name="notes_enabled">#55FFEE</color>
-    <color name="pumping_enabled">#FFFF33CC</color>
-    <color name="tummy_time_enabled">#FFBBFFBB</color>
-    <color name="light_blue_400">#FF29B6F6</color>
-    <color name="gray_400">#FFBDBDBD</color>
-    <color name="gray_600">#FF757575</color>
+    <color name="gray_400">#FFC7B9B2</color>
+    <color name="gray_600">#FF7A6B65</color>
 
-    <color name="diaperBlack">#FF000000</color>
-    <color name="diaperBrown">#DB8200</color>
-    <color name="diaperGreen">#FF00A900</color>
-    <color name="diaperYellow">#FFD7D700</color>
+    <color name="diaperBlack">#FF2B2B2B</color>
+    <color name="diaperBrown">#FFC2781E</color>
+    <color name="diaperGreen">#FF3A9E52</color>
+    <color name="diaperYellow">#FFE6C229</color>
 </resources>

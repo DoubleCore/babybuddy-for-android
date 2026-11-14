@@ -213,4 +213,46 @@ class ClientV2Test {
         val mapper = ObjectMapper()
         val headcircumference: HeadCircumferenceEntry = mapper.readValue(s, HeadCircumferenceEntry::class.java)
     }
+
+    @Test
+    fun growthAndTemperatureWriteSerialization() {
+        val kMapper = com.fasterxml.jackson.module.kotlin.jacksonObjectMapper()
+        val sampleDate = eu.pkgsoftware.babybuddywidgets.networking.babybuddy.parseNullOrDate("2026-05-10", "yyyy-MM-dd")!!
+        val sampleDateTime = eu.pkgsoftware.babybuddywidgets.networking.babybuddy.parseNullOrDate("2026-05-10T14:30:00+08:00", "yyyy-MM-dd'T'HH:mm:ssX")!!
+
+        val weightNode = kMapper.valueToTree<com.fasterxml.jackson.databind.node.ObjectNode>(
+            WeightEntry(id = 0, childId = 2, start = sampleDate, _notes = "checkup", weight = 6.45)
+        ).apply { remove("id") }
+        org.junit.Assert.assertEquals(2, weightNode.get("child").asInt())
+        org.junit.Assert.assertEquals("2026-05-10", weightNode.get("date").asText())
+        org.junit.Assert.assertEquals(6.45, weightNode.get("weight").asDouble(), 0.001)
+        org.junit.Assert.assertEquals("checkup", weightNode.get("notes").asText())
+        org.junit.Assert.assertNull(weightNode.get("_notes"))
+        org.junit.Assert.assertNull(weightNode.get("end"))
+
+        val heightNode = kMapper.valueToTree<com.fasterxml.jackson.databind.node.ObjectNode>(
+            HeightEntry(id = 0, childId = 2, start = sampleDate, _notes = "", height = 63.5)
+        ).apply { remove("id") }
+        org.junit.Assert.assertEquals("2026-05-10", heightNode.get("date").asText())
+        org.junit.Assert.assertEquals(63.5, heightNode.get("height").asDouble(), 0.001)
+
+        val hcNode = kMapper.valueToTree<com.fasterxml.jackson.databind.node.ObjectNode>(
+            HeadCircumferenceEntry(id = 0, childId = 2, start = sampleDate, _notes = null, head_circumference = 41.2)
+        ).apply { remove("id") }
+        org.junit.Assert.assertEquals(41.2, hcNode.get("head_circumference").asDouble(), 0.001)
+        org.junit.Assert.assertEquals("", hcNode.get("notes").asText())
+
+        val bmiNode = kMapper.valueToTree<com.fasterxml.jackson.databind.node.ObjectNode>(
+            BmiEntry(id = 0, childId = 2, start = sampleDate, _notes = null, bmi = 16.0)
+        ).apply { remove("id") }
+        org.junit.Assert.assertEquals(16.0, bmiNode.get("bmi").asDouble(), 0.001)
+
+        val tempNode = kMapper.valueToTree<com.fasterxml.jackson.databind.node.ObjectNode>(
+            TemperatureEntry(id = 0, childId = 2, start = sampleDateTime, _notes = "normal", temperature = 36.8)
+        ).apply { remove("id") }
+        org.junit.Assert.assertEquals(36.8, tempNode.get("temperature").asDouble(), 0.001)
+        org.junit.Assert.assertTrue(tempNode.get("time").asText().startsWith("2026-05-10T"))
+        org.junit.Assert.assertNull(tempNode.get("_notes"))
+        org.junit.Assert.assertNull(tempNode.get("end"))
+    }
 }

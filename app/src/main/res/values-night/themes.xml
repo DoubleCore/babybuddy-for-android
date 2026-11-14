@@ -1,20 +1,27 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
+    <!-- Base application theme (Night Mode: Eye-Friendly Warm Dark) -->
     <style name="Theme.BabyBuddyWidgets" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
 
-        <!-- Primary brand color. -->
+        <!-- Primary brand color -->
         <item name="colorPrimary">@color/purple_200</item>
         <item name="colorPrimaryVariant">@color/purple_700</item>
-        <item name="colorOnPrimary">@color/white</item>
-        <!-- Secondary brand color. -->
+        <item name="colorOnPrimary">@color/surface_background</item>
+        <!-- Secondary brand color -->
         <item name="colorSecondary">@color/teal_200</item>
         <item name="colorSecondaryVariant">@color/teal_200</item>
-        <item name="colorOnSecondary">@color/white</item>
-        <!-- Status bar color. -->
-        <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
-        <!-- Customize your theme here. -->
+        <item name="colorOnSecondary">@color/surface_background</item>
+        <!-- Warm dark surface & background -->
+        <item name="android:colorBackground">@color/surface_background</item>
+        <item name="colorSurface">@color/card_surface</item>
+        <item name="colorOnSurface">@color/text_primary_warm</item>
+        <item name="android:textColorPrimary">@color/text_primary_warm</item>
+        <item name="android:textColorSecondary">@color/text_secondary_warm</item>
+        <!-- Status bar color -->
+        <item name="android:statusBarColor">@color/primary_bg_color_dark</item>
+
+        <!-- Custom app attributes -->
         <item name="primaryColor">@color/primary_color_dark</item>
         <item name="primaryBgColor">@color/primary_bg_color_dark</item>
         <item name="appWidgetBackgroundColor">@color/light_blue_600</item>
@@ -26,7 +33,6 @@
     <style name="AppWidgetAttrs">
         <item name="primaryColor">@color/primary_color_dark</item>
         <item name="primaryBgColor">@color/primary_bg_color_dark</item>
-
         <item name="appWidgetBackgroundColor">@color/light_blue_600</item>
         <item name="appWidgetTextColor">@color/light_blue_50</item>
         <item name="colorPopoverBackground">@color/semi_transparent_dark_background</item>
@@ -57,6 +63,6 @@
     </style>
 
     <style name="SeparatorLine">
-        <item name="android:background">@color/semi_transparent_light_background</item>
+        <item name="android:background">@color/card_stroke</item>
     </style>
 </resources>

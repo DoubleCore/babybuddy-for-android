@@ -1,91 +1,197 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:layout_marginBottom="16dp"
-    android:layout_marginLeft="32dp"
-    android:layout_marginRight="32dp"
-    android:layout_marginTop="16dp"
+    android:background="@color/surface_background"
+    android:fillViewport="true"
     tools:context=".login.LoginFragment">
 
-    <Button
-        android:id="@+id/loginButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="28dp"
-        android:text="@string/login_button"
-        app:layout_constraintEnd_toEndOf="@+id/passwordEdit"
-        app:layout_constraintStart_toStartOf="@+id/passwordEdit"
-        app:layout_constraintTop_toBottomOf="@+id/passwordEdit" />
-
-    <Button
-        android:id="@+id/qrCode"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="@string/login_qrcode_button_text"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/qrCodeInfoText" />
-
-    <EditText
-        android:id="@+id/passwordEdit"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_marginTop="4dp"
-        android:autofillHints="password"
-        android:ems="10"
-        android:hint="@string/login_password_hint"
-        android:imeOptions="actionGo"
-        android:inputType="textPassword"
-        app:layout_constraintStart_toStartOf="@+id/loginNameEdit"
-        app:layout_constraintTop_toBottomOf="@+id/loginNameEdit" />
-
-    <EditText
-        android:id="@+id/serverAddressEdit"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:ems="10"
-        android:hint="@string/server_address_hint"
-        android:importantForAutofill="no"
-        android:inputType="textUri"
-        app:layout_constraintStart_toStartOf="@id/loginInfoText"
-        app:layout_constraintTop_toBottomOf="@+id/loginInfoText" />
-
-    <EditText
-        android:id="@+id/loginNameEdit"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_marginTop="8dp"
-        android:autofillHints="username"
-        android:ems="10"
-        android:hint="@string/login_text_hint"
-        android:inputType="textPersonName"
-        app:layout_constraintStart_toStartOf="@+id/serverAddressEdit"
-        app:layout_constraintTop_toBottomOf="@+id/serverAddressEdit" />
-
-    <TextView
-        android:id="@+id/qrCodeInfoText"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:text="@string/login_qrcode_info_text_checking_camera"
-        android:textColor="?android:attr/textColorPrimary"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/loginButton" />
-
-    <TextView
-        android:id="@+id/loginInfoText"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/login_explanation"
-        android:textColor="?android:attr/textColorPrimary"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:paddingStart="20dp"
+        android:paddingTop="24dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="32dp">
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+        <!-- Warm Nursery Brand Header -->
+        <FrameLayout
+            android:layout_width="68dp"
+            android:layout_height="68dp"
+            android:background="@drawable/bg_badge_rounded"
+            android:backgroundTint="@color/feeding_enabled"
+            android:padding="14dp">
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:importantForAccessibility="no"
+                app:srcCompat="@drawable/ic_baby_face"
+                app:tint="@color/feeding_accent" />
+        </FrameLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="@string/app_name"
+            android:textColor="@color/text_primary_warm"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:gravity="center"
+            android:text="@string/login_welcome_subtitle"
+            android:textColor="@color/text_secondary_warm"
+            android:textSize="14sp" />
+
+        <!-- Credentials Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            app:cardBackgroundColor="@color/card_surface"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp"
+            app:strokeColor="@color/card_stroke"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:id="@+id/loginInfoText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:lineSpacingExtra="2dp"
+                    android:text="@string/login_explanation"
+                    android:textColor="@color/text_secondary_warm"
+                    android:textSize="13sp" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:hint="@string/server_address_hint"
+                    app:boxCornerRadiusBottomEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusTopStart="12dp">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/serverAddressEdit"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:importantForAutofill="no"
+                        android:inputType="textUri"
+                        android:singleLine="true" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:hint="@string/login_text_hint"
+                    app:boxCornerRadiusBottomEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusTopStart="12dp">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/loginNameEdit"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:autofillHints="username"
+                        android:inputType="textPersonName"
+                        android:singleLine="true" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:hint="@string/login_password_hint"
+                    app:boxCornerRadiusBottomEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusTopStart="12dp"
+                    app:endIconMode="password_toggle">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/passwordEdit"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:autofillHints="password"
+                        android:imeOptions="actionGo"
+                        android:inputType="textPassword"
+                        android:singleLine="true" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/loginButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="20dp"
+                    android:text="@string/login_button"
+                    android:textAllCaps="false"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    app:cornerRadius="14dp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- QR Code Login Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            app:cardBackgroundColor="@color/card_surface_elevated"
+            app:cardCornerRadius="18dp"
+            app:cardElevation="0dp"
+            app:strokeColor="@color/card_stroke"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:id="@+id/qrCodeInfoText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="@string/login_qrcode_info_text_checking_camera"
+                    android:textColor="@color/text_secondary_warm"
+                    android:textSize="13sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/qrCode"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="10dp"
+                    android:text="@string/login_qrcode_button_text"
+                    android:textAllCaps="false"
+                    app:cornerRadius="14dp"
+                    app:strokeColor="@color/primary_color" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+    </LinearLayout>
+</ScrollView>

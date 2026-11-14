@@ -3,18 +3,58 @@ package eu.pkgsoftware.babybuddywidgets.widgets
 import android.content.Context
 import android.util.AttributeSet
 import android.view.LayoutInflater
+import android.view.View
 import android.widget.LinearLayout
 import eu.pkgsoftware.babybuddywidgets.databinding.HorizontalDecIncEditorBinding
-import kotlin.math.abs
-import kotlin.math.floor
-import kotlin.math.log10
+import java.math.BigDecimal
+import java.math.RoundingMode
+import java.text.DecimalFormat
+import java.text.DecimalFormatSymbols
+import java.util.Locale
 import kotlin.math.max
-import kotlin.math.pow
 
 class HorizontalDecIncEditor : LinearLayout {
+    companion object {
+        private val CLEAN_DECIMAL = DecimalFormat("0.##", DecimalFormatSymbols(Locale.US))
+
+        fun stepValue(
+            current: Double?,
+            delta: Double,
+            allowNull: Boolean,
+            defaultBaseline: Double? = null
+        ): Double? {
+            val base = current ?: defaultBaseline ?: 0.0
+            val next = BigDecimal.valueOf(base)
+                .add(BigDecimal.valueOf(delta))
+                .setScale(2, RoundingMode.HALF_UP)
+                .toDouble()
+            return if (next <= 0.0) {
+                if (allowNull && next < 0.0) null else max(0.0, next)
+            } else {
+                next
+            }
+        }
+
+        fun formatClean(v: Double): String {
+            return CLEAN_DECIMAL.format(
+                BigDecimal.valueOf(v).setScale(2, RoundingMode.HALF_UP).toDouble()
+            )
+        }
+    }
+
+    var stepSize: Double = 10.0
+    var defaultBaseline: Double? = null
+
+    var unitSuffix: String = ""
+        set(value) {
+            field = value
+            binding.unitSuffixLabel.text = value
+            binding.unitSuffixLabel.visibility = if (value.isNotBlank()) View.VISIBLE else View.GONE
+        }
+
     var value: Double?
         get() {
-            return binding.numberEditor.text.toString().toDoubleOrNull()
+            return binding.numberEditor.text.toString().replace(',', '.').toDoubleOrNull()
         }
         set(value) {
             val v = value.let {
@@ -30,7 +70,7 @@ class HorizontalDecIncEditor : LinearLayout {
             if (v == null) {
                 binding.numberEditor.setText("")
             } else {
-                binding.numberEditor.setText(v.toString())
+                binding.numberEditor.setText(formatClean(v))
             }
         }
 
@@ -45,9 +85,6 @@ class HorizontalDecIncEditor : LinearLayout {
     val binding = HorizontalDecIncEditorBinding.inflate(
         LayoutInflater.from(context), this, true
     )
-
-    private val incrementValue: Int
-        get() = max(1, (10.0).pow(floor(log10(abs(value?.toDouble() ?: 1.0)))).toInt())
 
     constructor(context: Context) : super(context) {
         init()
@@ -70,11 +107,21 @@ class HorizontalDecIncEditor : LinearLayout {
         value = null
 
         binding.decButton.setOnClickListener {
-            value = (value ?: 0.0) - incrementValue
+            val cur = value
+            if (cur == null && allowNull && defaultBaseline == null) {
+                value = null
+            } else {
+                val stepped = stepValue(cur, -stepSize, allowNull, defaultBaseline)
+                value = if (stepped != null && stepped == 0.0 && allowNull && (cur ?: 0.0) <= 0.0) {
+                    null
+                } else {
+                    stepped
+                }
+            }
             binding.numberEditor.selectAll()
         }
         binding.incButton.setOnClickListener {
-            value = (value ?: 0.0) + incrementValue
+            value = stepValue(value, stepSize, allowNull, defaultBaseline)
             binding.numberEditor.selectAll()
         }
     }

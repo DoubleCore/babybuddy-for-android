@@ -1,145 +1,160 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal">
+    android:layout_marginTop="8dp"
+    android:layout_marginBottom="4dp"
+    app:cardBackgroundColor="@color/card_surface"
+    app:cardCornerRadius="18dp"
+    app:cardElevation="0dp"
+    app:strokeColor="@color/feeding_accent"
+    app:strokeWidth="1.5dp">
 
-    <FrameLayout
-        android:id="@+id/feedingIcon"
-        android:layout_width="48dp"
-        android:layout_height="0dp"
-        android:background="@color/feeding_enabled"
-        android:minHeight="48dp"
-        android:padding="8dp"
-        android:layout_marginTop="8dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintHeight_min="48dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
-
-        <ImageView
-            android:id="@+id/feedingIconImage"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:scaleType="fitCenter"
-            android:src="@drawable/pkg_bottle"
-            android:tintMode="src_in"
-            android:visibility="visible"
-            app:tint="@color/fixed_color_button_text_color" />
-    </FrameLayout>
-
-    <TextView
-        android:id="@+id/currentTimerTime"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="24dp"
-        android:layout_marginTop="8dp"
-        android:layout_weight="0"
-        android:text="1:10:00"
-        android:textAppearance="@style/TextAppearance.AppCompat.Body1"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:orientation="horizontal"
+        android:padding="12dp">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/feedingIcon"
-        app:layout_constraintTop_toTopOf="parent">
+        <FrameLayout
+            android:id="@+id/feedingIcon"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@drawable/bg_badge_rounded"
+            android:backgroundTint="@color/feeding_enabled"
+            android:padding="8dp">
 
-        <EditText
-            android:id="@+id/noteEditor"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="top|left"
-            android:hint="@string/activity_notes_hint"
-            android:inputType="textLongMessage|textMultiLine|text"
-            android:maxLines="5"
-            android:minLines="1"
-            android:selectAllOnFocus="false"
-            android:singleLine="false"
-            app:layout_constraintTop_toBottomOf="@+id/feedingTypeGroup" />
-
-
-        <ImageButton
-            android:id="@+id/sendButton"
-            android:layout_width="56dp"
-            android:layout_height="wrap_content"
-            android:layout_margin="4dp"
-            android:layout_marginEnd="277dp"
-            android:layout_weight="0"
-            android:visibility="visible"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/noteEditor"
-            app:srcCompat="@android:drawable/ic_menu_save" />
+            <ImageView
+                android:id="@+id/feedingIconImage"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="fitCenter"
+                android:src="@drawable/pkg_bottle"
+                app:tint="@color/fixed_color_button_text_color" />
+        </FrameLayout>
 
         <LinearLayout
-            android:id="@+id/feedingTypeGroup"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:orientation="vertical"
-            app:layout_constraintTop_toBottomOf="@id/amountNumberPicker"
-            tools:layout_editor_absoluteX="8dp">
-
-            <Spinner
-                android:id="@+id/feedingTypeSpinner"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:layout_marginTop="8dp"
-                android:entries="@array/feedingTypes" />
-
-            <Spinner
-                android:id="@+id/feedingMethodSpinner"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:entries="@array/feedingMethods"
-                android:visibility="gone"
-                tools:visibility="visible" />
-
-            <eu.pkgsoftware.babybuddywidgets.widgets.AutoHGrid
-                android:id="@+id/feedingMethodButtons"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                tools:visibility="visible" />
-
-            <eu.pkgsoftware.babybuddywidgets.widgets.AutoHGrid
-                android:id="@+id/feedingTypeButtons"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                tools:visibility="visible" />
-
-        </LinearLayout>
-
-        <TextView
-            android:id="@+id/amountText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="16dp"
-            android:text="@string/feeding_amount_title"
-            android:textAppearance="@android:style/TextAppearance.DeviceDefault.Widget.TextView.SpinnerItem"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <eu.pkgsoftware.babybuddywidgets.widgets.HorizontalDecIncEditor
-            android:id="@+id/amountNumberPicker"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="8dp"
-            android:visibility="visible"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/amountText" />
-    </androidx.constraintlayout.widget.ConstraintLayout>
-</androidx.constraintlayout.widget.ConstraintLayout>
+            android:layout_marginStart="10dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/currentTimerTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:visibility="gone" />
+
+            <include
+                android:id="@+id/timerModeSection"
+                layout="@layout/include_timer_mode_controls" />
+
+            <TextView
+                android:id="@+id/amountText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/feeding_amount_title"
+                android:textColor="@color/text_secondary_warm"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <eu.pkgsoftware.babybuddywidgets.widgets.HorizontalDecIncEditor
+                android:id="@+id/amountNumberPicker"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp" />
+
+            <!-- Quick Milk Volume Preset Chips -->
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:scrollbars="none">
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/feedingAmountPresets"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:chipSpacingHorizontal="6dp"
+                    app:singleLine="true" />
+            </HorizontalScrollView>
+
+            <LinearLayout
+                android:id="@+id/feedingTypeGroup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <Spinner
+                    android:id="@+id/feedingTypeSpinner"
+                    android:layout_width="match_parent"
+                    android:layout_height="42dp"
+                    android:layout_marginBottom="6dp"
+                    android:background="@drawable/bg_soft_pill"
+                    android:entries="@array/feedingTypes"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp" />
+
+                <Spinner
+                    android:id="@+id/feedingMethodSpinner"
+                    android:layout_width="match_parent"
+                    android:layout_height="42dp"
+                    android:background="@drawable/bg_soft_pill"
+                    android:entries="@array/feedingMethods"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:visibility="gone"
+                    tools:visibility="visible" />
+
+                <eu.pkgsoftware.babybuddywidgets.widgets.AutoHGrid
+                    android:id="@+id/feedingMethodButtons"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    tools:visibility="visible" />
+
+                <eu.pkgsoftware.babybuddywidgets.widgets.AutoHGrid
+                    android:id="@+id/feedingTypeButtons"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    tools:visibility="visible" />
+            </LinearLayout>
+
+            <EditText
+                android:id="@+id/noteEditor"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_soft_pill"
+                android:gravity="top|start"
+                android:hint="@string/activity_notes_hint"
+                android:importantForAutofill="no"
+                android:inputType="textLongMessage|textMultiLine|text"
+                android:maxLines="4"
+                android:minHeight="42dp"
+                android:paddingStart="12dp"
+                android:paddingTop="8dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="8dp"
+                android:textSize="14sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/sendButton"
+                android:layout_width="match_parent"
+                android:layout_height="46dp"
+                android:layout_marginTop="10dp"
+                android:text="@string/logging_save_button"
+                android:textAllCaps="false"
+                android:textStyle="bold"
+                app:cornerRadius="12dp"
+                app:icon="@drawable/ic_check_save"
+                app:iconGravity="textStart" />
+        </LinearLayout>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

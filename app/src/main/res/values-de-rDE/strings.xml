@@ -136,6 +136,32 @@
     <string name="disconnect_dialog_progress_message">Verbinde zu Server...</string>
     <string name="send_message_failed_message">Fehler beim Versenden des Berichts an den Entwickler</string>
     <string name="send_message_sent_message">Bericht wurde an den Entwickler verschickt</string>
+    <string name="about_library_source_template">Quelle: {url}</string>
+    <string name="about_icon_derived_from_template">Bilder basieren auf oder sind abgeleitet von Werken von:\n{title}</string>
+    <string name="about_open_creator_website">Website des Urhebers öffnen</string>
+    <string name="pumping_amount_title">Menge</string>
+    <string name="login_failed_title">Anmeldung fehlgeschlagen</string>
+    <string name="login_internal_error_message">Interne Fehlermeldung: {error}</string>
+    <string name="login_error_token_not_found">Token nicht gefunden</string>
+    <string name="login_auth_failed_http_code">Authentifizierung fehlgeschlagen (HTTP-Code: {code})</string>
+    <string name="login_invalid_children_list">Ungültige Kinderliste</string>
+    <string name="login_no_app_token_found">Kein App-Token gefunden.</string>
+    <string name="login_error_server_response">Baby-Buddy-Anmeldeseite antwortete nicht korrekt</string>
+    <string name="login_error_csrf_missing">CSRF-Token fehlt in der Serverantwort</string>
+    <string name="login_error_invalid_credentials">Ungültiger Benutzername oder Passwort</string>
+    <string name="login_error_unknown">Anmeldung aus unbekanntem Grund fehlgeschlagen (Serverproblem?)</string>
+    <string name="login_error_profile_access">Zugriff auf Profilseite nicht möglich</string>
+    <string name="login_error_settings_access">Zugriff auf Benutzereinstellungen nicht möglich</string>
+    <string name="login_error_apikey_not_found">API-Schlüssel-Bereich nicht gefunden</string>
+    <string name="export_debug_logs_copied_toast">In die Zwischenablage kopiert</string>
+    <string name="setting_language">Sprache</string>
+    <array name="setting_language_options">
+        <item>Systemeinstellungen verwenden</item>
+        <item>简体中文</item>
+        <item>English</item>
+        <item>Deutsch</item>
+        <item>Nederlands</item>
+    </array>
     <string name="setting_dark_light_mode">Hell/Dunkel Modus</string>
     <string name="history_loading_timeline_entry_failed">Fehler beim Laden von {activity} Einträgen</string>
     <string name="timeline_title_line_title">Ereignisse</string>
@@ -144,4 +170,101 @@
         <item>Hell</item>
         <item>Dunkel</item>
     </array>
+
+    <!-- Navigation & Profile Header -->
+    <string name="nav_tab_record">Erfassen</string>
+    <string name="nav_tab_stats">Statistik</string>
+    <string name="baby_age_newborn">Neugeboren</string>
+    <string name="baby_age_days">{days} Tage alt</string>
+    <string name="baby_age_months_days">{months} Mon. {days} T.</string>
+    <string name="baby_age_years_months">{years} J. {months} Mon.</string>
+    <string name="login_welcome_subtitle">Sanfter Alltags- &amp; Wachstumstracker für Ihr Baby</string>
+
+    <!-- Quick Status & Today Summary -->
+    <string name="summary_card_title">Heutige Übersicht</string>
+    <string name="summary_pull_to_refresh_hint">Zum Aktualisieren herunterziehen</string>
+    <string name="summary_last_feeding_label">Letzte Mahlzeit</string>
+    <string name="summary_last_sleep_label">Letzter Schlaf</string>
+    <string name="summary_last_diaper_label">Letzte Windel</string>
+    <string name="summary_time_just_now">Gerade eben</string>
+    <string name="summary_time_ago_m">vor {minutes} Min.</string>
+    <string name="summary_time_ago_hm">vor {hours} Std. {minutes} Min.</string>
+    <string name="summary_time_ago_d">vor {days} T.</string>
+    <string name="summary_no_record">Kein Eintrag</string>
+    <string name="summary_today_feeding">Mahlzeiten heute</string>
+    <string name="summary_today_feeding_value">{count}x · {amount} ml</string>
+    <string name="summary_today_feeding_count_only">{count}x</string>
+    <string name="summary_today_sleep">Schlaf heute</string>
+    <string name="summary_today_sleep_value">{hours} Std. {minutes} Min.</string>
+    <string name="summary_today_diaper">Windeln heute</string>
+    <string name="summary_today_diaper_value">{total} ({wet} nass / {solid} voll)</string>
+    <string name="section_daily_care">Tägliche Pflege</string>
+    <string name="section_growth_health">Wachstum &amp; Gesundheit</string>
+
+    <!-- Activity Tile Short Labels -->
+    <string name="tile_feeding">Füttern</string>
+    <string name="tile_diaper">Windel</string>
+    <string name="tile_sleep">Schlaf</string>
+    <string name="tile_pumping">Abpumpen</string>
+    <string name="tile_tummy_time">Bauchlage</string>
+    <string name="tile_notes">Notiz</string>
+    <string name="tile_temperature">Temp.</string>
+    <string name="tile_weight">Gewicht</string>
+    <string name="tile_height">Größe</string>
+    <string name="tile_head_circumference">Kopfumfang</string>
+    <string name="tile_bmi">BMI</string>
+
+    <!-- Logging Controls, Manual Mode, Presets & Units -->
+    <string name="logging_save_button">Eintrag speichern</string>
+    <string name="logging_mode_timer">Live-Timer</string>
+    <string name="logging_mode_manual">Manuell</string>
+    <string name="logging_start_label">Start</string>
+    <string name="logging_end_label">Ende</string>
+    <string name="logging_time_label">Zeit</string>
+    <string name="logging_date_label">Datum</string>
+    <string name="logging_preset_minus_15m">-15 Min.</string>
+    <string name="logging_preset_minus_30m">-30 Min.</string>
+    <string name="logging_preset_minus_1h">-1 Std.</string>
+    <string name="logging_preset_plus_30ml">+30 ml</string>
+    <string name="diaper_wet_label">Nass</string>
+    <string name="diaper_solid_label">Stuhl</string>
+    <string name="diaper_extra_options_label">Farbe &amp; Menge</string>
+    <string name="unit_ml">ml</string>
+    <string name="unit_celsius">°C</string>
+    <string name="unit_kg">kg</string>
+    <string name="unit_cm">cm</string>
+    <string name="measurement_value_pattern">{value} {unit}</string>
+    <string name="measurement_bmi_pattern">BMI {value}</string>
+
+    <!-- Timeline Filters, Date Headers & Item Actions -->
+    <string name="filter_all">Alle</string>
+    <string name="filter_growth_health">Wachstum &amp; Gesundheit</string>
+    <string name="timeline_date_today">Heute</string>
+    <string name="timeline_date_yesterday">Gestern</string>
+    <string name="timeline_empty_filtered">Noch keine passenden Einträge</string>
+    <string name="timeline_open_web_desc">Im Webbrowser öffnen</string>
+    <string name="timeline_delete_desc">Eintrag löschen</string>
+
+    <!-- Statistics & Charts Tab -->
+    <string name="stats_range_7d">Letzte 7 Tage</string>
+    <string name="stats_range_14d">Letzte 14 Tage</string>
+    <string name="stats_range_30d">Letzte 30 Tage</string>
+    <string name="stats_kpi_avg_milk">Ø Milch / Tag</string>
+    <string name="stats_kpi_avg_feedings">Ø Mahlzeiten / Tag</string>
+    <string name="stats_kpi_avg_sleep">Ø Schlaf / Tag</string>
+    <string name="stats_kpi_avg_diapers">Ø Windeln / Tag</string>
+    <string name="stats_kpi_milk_value">{amount} ml</string>
+    <string name="stats_kpi_count_value">{count}x</string>
+    <string name="stats_kpi_hours_value">{hours} Std.</string>
+    <string name="stats_chart_feeding_title">Tägliche Trinkmenge (ml)</string>
+    <string name="stats_chart_feeding_subtitle">Gesamt {total} ml · {count}x ({breast} Muttermilch / {bottle} Flasche / {solid} Beikost)</string>
+    <string name="stats_chart_sleep_title">Tägliche Schlafdauer (Std.)</string>
+    <string name="stats_chart_sleep_subtitle">Gesamt {hours} Std. in {count} Schlafphasen</string>
+    <string name="stats_chart_diaper_title">Tägliche Windelwechsel</string>
+    <string name="stats_chart_diaper_subtitle">Nass: {wet} · Stuhl: {solid} · Gesamt: {total}</string>
+    <string name="stats_chart_growth_title">Wachstums- &amp; Temperaturkurve</string>
+    <string name="stats_growth_latest_summary">Aktuell: {latest} ({delta} ggü. Vorwert)</string>
+    <string name="stats_growth_latest_single">Aktuell: {latest}</string>
+    <string name="stats_no_data">Keine Daten in diesem Zeitraum</string>
+    <string name="stats_loading">Statistiken werden geladen…</string>
 </resources>

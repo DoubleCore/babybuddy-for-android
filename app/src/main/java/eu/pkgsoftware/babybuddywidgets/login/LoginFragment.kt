@@ -17,6 +17,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import androidx.navigation.Navigation.findNavController
+import com.squareup.phrase.Phrase
 import eu.pkgsoftware.babybuddywidgets.BaseFragment
 import eu.pkgsoftware.babybuddywidgets.R
 import eu.pkgsoftware.babybuddywidgets.databinding.LoginFragmentBinding
@@ -161,7 +162,7 @@ class LoginFragment : BaseFragment() {
 
     override fun onResume() {
         super.onResume()
-        mainActivity.setTitle("Login to Baby Buddy")
+        mainActivity.setTitle(getString(R.string.first_fragment_label))
         mainActivity.addMenuProvider(menu)
         val b = arguments
         if (b != null) {
@@ -203,9 +204,23 @@ class LoginFragment : BaseFragment() {
             result = asyncGrabber.parseFromSettingsPage()
         }
         if (result == null) {
-            throw java.lang.Exception("Token not found")
+            throw java.lang.Exception(getString(R.string.login_error_token_not_found))
         } else {
             return result
+        }
+    }
+
+    private fun translateLoginErrorMessage(msg: String?): String? {
+        return when (msg) {
+            "Baby Buddy login/ response not 200" -> getString(R.string.login_error_server_response)
+            "csrftoken missing" -> getString(R.string.login_error_csrf_missing)
+            "Invalid username or password (403)",
+            "Invalid username or password (sessionid)" -> getString(R.string.login_error_invalid_credentials)
+            "Login failed for unknown reason (server issue?)" -> getString(R.string.login_error_unknown)
+            "Cannot access profile page" -> getString(R.string.login_error_profile_access)
+            "Cannot access user settings" -> getString(R.string.login_error_settings_access)
+            "Cannot find api-key section" -> getString(R.string.login_error_apikey_not_found)
+            else -> msg
         }
     }
 
@@ -219,11 +234,14 @@ class LoginFragment : BaseFragment() {
                 token = try {
                     grabToken(AsyncGrabAppToken(URL(addressEdit.text.toString())))
                 } catch (e: IOException) {
-                    showError(true, "Login failed", e.message)
+                    showError(true, getString(R.string.login_failed_title), translateLoginErrorMessage(e.message))
                     return@cancelParallel
                 } catch (e: Exception) {
                     e.printStackTrace()
-                    showError(true, "Login failed", "Internal error message: " + e.message)
+                    val internalMsg = Phrase.from(resources, R.string.login_internal_error_message)
+                        .put("error", e.message ?: "")
+                        .format().toString()
+                    showError(true, getString(R.string.login_failed_title), internalMsg)
                     return@cancelParallel
                 }
                 credStore.storeAppToken(token)
@@ -234,7 +252,7 @@ class LoginFragment : BaseFragment() {
                     }
                 } catch (e: AsyncPromiseFailure) {
                     mainActivity.logout()
-                    showError(true, "Login failed", e.value.toString())
+                    showError(true, getString(R.string.login_failed_title), e.value.toString())
                     return@cancelParallel
                 }
                 moveToLoggedIn()

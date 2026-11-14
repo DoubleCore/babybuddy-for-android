@@ -54,3 +54,9 @@ class DateTimeSerializer : StdSerializer<Date>(Date::class.java) {
         gen.writeString(formatDate(value, DATE_TIME_FORMAT_STRING))
     }
 }
+
+class DateOnlySerializer : StdSerializer<Date>(Date::class.java) {
+    override fun serialize(value: Date, gen: JsonGenerator, provider: SerializerProvider) {
+        gen.writeString(formatDate(value, DATE_ONLY_FORMAT_STRING))
+    }
+}

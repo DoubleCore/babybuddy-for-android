@@ -117,7 +117,7 @@ if has_element:
     help_xml.text = indent
     help_xml[-1].tail = "\n"
 
-xml_text = '<?xml version="1.0" encoding="utf-8"?>\n' + ET.tostring(help_xml).decode()
-with open(out_xml, "w") as f:
+xml_text = '<?xml version="1.0" encoding="utf-8"?>\n' + ET.tostring(help_xml, encoding="unicode")
+with open(out_xml, "w", encoding="utf-8") as f:
     f.write(xml_text)
 

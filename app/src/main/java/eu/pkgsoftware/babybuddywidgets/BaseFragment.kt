@@ -309,6 +309,6 @@ abstract class BaseFragment : Fragment() {
         val id = resources.getIdentifier(
             "activity_singular_${cleanedName}", "string", mainActivity.packageName
         )
-        return resources.getString(id)
+        return if (id != 0) resources.getString(id) else name
     }
 }

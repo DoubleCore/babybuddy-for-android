@@ -1,21 +1,28 @@
 package eu.pkgsoftware.babybuddywidgets.timers
 
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import android.content.Context
+import android.content.res.ColorStateList
 import android.os.Handler
+import android.text.format.DateFormat as AndroidDateFormat
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
-import android.widget.Button
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.Spinner
+import androidx.core.content.ContextCompat
 import androidx.core.view.children
 import androidx.core.view.isVisible
 import androidx.core.widget.addTextChangedListener
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.chip.Chip
+import com.google.android.material.chip.ChipGroup
 import com.squareup.phrase.Phrase
 import eu.pkgsoftware.babybuddywidgets.BaseFragment
 import eu.pkgsoftware.babybuddywidgets.Constants
@@ -29,24 +36,33 @@ import eu.pkgsoftware.babybuddywidgets.databinding.BabyManagerBinding
 import eu.pkgsoftware.babybuddywidgets.databinding.DiaperLoggingEntryBinding
 import eu.pkgsoftware.babybuddywidgets.databinding.FeedingLoggingEntryBinding
 import eu.pkgsoftware.babybuddywidgets.databinding.GenericTimerLoggingEntryBinding
+import eu.pkgsoftware.babybuddywidgets.databinding.IncludeTimerModeControlsBinding
+import eu.pkgsoftware.babybuddywidgets.databinding.MeasurementLoggingEntryBinding
 import eu.pkgsoftware.babybuddywidgets.databinding.NoteLoggingEntryBinding
 import eu.pkgsoftware.babybuddywidgets.databinding.PumpingLoggingEntryBinding
 import eu.pkgsoftware.babybuddywidgets.login.Utils
 import eu.pkgsoftware.babybuddywidgets.networking.BabyBuddyClient
 import eu.pkgsoftware.babybuddywidgets.networking.BabyBuddyClient.Timer
 import eu.pkgsoftware.babybuddywidgets.networking.RequestCodeFailure
+import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.clientToServerTime
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.exponentialBackoff
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.maxDate
+import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.BmiEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.ChangeEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.Child
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.FeedingEntry
+import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.HeadCircumferenceEntry
+import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.HeightEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.NoteEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.PumpingEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.SleepEntry
+import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.TemperatureEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.TimeEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.TummyTimeEntry
+import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.WeightEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.classActivityName
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.nowServer
+import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.serverTimeToClientTime
 import eu.pkgsoftware.babybuddywidgets.utils.AsyncPromise
 import eu.pkgsoftware.babybuddywidgets.utils.AsyncPromiseFailure
 import eu.pkgsoftware.babybuddywidgets.utils.ConcurrentEventBlocker
@@ -55,7 +71,10 @@ import eu.pkgsoftware.babybuddywidgets.widgets.HorizontalDecIncEditor
 import eu.pkgsoftware.babybuddywidgets.widgets.SwitchButtonLogic
 import kotlinx.coroutines.launch
 import java.io.IOException
+import java.text.DateFormat
+import java.util.Calendar
 import java.util.Date
+import kotlin.math.max
 import kotlin.reflect.KClass
 
 interface ButtonListCallback {
@@ -69,12 +88,12 @@ interface FragmentCallbacks {
 }
 
 abstract class LoggingControls(val childId: Int) {
-    abstract val saveButton: ImageButton
+    abstract val saveButton: View
     abstract val controlsView: View
 
     abstract fun storeStateForSuspend()
     abstract fun reset()
-    suspend abstract fun save(): TimeEntry?
+    abstract suspend fun save(): TimeEntry?
 
     open fun updateVisuals() {}
     open fun postInit() {}
@@ -83,6 +102,58 @@ abstract class LoggingControls(val childId: Int) {
 
 interface TimerBase {
     fun updateTimer(timer: Timer?)
+}
+
+private fun populateVolumePresetChips(
+    context: Context,
+    chipGroup: ChipGroup,
+    editor: HorizontalDecIncEditor
+) {
+    chipGroup.removeAllViews()
+    val mlLabel = context.getString(R.string.unit_ml)
+    val fixedPresets = listOf(60, 90, 120, 150, 180)
+    for (preset in fixedPresets) {
+        val chip = Chip(context).apply {
+            text = "$preset $mlLabel"
+            textSize = 11.5f
+            isCheckable = false
+            setOnClickListener {
+                editor.value = preset.toDouble()
+            }
+        }
+        chipGroup.addView(chip)
+    }
+    val plus30Chip = Chip(context).apply {
+        text = context.getString(R.string.logging_preset_plus_30ml)
+        textSize = 11.5f
+        isCheckable = false
+        setOnClickListener {
+            editor.value = (editor.value ?: 0.0) + 30.0
+        }
+    }
+    chipGroup.addView(plus30Chip)
+}
+
+private fun showDateDialog(context: Context, initial: Date, onPicked: (Int, Int, Int) -> Unit) {
+    val cal = Calendar.getInstance().apply { time = initial }
+    DatePickerDialog(
+        context,
+        { _, y, m, d -> onPicked(y, m, d) },
+        cal.get(Calendar.YEAR),
+        cal.get(Calendar.MONTH),
+        cal.get(Calendar.DAY_OF_MONTH)
+    ).show()
+}
+
+private fun showTimeDialog(context: Context, initial: Date, onPicked: (Int, Int) -> Unit) {
+    val cal = Calendar.getInstance().apply { time = initial }
+    TimePickerDialog(
+        context,
+        { _, h, min -> onPicked(h, min) },
+        cal.get(Calendar.HOUR_OF_DAY),
+        cal.get(Calendar.MINUTE),
+        AndroidDateFormat.is24HourFormat(context)
+    ).show()
 }
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -96,7 +167,11 @@ abstract class GenericLoggingController(
     val timerControl: TimerControlInterface,
     val entryKlass: KClass<*>
 ) : LoggingControls(childId), TimerBase, StoreFunction<TimeEntry> {
-    protected abstract suspend fun createEntry(timer: Timer): TimeEntry
+    protected abstract suspend fun createEntryRange(startServer: Date, endServer: Date): TimeEntry
+
+    protected open suspend fun createEntry(timer: Timer): TimeEntry {
+        return createEntryRange(timer.start, maxDate(timer.start, nowServer()))
+    }
 
     val bindings = GenericTimerLoggingEntryBinding.inflate(fragment.layoutInflater)
     val typeName: String = classActivityName(entryKlass)
@@ -104,9 +179,19 @@ abstract class GenericLoggingController(
     open val uiIconList = bindings.icons.children
     open val uiNoteEditor = bindings.noteEditor
     open val uiCurrentTimerTime = bindings.currentTimerTime
+    open val uiTimerMode: IncludeTimerModeControlsBinding
+        get() = bindings.timerModeSection
 
-    override val saveButton: ImageButton = bindings.sendButton
+    override val saveButton: View = bindings.sendButton
     override val controlsView: View = bindings.root
+
+    var isManualMode: Boolean = false
+        private set
+    private var manualStartClient: Date = Date(System.currentTimeMillis() - 15 * 60_000L)
+    private var manualEndClient: Date = Date()
+    private var suppressModeListener: Boolean = false
+
+    var onModeChangedByUser: ((Boolean) -> Unit)? = null
 
     private var timer: Timer? = null
     private var storingPromise: Promise<TimeEntry?, Exception>? = null
@@ -118,13 +203,122 @@ abstract class GenericLoggingController(
 
         val children = uiIconList.toList()
         for (i in BabyBuddyClient.ACTIVITIES.ALL.indices) {
-            if (BabyBuddyClient.ACTIVITIES.ALL[i] == typeName) {
-                children[i].visibility = View.VISIBLE
-            } else {
-                children[i].visibility = View.GONE
+            if (i < children.size) {
+                children[i].visibility =
+                    if (BabyBuddyClient.ACTIVITIES.ALL[i] == typeName) View.VISIBLE else View.GONE
             }
         }
 
+        setupManualModeControls()
+        updateVisuals()
+    }
+
+    protected fun setupManualModeControls() {
+        val modeUi = uiTimerMode
+        modeUi.modeChipGroup.setOnCheckedStateChangeListener { _, checkedIds ->
+            if (suppressModeListener) return@setOnCheckedStateChangeListener
+            val checkedId = checkedIds.firstOrNull() ?: return@setOnCheckedStateChangeListener
+            val wantManual = (checkedId == R.id.chipModeManual)
+            if (wantManual != isManualMode) {
+                isManualMode = wantManual
+                if (wantManual) {
+                    val now = Date()
+                    manualEndClient = now
+                    manualStartClient = timer?.start?.let { serverTimeToClientTime(it) }
+                        ?: Date(now.time - 15 * 60_000L)
+                    if (manualStartClient.after(manualEndClient)) {
+                        manualStartClient = Date(manualEndClient.time - 5 * 60_000L)
+                    }
+                }
+                updateManualTimeButtons()
+                updateVisuals()
+                onModeChangedByUser?.invoke(wantManual)
+            }
+        }
+
+        modeUi.manualDateButton.setOnClickListener {
+            val ctx = fragment.context ?: return@setOnClickListener
+            showDateDialog(ctx, manualStartClient) { y, m, d ->
+                val startCal = Calendar.getInstance().apply {
+                    time = manualStartClient
+                    set(Calendar.YEAR, y)
+                    set(Calendar.MONTH, m)
+                    set(Calendar.DAY_OF_MONTH, d)
+                }
+                val durationMs = max(0L, manualEndClient.time - manualStartClient.time)
+                manualStartClient = startCal.time
+                manualEndClient = Date(manualStartClient.time + durationMs)
+                updateManualTimeButtons()
+            }
+        }
+
+        modeUi.manualStartTimeButton.setOnClickListener {
+            val ctx = fragment.context ?: return@setOnClickListener
+            showTimeDialog(ctx, manualStartClient) { h, min ->
+                val cal = Calendar.getInstance().apply {
+                    time = manualStartClient
+                    set(Calendar.HOUR_OF_DAY, h)
+                    set(Calendar.MINUTE, min)
+                    set(Calendar.SECOND, 0)
+                }
+                manualStartClient = cal.time
+                if (manualEndClient.before(manualStartClient)) {
+                    manualEndClient = Date(manualStartClient.time + 15 * 60_000L)
+                }
+                updateManualTimeButtons()
+            }
+        }
+
+        modeUi.manualEndTimeButton.setOnClickListener {
+            val ctx = fragment.context ?: return@setOnClickListener
+            showTimeDialog(ctx, manualEndClient) { h, min ->
+                val cal = Calendar.getInstance().apply {
+                    time = manualStartClient
+                    set(Calendar.HOUR_OF_DAY, h)
+                    set(Calendar.MINUTE, min)
+                    set(Calendar.SECOND, 0)
+                }
+                if (cal.time.before(manualStartClient)) {
+                    cal.add(Calendar.DAY_OF_MONTH, 1)
+                }
+                manualEndClient = cal.time
+                updateManualTimeButtons()
+            }
+        }
+
+        modeUi.chipMinus15m.setOnClickListener { applyQuickOffsetMinutes(15) }
+        modeUi.chipMinus30m.setOnClickListener { applyQuickOffsetMinutes(30) }
+        modeUi.chipMinus1h.setOnClickListener { applyQuickOffsetMinutes(60) }
+
+        updateManualTimeButtons()
+    }
+
+    private fun applyQuickOffsetMinutes(minutes: Int) {
+        val now = Date()
+        manualEndClient = now
+        manualStartClient = Date(now.time - minutes * 60_000L)
+        updateManualTimeButtons()
+    }
+
+    private fun updateManualTimeButtons() {
+        val ctx = fragment.context ?: return
+        val res = ctx.resources
+        val dateFmt = DateFormat.getDateInstance(DateFormat.SHORT)
+        val timeFmt = DateFormat.getTimeInstance(DateFormat.SHORT)
+
+        val modeUi = uiTimerMode
+        modeUi.manualDateButton.text = dateFmt.format(manualStartClient)
+        modeUi.manualStartTimeButton.text =
+            "${res.getString(R.string.logging_start_label)} ${timeFmt.format(manualStartClient)}"
+        modeUi.manualEndTimeButton.text =
+            "${res.getString(R.string.logging_end_label)} ${timeFmt.format(manualEndClient)}"
+    }
+
+    fun switchToTimerModeSilently() {
+        suppressModeListener = true
+        isManualMode = false
+        uiTimerMode.chipModeTimer.isChecked = true
+        suppressModeListener = false
         updateVisuals()
     }
 
@@ -136,28 +330,32 @@ abstract class GenericLoggingController(
 
     override fun reset() {
         uiNoteEditor.setText("")
+        switchToTimerModeSilently()
         storeStateForSuspend()
     }
 
     override suspend fun save(): TimeEntry? {
         storingPromise?.let {
-            throw IOException("Already storing activity of type ${typeName}")
+            throw IOException("Already storing activity of type $typeName")
         }
 
-        timer?.let { timer ->
+        if (isManualMode) {
+            val startSrv = clientToServerTime(manualStartClient)
+            val endSrv = maxDate(startSrv, clientToServerTime(manualEndClient))
+            return createEntryRange(startSrv, endSrv)
+        }
+
+        timer?.let { activeTimer ->
             try {
                 try {
-                    val result = AsyncPromise.call<TimeEntry?, Exception> { promise ->
+                    return AsyncPromise.call<TimeEntry?, Exception> { promise ->
                         storingPromise = promise
-                        fragment.mainActivity.storeActivity(timer, this)
+                        fragment.mainActivity.storeActivity(activeTimer, this)
                     }
-                    return result
-                }
-                finally {
+                } finally {
                     storingPromise = null
                 }
-            }
-            catch (e: AsyncPromiseFailure) {
+            } catch (e: AsyncPromiseFailure) {
                 fragment.showError(
                     true,
                     R.string.activity_store_failure_message,
@@ -165,28 +363,34 @@ abstract class GenericLoggingController(
                 )
             }
         }
-        throw IOException("Could not store activity of type ${typeName}")
+        throw IOException("Could not store activity of type $typeName")
     }
 
     override fun updateTimer(timer: Timer?) {
         this.timer = timer
+        if (timer != null && isManualMode) {
+            switchToTimerModeSilently()
+        }
         updateVisuals()
     }
 
     override fun updateVisuals() {
+        val modeUi = uiTimerMode
+        modeUi.manualTimeContainer.visibility = if (isManualMode) View.VISIBLE else View.GONE
+        modeUi.liveTimerBadge.visibility = if (isManualMode) View.GONE else View.VISIBLE
+
         val now = Date()
-        (timer?.start ?: now).let {
-            val diff = now.time - it.time
+        val startRef = timer?.start?.let { serverTimeToClientTime(it) } ?: now
+        val diff = max(0L, now.time - startRef.time)
+        val seconds = (diff / 1000L).toInt()
+        val minutes = seconds / 60
+        val hours = minutes / 60
 
-            val seconds = diff.toInt() / 1000
-            val minutes = seconds / 60
-            val hours = minutes / 60
-
-            uiCurrentTimerTime.text = "HH:MM:ss"
-                .replace("HH".toRegex(), "" + hours)
-                .replace("MM".toRegex(), Utils.padToLen("" + minutes % 60, '0', 2))
-                .replace("ss".toRegex(), Utils.padToLen("" + seconds % 60, '0', 2))
-        }
+        val formatted = "${hours}:" +
+            "${Utils.padToLen("" + minutes % 60, '0', 2)}:" +
+            Utils.padToLen("" + seconds % 60, '0', 2)
+        uiCurrentTimerTime.text = formatted
+        modeUi.liveTimerBadge.text = formatted
     }
 
     override fun store(
@@ -210,8 +414,7 @@ abstract class GenericLoggingController(
                             )
                         }
                     })
-            }
-            catch (e: Exception) {
+            } catch (e: Exception) {
                 callback.error(e)
             }
         }
@@ -241,12 +444,12 @@ abstract class GenericLoggingController(
 
     override fun error(error: java.lang.Exception) {
         var message = "" + (error.message ?: "")
-        if ((error is RequestCodeFailure) && (error.hasJSONMessage())) {
+        if ((error is RequestCodeFailure) && error.hasJSONMessage()) {
             message = Phrase.from(
                 fragment.requireContext(),
                 R.string.activity_store_failure_server_error
             )
-                .put("message", "Error while storing activity")
+                .put("message", fragment.getString(R.string.activity_store_failure_server_error_general))
                 .put("server_message", error.jsonErrorMessages().joinToString(", "))
                 .format().toString()
         }
@@ -306,24 +509,36 @@ class DiaperLoggingController(val fragment: BaseFragment, childId: Int) : Loggin
             updateColorButtons()
         }
 
+    private var customClientTime: Date? = null
     val noteEditor = bindings.noteEditor
 
     init {
-        wetLogic.addStateListener { _, _ ->
-            updateSaveEnabledState()
-        }
-        solidLogic.addStateListener { _, _ ->
-            updateSaveEnabledState()
-        }
+        wetLogic.addStateListener { _, _ -> updateSaveEnabledState() }
+        solidLogic.addStateListener { _, _ -> updateSaveEnabledState() }
         extraOptionsLogic.addStateListener { state, _ ->
-            bindings.extraOptionsList.visibility = if (state) {
-                View.VISIBLE
-            } else {
-                View.GONE
-            }
+            bindings.extraOptionsList.visibility = if (state) View.VISIBLE else View.GONE
         }
 
         bindings.amountEditor.allowNull = true
+        bindings.amountEditor.stepSize = 10.0
+
+        bindings.diaperTimeButton.setOnClickListener {
+            val ctx = fragment.context ?: return@setOnClickListener
+            val base = customClientTime ?: Date()
+            showTimeDialog(ctx, base) { h, m ->
+                val cal = Calendar.getInstance().apply {
+                    time = base
+                    set(Calendar.HOUR_OF_DAY, h)
+                    set(Calendar.MINUTE, m)
+                    set(Calendar.SECOND, 0)
+                }
+                if (cal.time.after(Date())) {
+                    cal.add(Calendar.DAY_OF_MONTH, -1)
+                }
+                customClientTime = cal.time
+                updateTimeButtonLabel()
+            }
+        }
 
         val colorValues = listOf(
             Constants.SolidDiaperColorEnum.BLACK,
@@ -344,11 +559,10 @@ class DiaperLoggingController(val fragment: BaseFragment, childId: Int) : Loggin
             solidLogic.state = it.solid
             noteEditor.setText(it.note)
             extraOptionsLogic.state = it.extraOptionsOpen
-            diaperColor = it.color?.let {
+            diaperColor = it.color?.let { c ->
                 try {
-                    Constants.SolidDiaperColorEnum.byPostName(it)
-                }
-                catch (_: NoSuchElementException) {
+                    Constants.SolidDiaperColorEnum.byPostName(c)
+                } catch (_: NoSuchElementException) {
                     null
                 }
             }
@@ -357,6 +571,21 @@ class DiaperLoggingController(val fragment: BaseFragment, childId: Int) : Loggin
 
         updateSaveEnabledState()
         updateColorButtons()
+        updateTimeButtonLabel()
+    }
+
+    private fun updateTimeButtonLabel() {
+        val ctx = fragment.context ?: return
+        val label = customClientTime?.let {
+            DateFormat.getTimeInstance(DateFormat.SHORT).format(it)
+        } ?: ctx.getString(R.string.summary_time_just_now)
+        bindings.diaperTimeButton.text = "${ctx.getString(R.string.logging_time_label)}: $label"
+    }
+
+    override fun postStart() {
+        super.postStart()
+        customClientTime = null
+        updateTimeButtonLabel()
     }
 
     private fun updateColorButtons() {
@@ -364,14 +593,9 @@ class DiaperLoggingController(val fragment: BaseFragment, childId: Int) : Loggin
         val lastChildIndex = bindings.diaperColorGrid.children.count() - 1
         for (entry in bindings.diaperColorGrid.children) {
             val ll = entry as LinearLayout
-
             val isSelected = (diaperColor?.value == i) or (diaperColor == null && i == lastChildIndex)
             for (view in listOf(ll.children.first(), ll.children.last())) {
-                view.visibility = if (isSelected) {
-                    View.VISIBLE
-                } else {
-                    View.INVISIBLE
-                }
+                view.visibility = if (isSelected) View.VISIBLE else View.INVISIBLE
             }
             i++
         }
@@ -403,19 +627,22 @@ class DiaperLoggingController(val fragment: BaseFragment, childId: Int) : Loggin
         solidLogic.state = false
         extraOptionsLogic.state = false
         diaperColor = null
+        customClientTime = null
         bindings.amountEditor.value = null
+        updateTimeButtonLabel()
     }
 
-    suspend override fun save(): TimeEntry {
+    override suspend fun save(): TimeEntry {
         val color = if (extraOptionsLogic.state) diaperColor?.post_name else null
         val amount = if (extraOptionsLogic.state) bindings.amountEditor.value else null
+        val serverTimestamp = customClientTime?.let { clientToServerTime(it) } ?: nowServer()
 
         return fragment.mainActivity.client.v2client.createEntry(
             ChangeEntry::class,
             ChangeEntry(
                 id = 0,
                 childId = childId,
-                start = nowServer(),
+                start = serverTimestamp,
                 _notes = noteEditor.text.toString(),
                 wet = wetLogic.state,
                 solid = solidLogic.state,
@@ -444,21 +671,18 @@ class NotesLoggingController(val fragment: BaseFragment, childId: Int) : Logging
                 view.context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager?
                     ?: return@setOnFocusChangeListener
             when (hasFocus) {
-                true -> imm.showSoftInput(
-                    view, InputMethodManager.SHOW_IMPLICIT
-                )
-                false -> imm.hideSoftInputFromWindow(
-                    view.windowToken, InputMethodManager.HIDE_IMPLICIT_ONLY
-                )
+                true -> imm.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT)
+                false -> imm.hideSoftInputFromWindow(view.windowToken, InputMethodManager.HIDE_IMPLICIT_ONLY)
             }
         }
 
         noteEditor.addTextChangedListener {
             updateVisuals()
         }
-        fragment.mainActivity.storage.child<DiaperDataRecord>(childId, "notes")?.let {
+        fragment.mainActivity.storage.child<NotesDataRecord>(childId, "notes")?.let {
             noteEditor.setText(it.note)
         }
+        updateVisuals()
     }
 
     override fun storeStateForSuspend() {
@@ -471,7 +695,7 @@ class NotesLoggingController(val fragment: BaseFragment, childId: Int) : Logging
         updateVisuals()
     }
 
-    suspend override fun save(): TimeEntry {
+    override suspend fun save(): TimeEntry {
         return fragment.mainActivity.client.v2client.createEntry(
             NoteEntry::class,
             NoteEntry(
@@ -485,11 +709,7 @@ class NotesLoggingController(val fragment: BaseFragment, childId: Int) : Logging
 
     override fun updateVisuals() {
         super.updateVisuals()
-        saveButton.visibility = if (noteEditor.text.isNotEmpty()) {
-            View.VISIBLE
-        } else {
-            View.GONE
-        }
+        saveButton.visibility = if (noteEditor.text.isNotEmpty()) View.VISIBLE else View.GONE
     }
 
     override fun postStart() {
@@ -498,19 +718,280 @@ class NotesLoggingController(val fragment: BaseFragment, childId: Int) : Logging
     }
 }
 
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class MeasurementDataRecord(
+    @JsonProperty("value") val value: Double?,
+    @JsonProperty("note") val note: String
+)
+
+class MeasurementLoggingController(
+    val fragment: BaseFragment,
+    childId: Int,
+    val eventType: String,
+) : LoggingControls(childId) {
+    val bindings = MeasurementLoggingEntryBinding.inflate(fragment.layoutInflater)
+    override val controlsView: View = bindings.root
+    override val saveButton: View = bindings.sendButton
+
+    private val hasTimeComponent: Boolean = (eventType == BabyBuddyClient.EVENTS.TEMPERATURE)
+    private var selectedClientDateTime: Date = Date()
+
+    override fun postInit() {
+        val ctx = fragment.requireContext()
+        val res = ctx.resources
+
+        data class VisualSpec(
+            val iconRes: Int,
+            val badgeBgRes: Int,
+            val accentRes: Int,
+            val unit: String,
+            val step: Double,
+            val baseline: Double,
+            val presets: List<Double>
+        )
+
+        val spec = when (eventType) {
+            BabyBuddyClient.EVENTS.TEMPERATURE -> VisualSpec(
+                R.drawable.ic_temperature,
+                R.color.temperature_enabled,
+                R.color.temperature_accent,
+                res.getString(R.string.unit_celsius),
+                0.1,
+                36.8,
+                listOf(36.5, 36.8, 37.2, 37.5, 38.0, 38.5)
+            )
+            BabyBuddyClient.EVENTS.WEIGHT -> VisualSpec(
+                R.drawable.ic_weight,
+                R.color.weight_enabled,
+                R.color.weight_accent,
+                res.getString(R.string.unit_kg),
+                0.1,
+                5.0,
+                listOf(3.5, 5.0, 6.5, 8.0, 10.0, 12.0)
+            )
+            BabyBuddyClient.EVENTS.HEIGHT -> VisualSpec(
+                R.drawable.ic_height,
+                R.color.height_enabled,
+                R.color.height_accent,
+                res.getString(R.string.unit_cm),
+                0.5,
+                60.0,
+                listOf(50.0, 55.0, 60.0, 65.0, 70.0, 75.0)
+            )
+            BabyBuddyClient.EVENTS.HEAD_CIRCUMFERENCE -> VisualSpec(
+                R.drawable.ic_head_circumference,
+                R.color.head_circumference_enabled,
+                R.color.head_circumference_accent,
+                res.getString(R.string.unit_cm),
+                0.5,
+                40.0,
+                listOf(34.0, 36.0, 38.0, 40.0, 42.0, 44.0)
+            )
+            else -> VisualSpec(
+                R.drawable.ic_bmi,
+                R.color.bmi_enabled,
+                R.color.bmi_accent,
+                "",
+                0.1,
+                15.0,
+                listOf(13.0, 14.0, 15.0, 16.0, 17.0)
+            )
+        }
+
+        bindings.measurementCard.strokeColor = ContextCompat.getColor(ctx, spec.accentRes)
+        bindings.measurementIconBadge.backgroundTintList =
+            ColorStateList.valueOf(ContextCompat.getColor(ctx, spec.badgeBgRes))
+        bindings.measurementIconImage.setImageResource(spec.iconRes)
+
+        val actName = fragment.translateActivityName(eventType)
+            .replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+        bindings.measurementTitle.text = if (spec.unit.isNotEmpty()) "$actName (${spec.unit})" else actName
+
+        bindings.measurementValueEditor.allowNull = true
+        bindings.measurementValueEditor.stepSize = spec.step
+        bindings.measurementValueEditor.defaultBaseline = spec.baseline
+        bindings.measurementValueEditor.unitSuffix = spec.unit
+        bindings.measurementValueEditor.binding.numberEditor.addTextChangedListener {
+            updateSaveVisibility()
+        }
+
+        bindings.measurementPresetsGroup.removeAllViews()
+        for (p in spec.presets) {
+            val chip = Chip(ctx).apply {
+                val u = if (spec.unit.isNotEmpty()) " ${spec.unit}" else ""
+                text = "${HorizontalDecIncEditor.formatClean(p)}$u"
+                textSize = 11.5f
+                isCheckable = false
+                setOnClickListener {
+                    bindings.measurementValueEditor.value = p
+                    updateSaveVisibility()
+                }
+            }
+            bindings.measurementPresetsGroup.addView(chip)
+        }
+
+        bindings.measurementTimeButton.visibility = if (hasTimeComponent) View.VISIBLE else View.GONE
+        bindings.measurementDateButton.setOnClickListener {
+            val c = fragment.context ?: return@setOnClickListener
+            showDateDialog(c, selectedClientDateTime) { y, m, d ->
+                val cal = Calendar.getInstance().apply {
+                    time = selectedClientDateTime
+                    set(Calendar.YEAR, y)
+                    set(Calendar.MONTH, m)
+                    set(Calendar.DAY_OF_MONTH, d)
+                }
+                selectedClientDateTime = cal.time
+                updateDateTimeLabels()
+            }
+        }
+        bindings.measurementTimeButton.setOnClickListener {
+            val c = fragment.context ?: return@setOnClickListener
+            showTimeDialog(c, selectedClientDateTime) { h, min ->
+                val cal = Calendar.getInstance().apply {
+                    time = selectedClientDateTime
+                    set(Calendar.HOUR_OF_DAY, h)
+                    set(Calendar.MINUTE, min)
+                    set(Calendar.SECOND, 0)
+                }
+                selectedClientDateTime = cal.time
+                updateDateTimeLabels()
+            }
+        }
+
+        fragment.mainActivity.storage.child<MeasurementDataRecord>(childId, "measure_$eventType")?.let {
+            bindings.measurementValueEditor.value = it.value
+            bindings.noteEditor.setText(it.note)
+        }
+
+        selectedClientDateTime = Date()
+        updateDateTimeLabels()
+        updateSaveVisibility()
+    }
+
+    override fun postStart() {
+        super.postStart()
+        selectedClientDateTime = Date()
+        updateDateTimeLabels()
+        updateSaveVisibility()
+    }
+
+    private fun updateDateTimeLabels() {
+        bindings.measurementDateButton.text =
+            DateFormat.getDateInstance(DateFormat.SHORT).format(selectedClientDateTime)
+        if (hasTimeComponent) {
+            bindings.measurementTimeButton.text =
+                DateFormat.getTimeInstance(DateFormat.SHORT).format(selectedClientDateTime)
+        }
+    }
+
+    private fun updateSaveVisibility() {
+        val v = bindings.measurementValueEditor.value
+        saveButton.visibility = if (v != null && v > 0.0) View.VISIBLE else View.GONE
+    }
+
+    override fun storeStateForSuspend() {
+        fragment.mainActivity.storage.child(
+            childId,
+            "measure_$eventType",
+            MeasurementDataRecord(
+                bindings.measurementValueEditor.value,
+                bindings.noteEditor.text.toString()
+            )
+        )
+    }
+
+    override fun reset() {
+        bindings.measurementValueEditor.value = null
+        bindings.noteEditor.setText("")
+        selectedClientDateTime = Date()
+        updateDateTimeLabels()
+        updateSaveVisibility()
+        storeStateForSuspend()
+    }
+
+    override suspend fun save(): TimeEntry {
+        val v = bindings.measurementValueEditor.value
+            ?: throw IOException("Measurement value is empty")
+        val note = bindings.noteEditor.text.toString()
+        val client = fragment.mainActivity.client.v2client
+
+        // For date-only entries, normalize to 12:00 local noon so yyyy-MM-dd formatting never drifts across timezones
+        val normalizedLocalNoon = Calendar.getInstance().apply {
+            time = selectedClientDateTime
+            set(Calendar.HOUR_OF_DAY, 12)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+        }.time
+
+        return when (eventType) {
+            BabyBuddyClient.EVENTS.TEMPERATURE -> client.createEntry(
+                TemperatureEntry::class,
+                TemperatureEntry(
+                    id = 0,
+                    childId = childId,
+                    start = clientToServerTime(selectedClientDateTime),
+                    _notes = note,
+                    temperature = v
+                )
+            )
+            BabyBuddyClient.EVENTS.WEIGHT -> client.createEntry(
+                WeightEntry::class,
+                WeightEntry(
+                    id = 0,
+                    childId = childId,
+                    start = normalizedLocalNoon,
+                    _notes = note,
+                    weight = v
+                )
+            )
+            BabyBuddyClient.EVENTS.HEIGHT -> client.createEntry(
+                HeightEntry::class,
+                HeightEntry(
+                    id = 0,
+                    childId = childId,
+                    start = normalizedLocalNoon,
+                    _notes = note,
+                    height = v
+                )
+            )
+            BabyBuddyClient.EVENTS.HEAD_CIRCUMFERENCE -> client.createEntry(
+                HeadCircumferenceEntry::class,
+                HeadCircumferenceEntry(
+                    id = 0,
+                    childId = childId,
+                    start = normalizedLocalNoon,
+                    _notes = note,
+                    head_circumference = v
+                )
+            )
+            BabyBuddyClient.EVENTS.BMI -> client.createEntry(
+                BmiEntry::class,
+                BmiEntry(
+                    id = 0,
+                    childId = childId,
+                    start = normalizedLocalNoon,
+                    _notes = note,
+                    bmi = v
+                )
+            )
+            else -> throw IOException("Unsupported measurement type: $eventType")
+        }
+    }
+}
+
 class SleepLoggingController(
     fragment: BaseFragment,
     childId: Int,
     timerControl: TimerControlInterface
 ) : GenericLoggingController(fragment, childId, timerControl, SleepEntry::class) {
-    override suspend fun createEntry(timer: Timer): TimeEntry {
+    override suspend fun createEntryRange(startServer: Date, endServer: Date): TimeEntry {
         return fragment.mainActivity.client.v2client.createEntry(
             SleepEntry::class,
             SleepEntry(
                 id = 0,
                 childId = childId,
-                start = timer.start,
-                end = maxDate(timer.start, nowServer()),
+                start = startServer,
+                end = endServer,
                 _notes = bindings.noteEditor.text.toString()
             )
         )
@@ -522,14 +1003,14 @@ class TummyTimeLoggingController(
     childId: Int,
     timerControl: TimerControlInterface
 ) : GenericLoggingController(fragment, childId, timerControl, TummyTimeEntry::class) {
-    override suspend fun createEntry(timer: Timer): TimeEntry {
+    override suspend fun createEntryRange(startServer: Date, endServer: Date): TimeEntry {
         return fragment.mainActivity.client.v2client.createEntry(
             TummyTimeEntry::class,
             TummyTimeEntry(
                 id = 0,
                 childId = childId,
-                start = timer.start,
-                end = maxDate(timer.start, nowServer()),
+                start = startServer,
+                end = endServer,
                 _notes = bindings.noteEditor.text.toString()
             )
         )
@@ -553,7 +1034,9 @@ class FeedingLoggingController(
 
     override val uiCurrentTimerTime = feedingBinding.currentTimerTime
     override val uiNoteEditor = feedingBinding.noteEditor
-    override val saveButton: ImageButton = feedingBinding.sendButton
+    override val uiTimerMode: IncludeTimerModeControlsBinding
+        get() = feedingBinding.timerModeSection
+    override val saveButton: View = feedingBinding.sendButton
     override val controlsView: View = feedingBinding.root
 
     private var assignedMethodButtons: List<FeedingMethodEnum> = emptyList()
@@ -562,6 +1045,14 @@ class FeedingLoggingController(
 
     override fun postInit() {
         super.postInit()
+
+        feedingBinding.amountNumberPicker.stepSize = 10.0
+        feedingBinding.amountNumberPicker.unitSuffix = fragment.getString(R.string.unit_ml)
+        populateVolumePresetChips(
+            fragment.requireContext(),
+            feedingBinding.feedingAmountPresets,
+            feedingBinding.amountNumberPicker
+        )
 
         populateButtonList(
             textArray = fragment.resources.getTextArray(R.array.feedingTypes),
@@ -611,28 +1102,27 @@ class FeedingLoggingController(
             selectedType = null
             selectedMethod = null
 
-            it.feedingType?.let {
+            it.feedingType?.let { ft ->
                 try {
-                    feedingBinding.feedingTypeSpinner.setSelection(it.value)
-                    selectedType = it
+                    feedingBinding.feedingTypeSpinner.setSelection(ft.value)
+                    selectedType = ft
                     feedingBinding.feedingTypeButtons.visibility = View.GONE
                     feedingBinding.feedingTypeSpinner.visibility = View.VISIBLE
-                    setupFeedingMethodButtons(it)
-                }
-                catch (_: NoSuchElementException) {
+                    setupFeedingMethodButtons(ft)
+                } catch (_: NoSuchElementException) {
                 }
             }
-            it.feedingMethod?.let {
+            it.feedingMethod?.let { fm ->
                 if (selectedType != null) {
                     try {
-                        assignedMethodButtons.indexOf(it).let {
-                            feedingBinding.feedingMethodSpinner.setSelection(it)
+                        val idx = assignedMethodButtons.indexOf(fm)
+                        if (idx >= 0) {
+                            feedingBinding.feedingMethodSpinner.setSelection(idx)
+                            selectedMethod = fm
+                            feedingBinding.feedingMethodButtons.visibility = View.GONE
+                            feedingBinding.feedingMethodSpinner.visibility = View.VISIBLE
                         }
-                        selectedMethod = it
-                        feedingBinding.feedingMethodButtons.visibility = View.GONE
-                        feedingBinding.feedingMethodSpinner.visibility = View.VISIBLE
-                    }
-                    catch (_: NoSuchElementException) {
+                    } catch (_: NoSuchElementException) {
                     }
                 }
             }
@@ -643,7 +1133,7 @@ class FeedingLoggingController(
 
     override fun storeStateForSuspend() {
         val fr = FeedingRecord(
-            feedingBinding.amountNumberPicker.value?.toDouble(),
+            feedingBinding.amountNumberPicker.value,
             feedingBinding.noteEditor.text.toString(),
             selectedType,
             selectedMethod,
@@ -656,20 +1146,21 @@ class FeedingLoggingController(
         feedingBinding.noteEditor.setText("")
         selectedType = null
         selectedMethod = null
+        switchToTimerModeSilently()
         storeStateForSuspend()
     }
 
     override fun updateVisuals() {
         super.updateVisuals()
 
-        val selectedType = selectedType
-        if (selectedType == null) {
+        val currentType = selectedType
+        if (currentType == null) {
             feedingBinding.feedingTypeButtons.visibility = View.VISIBLE
             feedingBinding.feedingTypeSpinner.visibility = View.GONE
             feedingBinding.feedingMethodButtons.visibility = View.GONE
             feedingBinding.feedingMethodSpinner.visibility = View.GONE
         } else if (selectedMethod == null) {
-            setupFeedingMethodButtons(selectedType)
+            setupFeedingMethodButtons(currentType)
             feedingBinding.feedingTypeButtons.visibility = View.GONE
             feedingBinding.feedingTypeSpinner.visibility = View.VISIBLE
             feedingBinding.feedingMethodButtons.visibility = View.VISIBLE
@@ -681,7 +1172,7 @@ class FeedingLoggingController(
             feedingBinding.feedingMethodSpinner.visibility = View.VISIBLE
         }
         feedingBinding.feedingIconImage.setImageResource(
-            feedingImageResourceFor(selectedType, selectedMethod)
+            feedingImageResourceFor(currentType, selectedMethod)
         )
 
         if (feedingBinding.feedingTypeSpinner.isVisible && feedingBinding.feedingMethodSpinner.isVisible) {
@@ -712,14 +1203,14 @@ class FeedingLoggingController(
         null -> R.drawable.pkg_bottle
     }
 
-    override suspend fun createEntry(timer: Timer): TimeEntry {
+    override suspend fun createEntryRange(startServer: Date, endServer: Date): TimeEntry {
         return fragment.mainActivity.client.v2client.createEntry(
             FeedingEntry::class,
             FeedingEntry(
                 id = 0,
                 childId = childId,
-                start = timer.start,
-                end = maxDate(timer.start, nowServer()),
+                start = startServer,
+                end = endServer,
                 feedingType = selectedType!!,
                 feedingMethod = selectedMethod!!,
                 amount = feedingBinding.amountNumberPicker.value,
@@ -734,65 +1225,68 @@ class FeedingLoggingController(
         spinner: Spinner,
         callback: ButtonListCallback
     ) {
+        val ctx = fragment.requireContext()
+        val marginPx = (3 * ctx.resources.displayMetrics.density).toInt()
         spinner.visibility = View.GONE
         buttons.visibility = View.VISIBLE
         buttons.removeAllViewsInLayout()
         for (i in textArray.indices) {
-            val button = Button(fragment.requireContext())
-            button.setOnClickListener {
-                spinner.setSelection(i)
-                spinner.visibility = View.VISIBLE
-                buttons.visibility = View.GONE
-                callback.onSelectionChanged(i)
-            }
-            button.text = textArray[i]
-            button.setLayoutParams(
-                LinearLayout.LayoutParams(
+            val button = MaterialButton(
+                ctx,
+                null,
+                com.google.android.material.R.attr.materialButtonOutlinedStyle
+            ).apply {
+                text = textArray[i]
+                isAllCaps = false
+                textSize = 12.5f
+                cornerRadius = (10 * ctx.resources.displayMetrics.density).toInt()
+                setOnClickListener {
+                    spinner.setSelection(i)
+                    spinner.visibility = View.VISIBLE
+                    buttons.visibility = View.GONE
+                    callback.onSelectionChanged(i)
+                }
+                layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                     1f
-                )
-            )
+                ).apply {
+                    setMargins(marginPx, marginPx / 2, marginPx, marginPx / 2)
+                }
+            }
             buttons.addView(button)
         }
     }
 
     private fun setupFeedingMethodButtons(type: FeedingTypeEnum) {
-        when (type) {
-            FeedingTypeEnum.BREAST_MILK -> {
-                assignedMethodButtons = listOf(
-                    FeedingMethodEnum.LEFT_BREAST,
-                    FeedingMethodEnum.RIGHT_BREAST,
-                    FeedingMethodEnum.BOTH_BREASTS,
-                    FeedingMethodEnum.BOTTLE,
-                    FeedingMethodEnum.PARENT_FED,
-                    FeedingMethodEnum.SELF_FED,
-                )
-            }
-
-            else -> {
-                assignedMethodButtons = listOf(
-                    FeedingMethodEnum.BOTTLE,
-                    FeedingMethodEnum.PARENT_FED,
-                    FeedingMethodEnum.SELF_FED,
-                )
-            }
+        assignedMethodButtons = when (type) {
+            FeedingTypeEnum.BREAST_MILK -> listOf(
+                FeedingMethodEnum.LEFT_BREAST,
+                FeedingMethodEnum.RIGHT_BREAST,
+                FeedingMethodEnum.BOTH_BREASTS,
+                FeedingMethodEnum.BOTTLE,
+                FeedingMethodEnum.PARENT_FED,
+                FeedingMethodEnum.SELF_FED,
+            )
+            else -> listOf(
+                FeedingMethodEnum.BOTTLE,
+                FeedingMethodEnum.PARENT_FED,
+                FeedingMethodEnum.SELF_FED,
+            )
         }
 
         val orgItems: Array<CharSequence> = fragment.resources.getTextArray(R.array.feedingMethods)
         val textItems: MutableList<CharSequence> = ArrayList(10)
         for (i in assignedMethodButtons.indices) {
-            textItems.add(orgItems[assignedMethodButtons.get(i).value])
+            textItems.add(orgItems[assignedMethodButtons[i].value])
         }
-        feedingBinding.feedingMethodSpinner.setAdapter(
-            ArrayAdapter<CharSequence>(
-                fragment.requireContext(),
-                android.R.layout.simple_spinner_dropdown_item,
-                textItems
-            )
+        feedingBinding.feedingMethodSpinner.adapter = ArrayAdapter(
+            fragment.requireContext(),
+            android.R.layout.simple_spinner_dropdown_item,
+            textItems
         )
         populateButtonList(
-            textItems.toTypedArray<CharSequence>(),
+            textItems.toTypedArray(),
             feedingBinding.feedingMethodButtons,
             feedingBinding.feedingMethodSpinner,
             object : ButtonListCallback {
@@ -837,7 +1331,9 @@ class PumpingLoggingController(
 
     override val uiCurrentTimerTime = pumpingBinding.currentTimerTime
     override val uiNoteEditor = pumpingBinding.noteEditor
-    override val saveButton: ImageButton = pumpingBinding.sendButton
+    override val uiTimerMode: IncludeTimerModeControlsBinding
+        get() = pumpingBinding.timerModeSection
+    override val saveButton: View = pumpingBinding.sendButton
     override val controlsView: View = pumpingBinding.root
 
     val amountNumberPicker: HorizontalDecIncEditor = pumpingBinding.amountNumberPicker
@@ -846,10 +1342,18 @@ class PumpingLoggingController(
         super.postInit()
 
         amountNumberPicker.allowNull = false
+        amountNumberPicker.stepSize = 10.0
+        amountNumberPicker.unitSuffix = fragment.getString(R.string.unit_ml)
         amountNumberPicker.value = 0.0
 
+        populateVolumePresetChips(
+            fragment.requireContext(),
+            pumpingBinding.pumpingAmountPresets,
+            amountNumberPicker
+        )
+
         fragment.mainActivity.storage.child<PumpingRecord>(childId, "pumping")?.let {
-            amountNumberPicker.value = it.amount ?: 0.0
+            amountNumberPicker.value = it.amount
             uiNoteEditor.setText(it.note)
         }
 
@@ -858,7 +1362,7 @@ class PumpingLoggingController(
 
     override fun storeStateForSuspend() {
         val pr = PumpingRecord(
-            pumpingBinding.amountNumberPicker.value?.toDouble() ?: 0.0,
+            pumpingBinding.amountNumberPicker.value ?: 0.0,
             pumpingBinding.noteEditor.text.toString()
         )
         fragment.mainActivity.storage.child(childId, "pumping", pr)
@@ -867,20 +1371,21 @@ class PumpingLoggingController(
     override fun reset() {
         pumpingBinding.amountNumberPicker.value = null
         pumpingBinding.noteEditor.setText("")
+        switchToTimerModeSilently()
         storeStateForSuspend()
     }
 
-    override suspend fun createEntry(timer: Timer): TimeEntry {
+    override suspend fun createEntryRange(startServer: Date, endServer: Date): TimeEntry {
         return fragment.mainActivity.client.v2client.createEntry(
             PumpingEntry::class,
             PumpingEntry(
                 id = 0,
                 childId = childId,
-                _start = timer.start,
-                _end = maxDate(timer.start, nowServer()),
-                amount = amountNumberPicker.value!!.toDouble(),
+                _start = startServer,
+                _end = endServer,
+                amount = amountNumberPicker.value ?: 0.0,
                 _notes = uiNoteEditor.text.toString(),
-                _legacyTime = timer.start
+                _legacyTime = startServer
             )
         )
     }
@@ -917,6 +1422,21 @@ class LoggingButtonController(
         BabyBuddyClient.ACTIVITIES.PUMPING to SwitchButtonLogic(
             bindings.pumpingDisabledButton, bindings.pumpingEnabledButton, false
         ),
+        BabyBuddyClient.EVENTS.TEMPERATURE to SwitchButtonLogic(
+            bindings.temperatureDisabledButton, bindings.temperatureEnabledButton, false
+        ),
+        BabyBuddyClient.EVENTS.WEIGHT to SwitchButtonLogic(
+            bindings.weightDisabledButton, bindings.weightEnabledButton, false
+        ),
+        BabyBuddyClient.EVENTS.HEIGHT to SwitchButtonLogic(
+            bindings.heightDisabledButton, bindings.heightEnabledButton, false
+        ),
+        BabyBuddyClient.EVENTS.HEAD_CIRCUMFERENCE to SwitchButtonLogic(
+            bindings.headCircumferenceDisabledButton, bindings.headCircumferenceEnabledButton, false
+        ),
+        BabyBuddyClient.EVENTS.BMI to SwitchButtonLogic(
+            bindings.bmiDisabledButton, bindings.bmiEnabledButton, false
+        ),
     )
 
     val loggingControllers: Map<String, LoggingControls> = mapOf(
@@ -934,6 +1454,21 @@ class LoggingButtonController(
         BabyBuddyClient.ACTIVITIES.PUMPING to PumpingLoggingController(
             fragment, child.id, timerControl
         ),
+        BabyBuddyClient.EVENTS.TEMPERATURE to MeasurementLoggingController(
+            fragment, child.id, BabyBuddyClient.EVENTS.TEMPERATURE
+        ),
+        BabyBuddyClient.EVENTS.WEIGHT to MeasurementLoggingController(
+            fragment, child.id, BabyBuddyClient.EVENTS.WEIGHT
+        ),
+        BabyBuddyClient.EVENTS.HEIGHT to MeasurementLoggingController(
+            fragment, child.id, BabyBuddyClient.EVENTS.HEIGHT
+        ),
+        BabyBuddyClient.EVENTS.HEAD_CIRCUMFERENCE to MeasurementLoggingController(
+            fragment, child.id, BabyBuddyClient.EVENTS.HEAD_CIRCUMFERENCE
+        ),
+        BabyBuddyClient.EVENTS.BMI to MeasurementLoggingController(
+            fragment, child.id, BabyBuddyClient.EVENTS.BMI
+        ),
     )
 
     private var timerHandler: Handler? = Handler(fragment.mainActivity.mainLooper)
@@ -943,6 +1478,12 @@ class LoggingButtonController(
     init {
         loggingControllers.forEach { (activity, controller) ->
             controller.postInit()
+
+            if (controller is GenericLoggingController) {
+                controller.onModeChangedByUser = { manual ->
+                    handleControllerModeSwitch(activity, controller, manual)
+                }
+            }
 
             logicMap[activity]?.addStateListener { state, userInduced ->
                 fragment.mainActivity.scope.launch {
@@ -971,11 +1512,40 @@ class LoggingButtonController(
                 if (k !in BabyBuddyClient.EVENTS.ALL) continue
                 if (k in it.openState) {
                     logic.state = true
+                    loggingControllers[k]?.let { ctrl ->
+                        controlsInterface.insertControls(ctrl.controlsView)
+                    }
                 }
             }
         }
 
         timerHandler()
+    }
+
+    private fun handleControllerModeSwitch(
+        activity: String,
+        controller: GenericLoggingController,
+        manual: Boolean
+    ) {
+        val matchingTimer = cachedTimers.firstOrNull { it.name == activity } ?: return
+        fragment.mainActivity.scope.launch {
+            try {
+                timerModificationsBlocker.register {
+                    if (manual && matchingTimer.active) {
+                        AsyncPromise.call<Any, TranslatedException> { promise ->
+                            timerControl.stopTimer(matchingTimer, promise)
+                        }
+                        matchingTimer.active = false
+                    } else if (!manual && !matchingTimer.active) {
+                        val started = AsyncPromise.call<Timer, TranslatedException> { promise ->
+                            timerControl.startTimer(matchingTimer, promise)
+                        }
+                        controller.updateTimer(started)
+                    }
+                }
+            } catch (_: AsyncPromiseFailure) {
+            }
+        }
     }
 
     private fun startTimerFromSwitch(
@@ -984,7 +1554,8 @@ class LoggingButtonController(
         activity: String
     ) {
         controlsInterface.insertControls(controller.controlsView)
-        if (userInduced && (controller is TimerBase)) {
+        val isManual = (controller as? GenericLoggingController)?.isManualMode == true
+        if (userInduced && (controller is TimerBase) && !isManual) {
             cachedTimers.firstOrNull { it.name == activity }?.let {
                 fragment.mainActivity.scope.launch {
                     try {
@@ -995,8 +1566,7 @@ class LoggingButtonController(
                                 }
                             controller.updateTimer(newTimer)
                         }
-                    }
-                    catch (e: AsyncPromiseFailure) {
+                    } catch (e: AsyncPromiseFailure) {
                         (e.value as? TranslatedException)?.let {
                             fragment.showError(
                                 true,
@@ -1018,13 +1588,14 @@ class LoggingButtonController(
     ) {
         timerModificationsBlocker.register {
             val timer = cachedTimers.firstOrNull { it.name == activity }
+            val isManual = (controller as? GenericLoggingController)?.isManualMode == true
             if (AsyncPromise.call<Boolean, TranslatedException> { promise ->
                     var defaultSucceed = true
-                    timer?.let { timer ->
-                        if (timer.active && userInduced) {
-                            val timeMs = nowServer().time - timer.start.time
+                    timer?.let { t ->
+                        if (t.active && userInduced && !isManual) {
+                            val timeMs = nowServer().time - t.start.time
                             if (timeMs > 10000) {
-                                defaultSucceed = false;
+                                defaultSucceed = false
 
                                 val message = Phrase.from(
                                     fragment.requireContext(),
@@ -1044,7 +1615,7 @@ class LoggingButtonController(
                                             promise.succeeded(b)
                                         }
                                     }
-                                );
+                                )
                             }
                         }
                     }
@@ -1052,9 +1623,10 @@ class LoggingButtonController(
                         promise.succeeded(true)
                     }
                 }) {
+                (controller as? GenericLoggingController)?.switchToTimerModeSilently()
                 controlsInterface.removeControls(controller.controlsView)
                 if (userInduced && (controller is TimerBase)) {
-                    timer?.let {
+                    timer?.takeIf { it.active }?.let {
                         fragment.mainActivity.scope.launch {
                             try {
                                 controller.updateTimer(null)
@@ -1062,8 +1634,7 @@ class LoggingButtonController(
                                     timerControl.stopTimer(it, promise)
                                 }
                                 controller.updateTimer(null)
-                            }
-                            catch (e: AsyncPromiseFailure) {
+                            } catch (e: AsyncPromiseFailure) {
                                 (e.value as? TranslatedException)?.let {
                                     fragment.showError(
                                         true,
@@ -1075,6 +1646,9 @@ class LoggingButtonController(
                         }
                     }
                 }
+            } else {
+                // User opted to keep timer running; restore button state
+                logicMap[activity]?.state = true
             }
         }
     }
@@ -1092,18 +1666,15 @@ class LoggingButtonController(
         timerModificationsBlocker.wait()
         timerModificationsBlocker.register {
             try {
-                // Note: exponentialBackoff does not work right now because controller.save()
-                // calls MainActivity.storeActivity() which does not throw exceptions but
-                // uses a callback to signal success or failure.
                 exponentialBackoff(fragment.disconnectDialog.getInterface(), forceRetry400 = 5) {
                     logicMap[activity]?.state = false
+                    controlsInterface.removeControls(controller.controlsView)
                     val te = controller.save()
                     controller.reset()
                     storeStateForSuspend()
                     controlsInterface.updateTimeline(te)
                 }
-            }
-            catch (e: RequestCodeFailure) {
+            } catch (e: RequestCodeFailure) {
                 fragment.showError(
                     true,
                     R.string.activity_store_failure_message,
@@ -1117,10 +1688,8 @@ class LoggingButtonController(
                         )
                         .put("server_message", e.jsonErrorMessages().joinToString(", "))
                         .format().toString()
-
                 )
-            }
-            catch (e: IOException) {
+            } catch (e: IOException) {
                 fragment.showError(
                     true,
                     R.string.activity_store_failure_message,
@@ -1159,13 +1728,17 @@ class LoggingButtonController(
         timerHandler = null
     }
 
-    // TODO Note to self: This is never called, update-times needs to be repaired first! Nope: updateTimerList
     override fun newTimerListLoaded(timers: Array<Timer>) {
-        cachedTimers = timers;
+        cachedTimers = timers
         if (timerModificationsBlocker.isBlocked) return
 
-        val toDisable =
-            loggingControllers.filter { it.value is TimerBase }.map { it.key }.toMutableList()
+        val toDisable = loggingControllers
+            .filter { (_, ctrl) ->
+                ctrl is TimerBase && !((ctrl as? GenericLoggingController)?.isManualMode == true)
+            }
+            .map { it.key }
+            .toMutableList()
+
         for (timer in timers) {
             if (!timer.active) continue
             loggingControllers[timer.name]?.let { controller ->

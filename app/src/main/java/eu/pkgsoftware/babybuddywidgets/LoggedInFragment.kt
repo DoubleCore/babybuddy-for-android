@@ -1,17 +1,19 @@
 package eu.pkgsoftware.babybuddywidgets
 
 import android.os.Bundle
-import android.os.Handler
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.viewpager2.widget.ViewPager2.OnPageChangeCallback
+import com.google.android.material.chip.Chip
 import eu.pkgsoftware.babybuddywidgets.UpdateNotifications.Companion.showUpdateNotice
 import eu.pkgsoftware.babybuddywidgets.databinding.LoggedInFragmentBinding
+import eu.pkgsoftware.babybuddywidgets.history.BabySummaryHelper
 import eu.pkgsoftware.babybuddywidgets.logic.ChildrenStateTracker
 import eu.pkgsoftware.babybuddywidgets.logic.RequestScheduler
 import eu.pkgsoftware.babybuddywidgets.login.LoggedInMenu
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.Child
+import eu.pkgsoftware.babybuddywidgets.stats.BabyStatsController
 import eu.pkgsoftware.babybuddywidgets.tutorial.TutorialManagement
 import java.util.Collections
 import kotlin.math.max
@@ -22,12 +24,15 @@ class LoggedInFragment : BaseFragment() {
 
     private val emptyBabyPagerAdapter = EmptyBabyPagerAdapter()
     private var babyAdapter: BabyPagerAdapter? = null
+    private var statsController: BabyStatsController? = null
 
     private lateinit var requestScheduler: RequestScheduler
     private var stateTracker: ChildrenStateTracker? = null
 
     private var selectedChildSlug = ""
     private var children = listOf<Child>()
+    private var selectedNavTabId: Int = R.id.nav_record
+    private var suppressChipCallback: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,24 +50,45 @@ class LoggedInFragment : BaseFragment() {
         binding.babyViewPagerSwitcher.registerOnPageChangeCallback(object :
             OnPageChangeCallback() {
             override fun onPageSelected(position: Int) {
-                var position = position
-                if (position >= children.size) {
-                    position = children.size - 1
+                var pos = position
+                if (pos >= children.size) {
+                    pos = children.size - 1
                 }
-                if (position < 0) {
-                    position = 0
+                if (pos < 0) {
+                    pos = 0
                 }
-                if (!children.isEmpty()) {
-                    selectChild(children.get(position))
+                if (children.isNotEmpty()) {
+                    selectChild(children[pos])
                 }
 
-                super.onPageSelected(position)
+                super.onPageSelected(pos)
             }
         })
 
-        binding.babyViewPagerSwitcher.setAdapter(emptyBabyPagerAdapter)
+        binding.babyViewPagerSwitcher.adapter = emptyBabyPagerAdapter
 
-        return binding.getRoot()
+        val sc = BabyStatsController(this)
+        statsController = sc
+        binding.statsContainer.removeAllViews()
+        binding.statsContainer.addView(sc.rootView)
+
+        binding.bottomNavigation.selectedItemId = selectedNavTabId
+        applyTabVisibility(selectedNavTabId)
+        binding.bottomNavigation.setOnItemSelectedListener { item ->
+            selectedNavTabId = item.itemId
+            applyTabVisibility(item.itemId)
+            true
+        }
+
+        return binding.root
+    }
+
+    private fun applyTabVisibility(tabId: Int) {
+        val showStats = (tabId == R.id.nav_stats)
+        binding.babyViewPagerSwitcher.visibility = if (showStats) View.GONE else View.VISIBLE
+        binding.statsContainer.visibility = if (showStats) View.VISIBLE else View.GONE
+        statsController?.setChild(selectedChild())
+        statsController?.setVisibleTab(showStats)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -72,17 +98,51 @@ class LoggedInFragment : BaseFragment() {
         stateTracker = ChildrenStateTracker(
             mainActivity.client.v2client, mainActivity.storage, requestScheduler, this.disconnectInterface
         )
-        stateTracker!!.addChildListener({ children: Array<Child> ->
-            this.children = Collections.unmodifiableList(children.toList())
+        stateTracker!!.addChildListener({ childrenArr: Array<Child> ->
+            this.children = Collections.unmodifiableList(childrenArr.toList())
+            rebuildChildSwitcherChips()
 
-            if (!this.children.isEmpty()) {
+            if (this.children.isNotEmpty()) {
+                var matched: Child? = null
                 for (c in this.children) {
                     if (c.slug == selectedChildSlug) {
-                        selectChild(c)
+                        matched = c
+                        break
                     }
                 }
+                selectChild(matched ?: this.children[0])
+            } else {
+                updateTitle()
             }
         }, true)
+    }
+
+    private fun rebuildChildSwitcherChips() {
+        val chipGroup = binding.childSwitcherChips
+        chipGroup.removeAllViews()
+        if (children.size <= 1) {
+            binding.childSwitcherScroll.visibility = View.GONE
+            return
+        }
+        binding.childSwitcherScroll.visibility = View.VISIBLE
+        val ctx = context ?: return
+        suppressChipCallback = true
+        for (child in children) {
+            val chip = Chip(ctx).apply {
+                id = View.generateViewId()
+                text = child.firstName.ifBlank { "${child.firstName} ${child.lastName}".trim() }
+                isCheckable = true
+                isChecked = (child.slug == selectedChildSlug)
+                setOnClickListener {
+                    if (!suppressChipCallback) {
+                        selectChild(child)
+                    }
+                }
+                tag = child.slug
+            }
+            chipGroup.addView(chip)
+        }
+        suppressChipCallback = false
     }
 
     override fun setupTutorialMessages(m: TutorialManagement) {
@@ -99,7 +159,7 @@ class LoggedInFragment : BaseFragment() {
             babyAdapter = run {
                 val bpa = BabyPagerAdapter(stateTracker!!)
                 bpa.postInit(this)
-                binding.babyViewPagerSwitcher.setAdapter(bpa)
+                binding.babyViewPagerSwitcher.adapter = bpa
                 bpa
             }
         }
@@ -109,10 +169,12 @@ class LoggedInFragment : BaseFragment() {
         val clampedIndex = max(0, childIndex)
         binding.babyViewPagerSwitcher.setCurrentItem(clampedIndex, false)
         if (childIndex >= 0) {
-            babyAdapter?.activeViewChanged(children.get(clampedIndex))
+            babyAdapter?.activeViewChanged(children[clampedIndex])
         }
 
-        this.updateTitle()
+        rebuildChildSwitcherChips()
+        updateTitle()
+        applyTabVisibility(selectedNavTabId)
 
         showUpdateNotice(this)
     }
@@ -128,7 +190,8 @@ class LoggedInFragment : BaseFragment() {
         progressDialog.hide()
         mainActivity.credStore.storePrefs()
 
-        binding.babyViewPagerSwitcher.setAdapter(emptyBabyPagerAdapter)
+        statsController?.close()
+        binding.babyViewPagerSwitcher.adapter = emptyBabyPagerAdapter
         closeAdapter()
     }
 
@@ -139,6 +202,8 @@ class LoggedInFragment : BaseFragment() {
 
     override fun onDestroy() {
         super.onDestroy()
+        statsController?.close()
+        statsController = null
         stateTracker?.destroy()
     }
 
@@ -147,14 +212,22 @@ class LoggedInFragment : BaseFragment() {
         babyAdapter = null
     }
 
+    fun notifyChildDataChanged(childId: Int) {
+        statsController?.invalidateCacheForChild(childId)
+    }
+
     private fun selectedChild(): Child? {
-        val childIndex = binding.babyViewPagerSwitcher.getCurrentItem()
-        var child: Child? = null
         val childCount = children.size
-        if ((childIndex >= 0) && (childIndex < childCount)) {
-            child = children.get(childIndex)
+        if (childCount == 0) return null
+        val bySlug = Child.childIndexBySlug(children.toTypedArray(), selectedChildSlug)
+        if (bySlug in 0 until childCount) {
+            return children[bySlug]
         }
-        return child
+        val pagerIdx = binding.babyViewPagerSwitcher.currentItem
+        if (pagerIdx in 0 until childCount) {
+            return children[pagerIdx]
+        }
+        return children[0]
     }
 
     private fun selectChild(c: Child) {
@@ -163,19 +236,35 @@ class LoggedInFragment : BaseFragment() {
         selectedChildSlug = c.slug
 
         babyAdapter?.activeViewChanged(c)
-        if (childIndex != binding.babyViewPagerSwitcher.getCurrentItem()) {
+        if (childIndex >= 0 && childIndex != binding.babyViewPagerSwitcher.currentItem) {
             binding.babyViewPagerSwitcher.setCurrentItem(max(0, childIndex), true)
         }
 
+        // Sync multi-child switcher chips
+        suppressChipCallback = true
+        for (i in 0 until binding.childSwitcherChips.childCount) {
+            val chip = binding.childSwitcherChips.getChildAt(i) as? Chip ?: continue
+            chip.isChecked = (chip.tag == c.slug)
+        }
+        suppressChipCallback = false
+
+        statsController?.setChild(c)
         updateTitle()
     }
 
     private fun updateTitle() {
         val child = selectedChild()
         if (child == null) {
-            mainActivity.setTitle(getString(R.string.logged_in_no_children_found))
+            val noChildStr = getString(R.string.logged_in_no_children_found)
+            mainActivity.setTitle(noChildStr)
+            binding.babyProfileName.text = noChildStr
+            binding.babyProfileAgeBadge.visibility = View.GONE
         } else {
-            mainActivity.setTitle(child.firstName + " " + child.lastName)
+            val fullName = "${child.firstName} ${child.lastName}".trim()
+            mainActivity.setTitle(fullName)
+            binding.babyProfileName.text = fullName
+            binding.babyProfileAgeBadge.text = BabySummaryHelper.formatBabyAge(resources, child.birthData)
+            binding.babyProfileAgeBadge.visibility = View.VISIBLE
         }
     }
 }

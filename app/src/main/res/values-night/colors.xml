@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="purple_200">#FFF09A84</color>
+    <color name="purple_500">#FFE07A5F</color>
+    <color name="purple_700">#FF181514</color>
+    <color name="teal_200">#FF81B29A</color>
+    <color name="teal_700">#FF6B9E8A</color>
+
+    <!-- Eye-Friendly Night Nursery Surface Palette -->
+    <color name="surface_background">#FF181514</color>
+    <color name="card_surface">#FF24201E</color>
+    <color name="card_surface_elevated">#FF2F2927</color>
+    <color name="card_stroke">#FF38312E</color>
+    <color name="card_stroke_active">#FFF09A84</color>
+    <color name="chip_surface">#FF2E2825</color>
+    <color name="text_primary_warm">#FFF5EBE6</color>
+    <color name="text_secondary_warm">#FFB8A9A2</color>
+    <color name="text_muted_warm">#FF857770</color>
+    <color name="danger_soft_bg">#FF3D2322</color>
+    <color name="danger_soft_fg">#FFF28B82</color>
+
+    <color name="fixed_color_button_text_color">#FFF5EBE6</color>
+
+    <color name="timer_button_disabled">#FF2D2725</color>
+    <color name="feeding_enabled">#FF4D2E29</color>
+    <color name="feeding_accent">#FFF28B82</color>
+    <color name="sleep_enabled">#FF263652</color>
+    <color name="sleep_accent">#FF8AB4F8</color>
+    <color name="diaper_enabled">#FF4A3C1E</color>
+    <color name="diaper_accent">#FFFDD663</color>
+    <color name="tummy_time_enabled">#FF214231</color>
+    <color name="tummy_time_accent">#FF81C995</color>
+    <color name="pumping_enabled">#FF432A4A</color>
+    <color name="pumping_accent">#FFD7AEFB</color>
+    <color name="notes_enabled">#FF1F3E43</color>
+    <color name="notes_accent">#FF78D9EC</color>
+    <color name="temperature_enabled">#FF4A311E</color>
+    <color name="temperature_accent">#FFFCAD70</color>
+    <color name="weight_enabled">#FF224030</color>
+    <color name="weight_accent">#FF81C995</color>
+    <color name="height_enabled">#FF233952</color>
+    <color name="height_accent">#FF8AB4F8</color>
+    <color name="head_circumference_enabled">#FF362A4D</color>
+    <color name="head_circumference_accent">#FFC58AF9</color>
+    <color name="bmi_enabled">#FF4A2835</color>
+    <color name="bmi_accent">#FFF48FB1</color>
+</resources>

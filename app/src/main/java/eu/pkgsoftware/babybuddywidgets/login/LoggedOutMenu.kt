@@ -22,6 +22,9 @@ class LoggedOutMenu(val fragment: Fragment) : MenuProvider {
         if (menuItem.itemId == R.id.showHelpMenuButton) {
             navController.navigate(R.id.global_showHelp)
         }
+        if (menuItem.itemId == R.id.settingsMenuMenuItem) {
+            navController.navigate(R.id.action_global_settingsFragment)
+        }
         if (menuItem.itemId == R.id.contactDeveloperMenuItem) {
             navController.navigate(R.id.action_global_contactDeveloperFragment)
         }

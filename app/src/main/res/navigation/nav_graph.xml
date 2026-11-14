@@ -34,19 +34,19 @@
     <fragment
         android:id="@+id/aboutFragment"
         android:name="eu.pkgsoftware.babybuddywidgets.AboutFragment"
-        android:label="AboutFragment" />
+        android:label="@string/about_page_title" />
 
     <action android:id="@+id/global_aboutFragment" app:destination="@id/aboutFragment"/>
     <fragment
         android:id="@+id/help"
         android:name="eu.pkgsoftware.babybuddywidgets.Help"
-        android:label="help_fragment"
+        android:label="@string/help_title"
         tools:layout="@layout/help_fragment" />
     <action android:id="@+id/global_showHelp" app:destination="@id/help" />
     <fragment
         android:id="@+id/QRCodeLoginFragment"
         android:name="eu.pkgsoftware.babybuddywidgets.login.QRCodeLoginFragment"
-        android:label="qr_code_login_fragment"
+        android:label="@string/login_qrcode_title"
         tools:layout="@layout/qr_code_login_fragment" >
         <action
             android:id="@+id/action_QRCodeLoginFragment_to_loggedInFragment2"
@@ -66,19 +66,19 @@
     <fragment
         android:id="@+id/debugLogDisplay"
         android:name="eu.pkgsoftware.babybuddywidgets.debugging.DebugLogDisplay"
-        android:label="fragment_debug_log_display"
+        android:label="@string/export_debug_logs_title"
         tools:layout="@layout/fragment_debug_log_display" />
     <action android:id="@+id/action_global_debugLogDisplay" app:destination="@id/debugLogDisplay"/>
     <fragment
         android:id="@+id/contactDeveloperFragment"
         android:name="eu.pkgsoftware.babybuddywidgets.ContactDeveloperFragment"
-        android:label="fragment_contact_developer"
+        android:label="@string/send_message_send_title"
         tools:layout="@layout/fragment_contact_developer" />
     <action android:id="@+id/action_global_contactDeveloperFragment" app:destination="@id/contactDeveloperFragment"/>
     <fragment
         android:id="@+id/settingsFragment"
         android:name="eu.pkgsoftware.babybuddywidgets.SettingsFragment"
-        android:label="SettingsFragment" />
+        android:label="@string/action_settings" />
     <action
         android:id="@+id/action_global_settingsFragment"
         app:destination="@id/settingsFragment" />

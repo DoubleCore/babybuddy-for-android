@@ -1,200 +1,218 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:layout_marginTop="8dp"
+    android:layout_marginBottom="4dp"
+    app:cardBackgroundColor="@color/card_surface"
+    app:cardCornerRadius="18dp"
+    app:cardElevation="0dp"
+    app:strokeColor="@color/diaper_accent"
+    app:strokeWidth="1.5dp">
 
-    <FrameLayout
-        android:id="@+id/sleepIcon"
-        android:layout_width="48dp"
-        android:layout_height="0dp"
-        android:background="@color/diaper_enabled"
-        android:minHeight="48dp"
-        android:padding="8dp"
-        android:layout_marginTop="8dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintHeight_min="48dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
-
-        <ImageView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_weight="0"
-            android:scaleType="fitCenter"
-            android:src="@drawable/pkg_diaper"
-            android:tintMode="src_in"
-            android:visibility="visible"
-            app:tint="@color/fixed_color_button_text_color" />
-    </FrameLayout>
-
-
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/constraintLayout"
-        android:layout_width="0dp"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/sleepIcon"
-        app:layout_constraintTop_toTopOf="parent">
+        android:orientation="horizontal"
+        android:padding="12dp">
 
-        <EditText
-            android:id="@+id/noteEditor"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:layout_weight="1"
-            android:gravity="top|left"
-            android:hint="@string/activity_notes_hint"
-            android:inputType="textLongMessage|textMultiLine|text"
-            android:maxLines="5"
-            android:minLines="1"
-            android:selectAllOnFocus="false"
-            android:singleLine="false"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/wetButtonGroup" />
+        <FrameLayout
+            android:id="@+id/sleepIcon"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@drawable/bg_badge_rounded"
+            android:backgroundTint="@color/diaper_enabled"
+            android:padding="8dp">
 
-        <ImageButton
-            android:id="@+id/sendButton"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
-            android:layout_margin="4dp"
-            android:layout_marginEnd="277dp"
-            android:layout_weight="0"
-            android:visibility="visible"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/extraOptionsList"
-            app:srcCompat="@android:drawable/ic_menu_save" />
-
-        <LinearLayout
-            android:id="@+id/wetButtonGroup"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
-
-            <ImageButton
-                android:id="@+id/wetDisabledButton"
-                android:layout_width="64dp"
-                android:layout_height="64dp"
-                android:layout_weight="0"
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
                 android:scaleType="fitCenter"
-                android:src="@drawable/pkg_not_wet"
-                android:tintMode="src_in"
-                android:visibility="gone"
-                app:tint="?android:attr/textColorSecondary"
-                tools:layout_editor_absoluteX="544dp"
-                tools:layout_editor_absoluteY="29dp" />
-
-            <ImageButton
-                android:id="@+id/wetEnabledButton"
-                android:layout_width="64dp"
-                android:layout_height="64dp"
-                android:layout_weight="0"
-                android:backgroundTint="#80FF80"
-                android:scaleType="fitCenter"
-                android:src="@drawable/pkg_wet"
-                android:tintMode="src_in"
-                android:visibility="visible"
-                app:tint="@color/fixed_color_button_text_color"
-                tools:layout_editor_absoluteX="370dp"
-                tools:layout_editor_absoluteY="0dp" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/solidButtonGroup"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            app:layout_constraintStart_toEndOf="@+id/wetButtonGroup"
-            app:layout_constraintTop_toTopOf="parent">
-
-            <ImageButton
-                android:id="@+id/solidDisabledButton"
-                android:layout_width="64dp"
-                android:layout_height="64dp"
-                android:layout_weight="0"
-                android:scaleType="fitCenter"
-                android:src="@drawable/pkg_no_poop"
-                android:tintMode="src_in"
-                android:visibility="gone"
-                app:tint="?android:attr/textColorSecondary" />
-
-            <ImageButton
-                android:id="@+id/solidEnabledButton"
-                android:layout_width="64dp"
-                android:layout_height="64dp"
-                android:layout_weight="0"
-                android:backgroundTint="#80FF80"
-                android:scaleType="fitCenter"
-                android:src="@drawable/pkg_poop"
-                android:tintMode="src_in"
-                android:visibility="visible"
+                android:src="@drawable/pkg_diaper"
                 app:tint="@color/fixed_color_button_text_color" />
-        </LinearLayout>
+        </FrameLayout>
 
         <LinearLayout
-            android:id="@+id/extraOptionsGroup"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="32dp"
-            android:orientation="vertical"
-            app:layout_constraintBottom_toBottomOf="@+id/solidButtonGroup"
-            app:layout_constraintStart_toEndOf="@+id/solidButtonGroup"
-            app:layout_constraintTop_toTopOf="parent">
-
-            <ImageButton
-                android:id="@+id/closeExtraOptions"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:layout_weight="0"
-                android:scaleType="fitCenter"
-                android:src="@drawable/collapse_button"
-                android:tintMode="src_in"
-                android:visibility="gone"
-                app:tint="?android:attr/textColorSecondary" />
-
-            <ImageButton
-                android:id="@+id/openExtraOptions"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:layout_weight="0"
-                android:scaleType="fitCenter"
-                android:src="@drawable/expand_button"
-                android:tintMode="src_in"
-                android:visibility="visible" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/extraOptionsList"
+            android:id="@+id/constraintLayout"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="8dp"
-            android:visibility="gone"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/noteEditor"
-            tools:visibility="visible">
+            android:layout_marginStart="10dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
 
+            <!-- Wet / Solid / Extra Options Row -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:id="@+id/wetButtonGroup"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:orientation="vertical">
+
+                    <ImageButton
+                        android:id="@+id/wetDisabledButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:background="@drawable/bg_tile_idle"
+                        android:padding="10dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/pkg_not_wet"
+                        android:visibility="gone"
+                        app:tint="@color/text_secondary_warm" />
+
+                    <ImageButton
+                        android:id="@+id/wetEnabledButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:background="@drawable/bg_tile_active"
+                        android:padding="10dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/pkg_wet"
+                        android:visibility="visible"
+                        app:tint="@color/primary_color" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="@string/diaper_wet_label"
+                        android:textColor="@color/text_secondary_warm"
+                        android:textSize="11sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/solidButtonGroup"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:orientation="vertical">
+
+                    <ImageButton
+                        android:id="@+id/solidDisabledButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:background="@drawable/bg_tile_idle"
+                        android:padding="10dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/pkg_no_poop"
+                        android:visibility="gone"
+                        app:tint="@color/text_secondary_warm" />
+
+                    <ImageButton
+                        android:id="@+id/solidEnabledButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:background="@drawable/bg_tile_active"
+                        android:padding="10dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/pkg_poop"
+                        android:visibility="visible"
+                        app:tint="@color/diaper_accent" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="@string/diaper_solid_label"
+                        android:textColor="@color/text_secondary_warm"
+                        android:textSize="11sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/extraOptionsGroup"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:gravity="center"
+                    android:orientation="vertical">
+
+                    <ImageButton
+                        android:id="@+id/closeExtraOptions"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:background="@drawable/bg_tile_active"
+                        android:padding="10dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/collapse_button"
+                        android:visibility="gone"
+                        app:tint="@color/primary_color" />
+
+                    <ImageButton
+                        android:id="@+id/openExtraOptions"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:background="@drawable/bg_tile_idle"
+                        android:padding="10dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/expand_button"
+                        android:visibility="visible"
+                        app:tint="@color/text_secondary_warm" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="@string/diaper_extra_options_label"
+                        android:textColor="@color/text_secondary_warm"
+                        android:textSize="11sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Optional Time Button for Diaper Change -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/diaperTimeButton"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:layout_marginTop="4dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:minWidth="0dp"
+                android:paddingStart="6dp"
+                android:paddingEnd="8dp"
+                android:textAllCaps="false"
+                android:textColor="@color/text_secondary_warm"
+                android:textSize="12sp"
+                app:icon="@drawable/ic_schedule_clock"
+                app:iconSize="16dp"
+                app:iconTint="@color/text_secondary_warm"
+                tools:text="时间: 20:15" />
+
+            <LinearLayout
+                android:id="@+id/extraOptionsList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/bg_soft_pill"
+                android:orientation="vertical"
+                android:padding="10dp"
+                android:visibility="gone"
+                tools:visibility="visible">
+
                 <TextView
                     android:id="@+id/diaperColorLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/diaper_color_label"
-                    android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
+                    android:textColor="@color/text_secondary_warm"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
 
                 <eu.pkgsoftware.babybuddywidgets.widgets.AutoHGrid
                     android:id="@+id/diaperColorGrid"
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
                     app:equalizeRowWidths="true">
 
                     <LinearLayout
@@ -204,18 +222,18 @@
                         android:orientation="vertical">
 
                         <ImageView
-                            android:layout_width="16dp"
-                            android:layout_height="16dp"
+                            android:layout_width="14dp"
+                            android:layout_height="14dp"
                             app:srcCompat="@android:drawable/arrow_down_float" />
 
                         <ImageButton
-                            android:layout_width="54dp"
-                            android:layout_height="54dp"
+                            android:layout_width="46dp"
+                            android:layout_height="46dp"
                             android:src="@color/diaperBlack" />
 
                         <ImageView
-                            android:layout_width="16dp"
-                            android:layout_height="16dp"
+                            android:layout_width="14dp"
+                            android:layout_height="14dp"
                             app:srcCompat="@android:drawable/arrow_up_float" />
                     </LinearLayout>
 
@@ -226,18 +244,18 @@
                         android:orientation="vertical">
 
                         <ImageView
-                            android:layout_width="16dp"
-                            android:layout_height="16dp"
+                            android:layout_width="14dp"
+                            android:layout_height="14dp"
                             app:srcCompat="@android:drawable/arrow_down_float" />
 
                         <ImageButton
-                            android:layout_width="54dp"
-                            android:layout_height="54dp"
+                            android:layout_width="46dp"
+                            android:layout_height="46dp"
                             android:src="@color/diaperBrown" />
 
                         <ImageView
-                            android:layout_width="16dp"
-                            android:layout_height="16dp"
+                            android:layout_width="14dp"
+                            android:layout_height="14dp"
                             app:srcCompat="@android:drawable/arrow_up_float" />
                     </LinearLayout>
 
@@ -248,18 +266,18 @@
                         android:orientation="vertical">
 
                         <ImageView
-                            android:layout_width="16dp"
-                            android:layout_height="16dp"
+                            android:layout_width="14dp"
+                            android:layout_height="14dp"
                             app:srcCompat="@android:drawable/arrow_down_float" />
 
                         <ImageButton
-                            android:layout_width="54dp"
-                            android:layout_height="54dp"
+                            android:layout_width="46dp"
+                            android:layout_height="46dp"
                             android:src="@color/diaperGreen" />
 
                         <ImageView
-                            android:layout_width="16dp"
-                            android:layout_height="16dp"
+                            android:layout_width="14dp"
+                            android:layout_height="14dp"
                             app:srcCompat="@android:drawable/arrow_up_float" />
                     </LinearLayout>
 
@@ -270,18 +288,18 @@
                         android:orientation="vertical">
 
                         <ImageView
-                            android:layout_width="16dp"
-                            android:layout_height="16dp"
+                            android:layout_width="14dp"
+                            android:layout_height="14dp"
                             app:srcCompat="@android:drawable/arrow_down_float" />
 
                         <ImageButton
-                            android:layout_width="54dp"
-                            android:layout_height="54dp"
+                            android:layout_width="46dp"
+                            android:layout_height="46dp"
                             android:src="@color/diaperYellow" />
 
                         <ImageView
-                            android:layout_width="16dp"
-                            android:layout_height="16dp"
+                            android:layout_width="14dp"
+                            android:layout_height="14dp"
                             app:srcCompat="@android:drawable/arrow_up_float" />
                     </LinearLayout>
 
@@ -292,45 +310,67 @@
                         android:orientation="vertical">
 
                         <ImageView
-                            android:layout_width="16dp"
-                            android:layout_height="16dp"
+                            android:layout_width="14dp"
+                            android:layout_height="14dp"
                             app:srcCompat="@android:drawable/arrow_down_float" />
 
                         <ImageButton
-                            android:layout_width="54dp"
-                            android:layout_height="54dp"
+                            android:layout_width="46dp"
+                            android:layout_height="46dp"
                             android:src="@android:drawable/ic_menu_close_clear_cancel" />
 
                         <ImageView
-                            android:layout_width="16dp"
-                            android:layout_height="16dp"
+                            android:layout_width="14dp"
+                            android:layout_height="14dp"
                             app:srcCompat="@android:drawable/arrow_up_float" />
                     </LinearLayout>
                 </eu.pkgsoftware.babybuddywidgets.widgets.AutoHGrid>
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginEnd="16dp"
+                    android:layout_marginTop="8dp"
                     android:text="@string/diaper_amount_title"
-                    android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
+                    android:textColor="@color/text_secondary_warm"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
 
                 <eu.pkgsoftware.babybuddywidgets.widgets.HorizontalDecIncEditor
                     android:id="@+id/amountEditor"
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1" />
+                    android:layout_marginTop="4dp" />
             </LinearLayout>
+
+            <EditText
+                android:id="@+id/noteEditor"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_soft_pill"
+                android:gravity="top|start"
+                android:hint="@string/activity_notes_hint"
+                android:importantForAutofill="no"
+                android:inputType="textLongMessage|textMultiLine|text"
+                android:maxLines="4"
+                android:minHeight="42dp"
+                android:paddingStart="12dp"
+                android:paddingTop="8dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="8dp"
+                android:textSize="14sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/sendButton"
+                android:layout_width="match_parent"
+                android:layout_height="46dp"
+                android:layout_marginTop="10dp"
+                android:text="@string/logging_save_button"
+                android:textAllCaps="false"
+                android:textStyle="bold"
+                app:cornerRadius="12dp"
+                app:icon="@drawable/ic_check_save"
+                app:iconGravity="textStart" />
         </LinearLayout>
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
-
-
-</androidx.constraintlayout.widget.ConstraintLayout>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

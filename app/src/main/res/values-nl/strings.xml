@@ -198,6 +198,32 @@
     <string name="diaper_title">Luier</string>
 
     <!-- Settings screen -->
+    <string name="about_library_source_template">Bron: {url}</string>
+    <string name="about_icon_derived_from_template">Afbeeldingen gebaseerd op of afgeleid van werken van:\n{title}</string>
+    <string name="about_open_creator_website">Website van maker openen</string>
+    <string name="pumping_amount_title">Hoeveelheid</string>
+    <string name="login_failed_title">Inloggen mislukt</string>
+    <string name="login_internal_error_message">Interne foutmelding: {error}</string>
+    <string name="login_error_token_not_found">Token niet gevonden</string>
+    <string name="login_auth_failed_http_code">Authenticatie mislukt (HTTP-status: {code})</string>
+    <string name="login_invalid_children_list">Ongeldige kinderlijst</string>
+    <string name="login_no_app_token_found">Geen app-token gevonden.</string>
+    <string name="login_error_server_response">Baby Buddy-inlogpagina reageerde niet correct</string>
+    <string name="login_error_csrf_missing">CSRF-token ontbreekt in serverantwoord</string>
+    <string name="login_error_invalid_credentials">Ongeldige gebruikersnaam of wachtwoord</string>
+    <string name="login_error_unknown">Inloggen mislukt om onbekende reden (serverprobleem?)</string>
+    <string name="login_error_profile_access">Geen toegang tot profielpagina</string>
+    <string name="login_error_settings_access">Geen toegang tot gebruikersinstellingen</string>
+    <string name="login_error_apikey_not_found">Kan API-sleutelsectie niet vinden</string>
+    <string name="export_debug_logs_copied_toast">Gekopieerd naar klembord</string>
+    <string name="setting_language">Taal</string>
+    <array name="setting_language_options">
+        <item>Volg systeem</item>
+        <item>简体中文</item>
+        <item>English</item>
+        <item>Deutsch</item>
+        <item>Nederlands</item>
+    </array>
     <string name="setting_dark_light_mode">Donker/Licht modus</string>
     <array name="setting_dark_light_mode_options">
         <item>Volg systeem</item>
@@ -206,4 +232,101 @@
     </array>
     <string name="diaper_color_label">Kleur</string>
     <string name="timeline_title_line_title">Timeline</string>
+
+    <!-- Navigation & Profile Header -->
+    <string name="nav_tab_record">Vastleggen</string>
+    <string name="nav_tab_stats">Statistieken</string>
+    <string name="baby_age_newborn">Pasgeboren</string>
+    <string name="baby_age_days">{days} d oud</string>
+    <string name="baby_age_months_days">{months} mnd {days} d</string>
+    <string name="baby_age_years_months">{years} jr {months} mnd</string>
+    <string name="login_welcome_subtitle">Dagelijkse verzorging &amp; groei van je baby bijhouden</string>
+
+    <!-- Quick Status & Today Summary -->
+    <string name="summary_card_title">Overzicht vandaag</string>
+    <string name="summary_pull_to_refresh_hint">Trek omlaag om te vernieuwen</string>
+    <string name="summary_last_feeding_label">Laatste voeding</string>
+    <string name="summary_last_sleep_label">Laatste slaap</string>
+    <string name="summary_last_diaper_label">Laatste luier</string>
+    <string name="summary_time_just_now">Zojuist</string>
+    <string name="summary_time_ago_m">{minutes} min geleden</string>
+    <string name="summary_time_ago_hm">{hours} u {minutes} m geleden</string>
+    <string name="summary_time_ago_d">{days} d geleden</string>
+    <string name="summary_no_record">Geen gegevens</string>
+    <string name="summary_today_feeding">Voeding vandaag</string>
+    <string name="summary_today_feeding_value">{count}x · {amount} ml</string>
+    <string name="summary_today_feeding_count_only">{count}x</string>
+    <string name="summary_today_sleep">Slaap vandaag</string>
+    <string name="summary_today_sleep_value">{hours} u {minutes} m</string>
+    <string name="summary_today_diaper">Luiers vandaag</string>
+    <string name="summary_today_diaper_value">{total} ({wet} nat / {solid} vast)</string>
+    <string name="section_daily_care">Dagelijkse zorg</string>
+    <string name="section_growth_health">Groei &amp; Gezondheid</string>
+
+    <!-- Activity Tile Short Labels -->
+    <string name="tile_feeding">Voeden</string>
+    <string name="tile_diaper">Luier</string>
+    <string name="tile_sleep">Slaap</string>
+    <string name="tile_pumping">Kolven</string>
+    <string name="tile_tummy_time">Buikliggen</string>
+    <string name="tile_notes">Notitie</string>
+    <string name="tile_temperature">Temp</string>
+    <string name="tile_weight">Gewicht</string>
+    <string name="tile_height">Lengte</string>
+    <string name="tile_head_circumference">Hoofdomtrek</string>
+    <string name="tile_bmi">BMI</string>
+
+    <!-- Logging Controls, Manual Mode, Presets & Units -->
+    <string name="logging_save_button">Opslaan</string>
+    <string name="logging_mode_timer">Live timer</string>
+    <string name="logging_mode_manual">Handmatig</string>
+    <string name="logging_start_label">Start</string>
+    <string name="logging_end_label">Einde</string>
+    <string name="logging_time_label">Tijd</string>
+    <string name="logging_date_label">Datum</string>
+    <string name="logging_preset_minus_15m">-15m</string>
+    <string name="logging_preset_minus_30m">-30m</string>
+    <string name="logging_preset_minus_1h">-1u</string>
+    <string name="logging_preset_plus_30ml">+30 ml</string>
+    <string name="diaper_wet_label">Nat</string>
+    <string name="diaper_solid_label">Vast</string>
+    <string name="diaper_extra_options_label">Kleur &amp; Hoeveelheid</string>
+    <string name="unit_ml">ml</string>
+    <string name="unit_celsius">°C</string>
+    <string name="unit_kg">kg</string>
+    <string name="unit_cm">cm</string>
+    <string name="measurement_value_pattern">{value} {unit}</string>
+    <string name="measurement_bmi_pattern">BMI {value}</string>
+
+    <!-- Timeline Filters, Date Headers & Item Actions -->
+    <string name="filter_all">Alles</string>
+    <string name="filter_growth_health">Groei &amp; Gezondheid</string>
+    <string name="timeline_date_today">Vandaag</string>
+    <string name="timeline_date_yesterday">Gisteren</string>
+    <string name="timeline_empty_filtered">Nog geen overeenkomende gegevens</string>
+    <string name="timeline_open_web_desc">Openen in Baby Buddy-web</string>
+    <string name="timeline_delete_desc">Invoer verwijderen</string>
+
+    <!-- Statistics & Charts Tab -->
+    <string name="stats_range_7d">Laatste 7 dagen</string>
+    <string name="stats_range_14d">Laatste 14 dagen</string>
+    <string name="stats_range_30d">Laatste 30 dagen</string>
+    <string name="stats_kpi_avg_milk">Gem. melk / dag</string>
+    <string name="stats_kpi_avg_feedings">Gem. voedingen / dag</string>
+    <string name="stats_kpi_avg_sleep">Gem. slaap / dag</string>
+    <string name="stats_kpi_avg_diapers">Gem. luiers / dag</string>
+    <string name="stats_kpi_milk_value">{amount} ml</string>
+    <string name="stats_kpi_count_value">{count}x</string>
+    <string name="stats_kpi_hours_value">{hours} u</string>
+    <string name="stats_chart_feeding_title">Dagelijks voedingsvolume (ml)</string>
+    <string name="stats_chart_feeding_subtitle">Totaal {total} ml · {count}x ({breast} borst / {bottle} fles / {solid} vast)</string>
+    <string name="stats_chart_sleep_title">Dagelijkse slaapduur (u)</string>
+    <string name="stats_chart_sleep_subtitle">Totaal {hours} u verdeeld over {count} slaapjes</string>
+    <string name="stats_chart_diaper_title">Dagelijkse luierwissels</string>
+    <string name="stats_chart_diaper_subtitle">Nat: {wet} · Vast: {solid} · Totaal: {total}</string>
+    <string name="stats_chart_growth_title">Groei- en temperatuurcurve</string>
+    <string name="stats_growth_latest_summary">Laatste: {latest} ({delta} t.o.v. vorige)</string>
+    <string name="stats_growth_latest_single">Laatste: {latest}</string>
+    <string name="stats_no_data">Geen gegevens in deze periode</string>
+    <string name="stats_loading">Statistieken laden…</string>
 </resources>

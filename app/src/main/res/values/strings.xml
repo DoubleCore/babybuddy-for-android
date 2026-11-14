@@ -31,6 +31,9 @@
     <string name="about_text">This Android application is Open Source software created by &lt;a href=\'http://www.craftware.info\'&gt;Paul Konstantin Gerke&lt;/a&gt; and licensed under the MIT License (see below).\n\nThe source code of the application is available at &lt;a href=\'https://github.com/babybuddy/babybuddy-for-android/\'&gt;https://github.com/babybuddy/babybuddy-for-android/&lt;/a&gt;.\n\nThe application uses third-party media under attribution licenes listed below.</string>
     <string name="about_external_media_resources_title">Third party media</string>
     <string name="about_external_libraries_title">Third party libraries</string>
+    <string name="about_library_source_template">Source: {url}</string>
+    <string name="about_icon_derived_from_template">Images based on or derived from works from:\n{title}</string>
+    <string name="about_open_creator_website">Open creator\'s website</string>
 
     <!-- Translations for all events and activities using their activity name as keys without capitalization -->
     <string name="activity_singular_sleep">sleep</string>
@@ -47,6 +50,7 @@
 
     <!-- Feeding store messages -->
     <string name="feeding_amount_title">Amount</string>
+    <string name="pumping_amount_title">Amount</string>
     <string name="store_feeding_amount_string">Amount: {quantity}</string>
     <string name="store_feeding_amount_none">None</string>
 
@@ -89,6 +93,19 @@
     <string name="login_http_warning_continue_login">Continue anyway</string>
 
     <string name="logging_in_message">Logging in…</string>
+    <string name="login_failed_title">Login failed</string>
+    <string name="login_internal_error_message">Internal error message: {error}</string>
+    <string name="login_error_token_not_found">Token not found</string>
+    <string name="login_auth_failed_http_code">Authentication failed (HTTP response: {code})</string>
+    <string name="login_invalid_children_list">Invalid children list</string>
+    <string name="login_no_app_token_found">No app token found.</string>
+    <string name="login_error_server_response">Baby Buddy login page did not respond properly</string>
+    <string name="login_error_csrf_missing">CSRF token missing from server response</string>
+    <string name="login_error_invalid_credentials">Invalid username or password</string>
+    <string name="login_error_unknown">Login failed for unknown reason (server issue?)</string>
+    <string name="login_error_profile_access">Cannot access profile page</string>
+    <string name="login_error_settings_access">Cannot access user settings</string>
+    <string name="login_error_apikey_not_found">Cannot find API key section</string>
 
     <string name="login_qrcode_info_text_checking_camera">Checking for presence of a camera…</string>
     <string name="login_qrcode_info_text">You can also try to login using a Baby&#160;Buddy login QR code:</string>
@@ -200,6 +217,7 @@
     <string name="export_debug_logs_title">Export Debug Logs</string>
     <string name="export_debug_logs_menu_item">Export Debug Logs</string>
     <string name="export_debug_logs_menu_item_copy_to_clipboard">Copy to clipboard</string>
+    <string name="export_debug_logs_copied_toast">Copied to clipboard</string>
 
     <!-- Send message screen -->
     <string name="send_message_info">Send
@@ -215,6 +233,21 @@
     <string name="send_message_sent_message">Message sent to developer</string>
 
     <!-- Settings screen -->
+    <string name="setting_language">Language</string>
+    <array name="setting_language_options">
+        <item>Follow system</item>
+        <item>简体中文</item>
+        <item>English</item>
+        <item>Deutsch</item>
+        <item>Nederlands</item>
+    </array>
+    <array name="setting_language_values" translatable="false">
+        <item>system</item>
+        <item>zh-CN</item>
+        <item>en</item>
+        <item>de-DE</item>
+        <item>nl</item>
+    </array>
     <string name="setting_dark_light_mode">Dark/Light mode</string>
     <string name="timeline_title_line_title">Timeline</string>
     <array name="setting_dark_light_mode_options">
@@ -227,4 +260,101 @@
         <item>light</item>
         <item>dark</item>
     </array>
+
+    <!-- Navigation & Profile Header -->
+    <string name="nav_tab_record">Record</string>
+    <string name="nav_tab_stats">Statistics</string>
+    <string name="baby_age_newborn">Newborn</string>
+    <string name="baby_age_days">{days}d old</string>
+    <string name="baby_age_months_days">{months}m {days}d</string>
+    <string name="baby_age_years_months">{years}y {months}m</string>
+    <string name="login_welcome_subtitle">Gentle daily baby care &amp; growth tracker</string>
+
+    <!-- Quick Status & Today Summary -->
+    <string name="summary_card_title">Today Overview</string>
+    <string name="summary_pull_to_refresh_hint">Pull down to refresh</string>
+    <string name="summary_last_feeding_label">Last feeding</string>
+    <string name="summary_last_sleep_label">Last sleep</string>
+    <string name="summary_last_diaper_label">Last diaper</string>
+    <string name="summary_time_just_now">Just now</string>
+    <string name="summary_time_ago_m">{minutes}m ago</string>
+    <string name="summary_time_ago_hm">{hours}h {minutes}m ago</string>
+    <string name="summary_time_ago_d">{days}d ago</string>
+    <string name="summary_no_record">No record</string>
+    <string name="summary_today_feeding">Today feeding</string>
+    <string name="summary_today_feeding_value">{count}x · {amount} ml</string>
+    <string name="summary_today_feeding_count_only">{count}x</string>
+    <string name="summary_today_sleep">Today sleep</string>
+    <string name="summary_today_sleep_value">{hours}h {minutes}m</string>
+    <string name="summary_today_diaper">Today diapers</string>
+    <string name="summary_today_diaper_value">{total} ({wet} wet / {solid} solid)</string>
+    <string name="section_daily_care">Daily Care</string>
+    <string name="section_growth_health">Growth &amp; Health</string>
+
+    <!-- Activity Tile Short Labels -->
+    <string name="tile_feeding">Feeding</string>
+    <string name="tile_diaper">Diaper</string>
+    <string name="tile_sleep">Sleep</string>
+    <string name="tile_pumping">Pumping</string>
+    <string name="tile_tummy_time">Tummy Time</string>
+    <string name="tile_notes">Note</string>
+    <string name="tile_temperature">Temp</string>
+    <string name="tile_weight">Weight</string>
+    <string name="tile_height">Height</string>
+    <string name="tile_head_circumference">Head Circ.</string>
+    <string name="tile_bmi">BMI</string>
+
+    <!-- Logging Controls, Manual Mode, Presets & Units -->
+    <string name="logging_save_button">Save Record</string>
+    <string name="logging_mode_timer">Live Timer</string>
+    <string name="logging_mode_manual">Manual Time</string>
+    <string name="logging_start_label">Start</string>
+    <string name="logging_end_label">End</string>
+    <string name="logging_time_label">Time</string>
+    <string name="logging_date_label">Date</string>
+    <string name="logging_preset_minus_15m">-15m</string>
+    <string name="logging_preset_minus_30m">-30m</string>
+    <string name="logging_preset_minus_1h">-1h</string>
+    <string name="logging_preset_plus_30ml">+30 ml</string>
+    <string name="diaper_wet_label">Wet</string>
+    <string name="diaper_solid_label">Solid</string>
+    <string name="diaper_extra_options_label">Color &amp; Amount</string>
+    <string name="unit_ml">ml</string>
+    <string name="unit_celsius">°C</string>
+    <string name="unit_kg">kg</string>
+    <string name="unit_cm">cm</string>
+    <string name="measurement_value_pattern">{value} {unit}</string>
+    <string name="measurement_bmi_pattern">BMI {value}</string>
+
+    <!-- Timeline Filters, Date Headers & Item Actions -->
+    <string name="filter_all">All</string>
+    <string name="filter_growth_health">Growth &amp; Health</string>
+    <string name="timeline_date_today">Today</string>
+    <string name="timeline_date_yesterday">Yesterday</string>
+    <string name="timeline_empty_filtered">No matching records yet</string>
+    <string name="timeline_open_web_desc">Open in Baby Buddy web</string>
+    <string name="timeline_delete_desc">Delete entry</string>
+
+    <!-- Statistics & Charts Tab -->
+    <string name="stats_range_7d">Last 7 Days</string>
+    <string name="stats_range_14d">Last 14 Days</string>
+    <string name="stats_range_30d">Last 30 Days</string>
+    <string name="stats_kpi_avg_milk">Avg Milk / Day</string>
+    <string name="stats_kpi_avg_feedings">Avg Feedings / Day</string>
+    <string name="stats_kpi_avg_sleep">Avg Sleep / Day</string>
+    <string name="stats_kpi_avg_diapers">Avg Diapers / Day</string>
+    <string name="stats_kpi_milk_value">{amount} ml</string>
+    <string name="stats_kpi_count_value">{count}x</string>
+    <string name="stats_kpi_hours_value">{hours} h</string>
+    <string name="stats_chart_feeding_title">Daily Feeding Volume (ml)</string>
+    <string name="stats_chart_feeding_subtitle">Total {total} ml · {count} feedings ({breast} breast / {bottle} bottle / {solid} solid)</string>
+    <string name="stats_chart_sleep_title">Daily Sleep Duration (h)</string>
+    <string name="stats_chart_sleep_subtitle">Total {hours} h across {count} sleeps</string>
+    <string name="stats_chart_diaper_title">Daily Diaper Changes</string>
+    <string name="stats_chart_diaper_subtitle">Wet: {wet} · Solid: {solid} · Total: {total}</string>
+    <string name="stats_chart_growth_title">Growth &amp; Temperature Curve</string>
+    <string name="stats_growth_latest_summary">Latest: {latest} ({delta} vs previous)</string>
+    <string name="stats_growth_latest_single">Latest: {latest}</string>
+    <string name="stats_no_data">No data recorded in this period</string>
+    <string name="stats_loading">Loading statistics…</string>
 </resources>

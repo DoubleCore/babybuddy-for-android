@@ -34,7 +34,7 @@ tasks.register('generateAboutStrings') {
         outList.add(["icons": tagsList, "title": aHrefTitle, "link": aHrefAddress])
     }
 
-    String licenseText = new File("LICENSE.md").text.trim()
+    String licenseText = new File("LICENSE.md").text.replace("\r\n", "\n").trim()
     String[] splits = licenseText.split("\n", 2)
     String licenseTitle = splits[0].replace("#", "").trim()
     licenseText = splits[1].trim().replaceAll("\n\n", "\\\\\\n\\\\\\n").replaceAll("\n", " ")
@@ -81,6 +81,7 @@ preBuild.dependsOn(invokeHelpMakefile)
 
 android {
     compileSdk = 37
+    compileSdkMinor = 0
 
     defaultConfig {
         applicationId "eu.pkgsoftware.babybuddywidgets"
@@ -154,6 +155,7 @@ dependencies {
     implementation 'androidx.navigation:navigation-fragment-ktx:2.9.6'
     implementation 'androidx.navigation:navigation-ui-ktx:2.9.6'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
+    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
     implementation 'androidx.concurrent:concurrent-futures:1.3.0'
 
     implementation "androidx.camera:camera-core:$camerax_version"

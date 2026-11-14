@@ -13,6 +13,7 @@ import eu.pkgsoftware.babybuddywidgets.networking.BabyBuddyClient.ACTIVITIES
 import eu.pkgsoftware.babybuddywidgets.networking.BabyBuddyClient.EVENTS
 import eu.pkgsoftware.babybuddywidgets.DateTimeDeserializer
 import eu.pkgsoftware.babybuddywidgets.DateOnlyDeserializer
+import eu.pkgsoftware.babybuddywidgets.DateOnlySerializer
 import eu.pkgsoftware.babybuddywidgets.DateTimeSerializer
 import java.util.Date
 import kotlin.reflect.KClass
@@ -187,14 +188,17 @@ data class NoteEntry(
 data class BmiEntry(
     @JsonProperty("id", required = true) override val id: Int,
     @JsonProperty("child", required = true) override val childId: Int,
-    @JsonProperty("date", required = true) @JsonDeserialize(using = DateOnlyDeserializer::class) override val start: Date,
-    @param:JsonProperty("notes", required = false) val _notes: String?,
+    @JsonProperty("date", required = true)
+    @JsonDeserialize(using = DateOnlyDeserializer::class)
+    @JsonSerialize(using = DateOnlySerializer::class)
+    override val start: Date,
+    @param:JsonProperty("notes", required = false) @get:JsonIgnore val _notes: String?,
     @JsonProperty("bmi", required = true) val bmi: Double,
 ) : TimeEntry {
     override @JsonIgnore val appType: String = EVENTS.BMI
     override @JsonIgnore val appTypeId: Int = EVENTS.index(appType)
-    override val end: Date = start
-    override val notes: String = _notes ?: ""
+    override @get:JsonIgnore val end: Date = start
+    override @get:JsonGetter("notes") val notes: String = _notes ?: ""
 }
 
 @UIPath("temperature")
@@ -204,14 +208,17 @@ data class BmiEntry(
 data class TemperatureEntry(
     @JsonProperty("id", required = true) override val id: Int,
     @JsonProperty("child", required = true) override val childId: Int,
-    @JsonProperty("time", required = true) @JsonDeserialize(using = DateTimeDeserializer::class) override val start: Date,
-    @param:JsonProperty("notes", required = false) val _notes: String?,
+    @JsonProperty("time", required = true)
+    @JsonDeserialize(using = DateTimeDeserializer::class)
+    @JsonSerialize(using = DateTimeSerializer::class)
+    override val start: Date,
+    @param:JsonProperty("notes", required = false) @get:JsonIgnore val _notes: String?,
     @JsonProperty("temperature", required = true) val temperature: Double,
 ) : TimeEntry {
     override @JsonIgnore val appType: String = EVENTS.TEMPERATURE
     override @JsonIgnore val appTypeId: Int = EVENTS.index(appType)
-    override val end: Date = start
-    override val notes: String = _notes ?: ""
+    override @get:JsonIgnore val end: Date = start
+    override @get:JsonGetter("notes") val notes: String = _notes ?: ""
 }
 
 @UIPath("weight")
@@ -221,14 +228,17 @@ data class TemperatureEntry(
 data class WeightEntry(
     @JsonProperty("id", required = true) override val id: Int,
     @JsonProperty("child", required = true) override val childId: Int,
-    @JsonProperty("date", required = true) @JsonDeserialize(using = DateOnlyDeserializer::class) override val start: Date,
-    @param:JsonProperty("notes", required = false) val _notes: String?,
+    @JsonProperty("date", required = true)
+    @JsonDeserialize(using = DateOnlyDeserializer::class)
+    @JsonSerialize(using = DateOnlySerializer::class)
+    override val start: Date,
+    @param:JsonProperty("notes", required = false) @get:JsonIgnore val _notes: String?,
     @JsonProperty("weight", required = true) val weight: Double,
 ) : TimeEntry {
     override @JsonIgnore val appType: String = EVENTS.WEIGHT
     override @JsonIgnore val appTypeId: Int = EVENTS.index(appType)
-    override val end: Date = start
-    override val notes: String = _notes ?: ""
+    override @get:JsonIgnore val end: Date = start
+    override @get:JsonGetter("notes") val notes: String = _notes ?: ""
 }
 
 @UIPath("height")
@@ -238,14 +248,17 @@ data class WeightEntry(
 data class HeightEntry(
     @JsonProperty("id", required = true) override val id: Int,
     @JsonProperty("child", required = true) override val childId: Int,
-    @JsonProperty("date", required = true) @JsonDeserialize(using = DateOnlyDeserializer::class) override val start: Date,
-    @param:JsonProperty("notes", required = false) val _notes: String?,
+    @JsonProperty("date", required = true)
+    @JsonDeserialize(using = DateOnlyDeserializer::class)
+    @JsonSerialize(using = DateOnlySerializer::class)
+    override val start: Date,
+    @param:JsonProperty("notes", required = false) @get:JsonIgnore val _notes: String?,
     @JsonProperty("height", required = true) val height: Double,
 ) : TimeEntry {
     override @JsonIgnore val appType: String = EVENTS.HEIGHT
     override @JsonIgnore val appTypeId: Int = EVENTS.index(appType)
-    override val end: Date = start
-    override val notes: String = _notes ?: ""
+    override @get:JsonIgnore val end: Date = start
+    override @get:JsonGetter("notes") val notes: String = _notes ?: ""
 }
 
 @UIPath("head-circumference")
@@ -255,14 +268,17 @@ data class HeightEntry(
 data class HeadCircumferenceEntry(
     @JsonProperty("id", required = true) override val id: Int,
     @JsonProperty("child", required = true) override val childId: Int,
-    @JsonProperty("date", required = true) @JsonDeserialize(using = DateOnlyDeserializer::class) override val start: Date,
-    @param:JsonProperty("notes", required = false) val _notes: String?,
+    @JsonProperty("date", required = true)
+    @JsonDeserialize(using = DateOnlyDeserializer::class)
+    @JsonSerialize(using = DateOnlySerializer::class)
+    override val start: Date,
+    @param:JsonProperty("notes", required = false) @get:JsonIgnore val _notes: String?,
     @JsonProperty("head_circumference", required = true) val head_circumference: Double,
 ) : TimeEntry {
     override @JsonIgnore val appType: String = EVENTS.HEAD_CIRCUMFERENCE
     override @JsonIgnore val appTypeId: Int = EVENTS.index(appType)
-    override val end: Date = start
-    override val notes: String = _notes ?: ""
+    override @get:JsonIgnore val end: Date = start
+    override @get:JsonGetter("notes") val notes: String = _notes ?: ""
 }
 
 // Generic wrappers

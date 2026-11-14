@@ -1,22 +1,30 @@
 package eu.pkgsoftware.babybuddywidgets.history
 
+import android.content.res.ColorStateList
 import android.view.MotionEvent
 import android.view.View
+import androidx.core.content.ContextCompat
 import com.squareup.phrase.Phrase
 import eu.pkgsoftware.babybuddywidgets.BaseFragment
 import eu.pkgsoftware.babybuddywidgets.Constants
 import eu.pkgsoftware.babybuddywidgets.Constants.FeedingMethodEnum
 import eu.pkgsoftware.babybuddywidgets.Constants.FeedingTypeEnum
 import eu.pkgsoftware.babybuddywidgets.DialogCallback
+import eu.pkgsoftware.babybuddywidgets.LoggedInFragment
 import eu.pkgsoftware.babybuddywidgets.R
 import eu.pkgsoftware.babybuddywidgets.databinding.TimelineItemBinding
 import eu.pkgsoftware.babybuddywidgets.networking.BabyBuddyClient
 import eu.pkgsoftware.babybuddywidgets.networking.RequestCodeFailure
+import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.BmiEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.ChangeEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.FeedingEntry
+import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.HeadCircumferenceEntry
+import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.HeightEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.PumpingEntry
+import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.TemperatureEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.TimeEntry
-import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.serverTimeToClientTime
+import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.WeightEntry
+import eu.pkgsoftware.babybuddywidgets.widgets.HorizontalDecIncEditor
 import kotlinx.coroutines.launch
 import java.io.IOException
 import java.net.MalformedURLException
@@ -25,35 +33,29 @@ import java.text.NumberFormat
 import java.time.ZoneId
 import kotlin.math.max
 
-
 fun interpreteAmountValue(fragment: BaseFragment, amount: Double?): String {
     if (amount == null) {
         return ""
     }
     val nf = NumberFormat.getInstance()
-    nf.maximumIntegerDigits = 3
+    nf.maximumIntegerDigits = 4
+    nf.maximumFractionDigits = 2
     nf.minimumFractionDigits = 0
-    val result = Phrase.from(
+    return Phrase.from(
         fragment.resources, R.string.history_amount_timeline_pattern
     ).put("amount", nf.format(amount)).format().toString()
-
-    return result + "\n"
 }
 
 class TimelineEntry(private val fragment: BaseFragment, private var _entry: TimeEntry?) {
     companion object {
-        val DATE_FORMAT = DateFormat.getDateInstance(DateFormat.SHORT)
-        val TIME_FORMAT = DateFormat.getTimeInstance(DateFormat.SHORT)
+        val DATE_FORMAT: DateFormat
+            get() = DateFormat.getDateInstance(DateFormat.SHORT)
+        val TIME_FORMAT: DateFormat
+            get() = DateFormat.getTimeInstance(DateFormat.SHORT)
     }
 
     private val binding = TimelineItemBinding.inflate(fragment.mainActivity.layoutInflater)
     private var modifiedCallback: Runnable? = null
-    private fun hideAllSubviews() {
-        for (i in 0 until binding.viewGroup.childCount) {
-            val c = binding.viewGroup.getChildAt(i)
-            c.visibility = View.GONE
-        }
-    }
 
     var entry: TimeEntry?
         get() = _entry
@@ -68,185 +70,202 @@ class TimelineEntry(private val fragment: BaseFragment, private var _entry: Time
     val view: View
         get() = binding.root
 
-    private fun updateUi() {
-        val entry = _entry
-        if (entry == null) {
-            binding.root.visibility = View.INVISIBLE
+    fun setDateHeader(headerText: String?) {
+        if (headerText.isNullOrBlank()) {
+            binding.dateSectionHeader.visibility = View.GONE
         } else {
-            binding.root.visibility = View.VISIBLE
-            if (BabyBuddyClient.ACTIVITIES.TUMMY_TIME == entry.appType) {
-                configureTummyTime()
-            } else if (BabyBuddyClient.EVENTS.CHANGE == entry.appType) {
-                configureChange()
-            } else if (BabyBuddyClient.ACTIVITIES.SLEEP == entry.appType) {
-                configureSleep()
-            } else if (BabyBuddyClient.ACTIVITIES.FEEDING == entry.appType) {
-                configureFeeding()
-            } else if (BabyBuddyClient.EVENTS.NOTE == entry.appType) {
-                configureNote()
-            } else if (BabyBuddyClient.ACTIVITIES.PUMPING == entry.appType) {
-                configurePumping()
-            } else {
-                configureDefaultView()
-            }
+            binding.dateSectionHeader.text = headerText
+            binding.dateSectionHeader.visibility = View.VISIBLE
         }
     }
 
     init {
-        binding.root.setOnLongClickListener { v: View? -> longClick() }
-        binding.root.setOnTouchListener { v, event ->
+        binding.entryCard.setOnLongClickListener { longClick() }
+        binding.entryCard.setOnTouchListener { v, event ->
             longClickStartStopHandler(v, event)
             false
         }
-        binding.removeButton.setOnClickListener { v: View? -> removeClick() }
+        binding.openWebButton.setOnClickListener { longClick() }
+        binding.removeButton.setOnClickListener { removeClick() }
         updateUi()
     }
 
+    private fun setBadgeVisual(iconRes: Int, bgColorRes: Int, paddingDp: Int = 8) {
+        val ctx = fragment.requireContext()
+        val padPx = (paddingDp * ctx.resources.displayMetrics.density).toInt()
+        binding.entryIconBadge.setPadding(padPx, padPx, padPx, padPx)
+        binding.entryIconBadge.backgroundTintList =
+            ColorStateList.valueOf(ContextCompat.getColor(ctx, bgColorRes))
+        binding.entryIconImage.setImageResource(iconRes)
+    }
+
+    private fun updateUi() {
+        val entry = _entry
+        if (entry == null) {
+            binding.entryCard.visibility = View.INVISIBLE
+            return
+        }
+        binding.entryCard.visibility = View.VISIBLE
+        binding.diaperWetImage.visibility = View.GONE
+        binding.diaperSolidImage.visibility = View.GONE
+        binding.diaperColorPreview.visibility = View.GONE
+
+        val res = fragment.resources
+        val localStart = BabySummaryHelper.entryClientStart(entry)
+        val localEnd = BabySummaryHelper.entryClientEnd(entry)
+        val isDateOnly = BabySummaryHelper.isDateOnlyEntry(entry)
+
+        val timeDiffSec = max(0L, (localEnd.time - localStart.time) / 1000L)
+        val startTimeStr = TIME_FORMAT.format(localStart)
+        val endTimeStr = TIME_FORMAT.format(localEnd)
+        val durationHours = timeDiffSec / 3600L
+        val durationMins = max(1L, (timeDiffSec % 3600L) / 60L).toString().padStart(2, '0')
+        val timeRangeStr = when {
+            isDateOnly -> DATE_FORMAT.format(localStart)
+            timeDiffSec < 30L -> startTimeStr
+            else -> "$startTimeStr - $endTimeStr ($durationHours:$durationMins)"
+        }
+
+        val activityTitle = fragment.translateActivityName(entry.appType)
+            .replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+        var titleLine = activityTitle
+        var metaLine = timeRangeStr
+
+        when (entry) {
+            is FeedingEntry -> {
+                val iconRes = when (entry.feedingType) {
+                    FeedingTypeEnum.BREAST_MILK -> when (entry.feedingMethod) {
+                        FeedingMethodEnum.LEFT_BREAST -> R.drawable.pkg_breast_left
+                        FeedingMethodEnum.RIGHT_BREAST -> R.drawable.pkg_breast_right
+                        FeedingMethodEnum.BOTH_BREASTS -> R.drawable.pkg_breast
+                        else -> R.drawable.pkg_bottle
+                    }
+                    FeedingTypeEnum.SOLID_FOOD -> R.drawable.pkg_solid_food
+                    else -> R.drawable.pkg_bottle
+                }
+                val pad = if (iconRes == R.drawable.pkg_breast_left || iconRes == R.drawable.pkg_breast_right) 2 else 8
+                setBadgeVisual(iconRes, R.color.feeding_enabled, pad)
+
+                val detail = BabySummaryHelper.formatFeedingMethodDetail(res, entry)
+                if (detail.isNotBlank()) {
+                    titleLine = "$activityTitle · $detail"
+                }
+            }
+            is ChangeEntry -> {
+                setBadgeVisual(R.drawable.pkg_diaper, R.color.diaper_enabled)
+                binding.diaperWetImage.visibility = if (entry.wet) View.VISIBLE else View.GONE
+                binding.diaperSolidImage.visibility = if (entry.solid) View.VISIBLE else View.GONE
+                if (entry.color.isNotEmpty()) {
+                    try {
+                        val colorEnum = Constants.SolidDiaperColorEnum.byPostName(entry.color)
+                        val c = ContextCompat.getColor(fragment.requireContext(), colorEnum.colorResId)
+                        binding.diaperColorPreview.backgroundTintList = ColorStateList.valueOf(c)
+                        binding.diaperColorPreview.visibility = View.VISIBLE
+                    } catch (_: Exception) {
+                        binding.diaperColorPreview.visibility = View.GONE
+                    }
+                }
+                val amtStr = interpreteAmountValue(fragment, entry.amount)
+                if (amtStr.isNotBlank()) {
+                    metaLine = "$timeRangeStr · $amtStr"
+                }
+            }
+            is PumpingEntry -> {
+                setBadgeVisual(R.drawable.pkg_pumping, R.color.pumping_enabled)
+                val cleanAmt = HorizontalDecIncEditor.formatClean(entry.amount)
+                titleLine = "$activityTitle · $cleanAmt ${res.getString(R.string.unit_ml)}"
+            }
+            is TemperatureEntry -> {
+                setBadgeVisual(R.drawable.ic_temperature, R.color.temperature_enabled)
+                val valStr = Phrase.from(res, R.string.measurement_value_pattern)
+                    .put("value", HorizontalDecIncEditor.formatClean(entry.temperature))
+                    .put("unit", res.getString(R.string.unit_celsius))
+                    .format()
+                titleLine = "$activityTitle · $valStr"
+            }
+            is WeightEntry -> {
+                setBadgeVisual(R.drawable.ic_weight, R.color.weight_enabled)
+                val valStr = Phrase.from(res, R.string.measurement_value_pattern)
+                    .put("value", HorizontalDecIncEditor.formatClean(entry.weight))
+                    .put("unit", res.getString(R.string.unit_kg))
+                    .format()
+                titleLine = "$activityTitle · $valStr"
+            }
+            is HeightEntry -> {
+                setBadgeVisual(R.drawable.ic_height, R.color.height_enabled)
+                val valStr = Phrase.from(res, R.string.measurement_value_pattern)
+                    .put("value", HorizontalDecIncEditor.formatClean(entry.height))
+                    .put("unit", res.getString(R.string.unit_cm))
+                    .format()
+                titleLine = "$activityTitle · $valStr"
+            }
+            is HeadCircumferenceEntry -> {
+                setBadgeVisual(R.drawable.ic_head_circumference, R.color.head_circumference_enabled)
+                val valStr = Phrase.from(res, R.string.measurement_value_pattern)
+                    .put("value", HorizontalDecIncEditor.formatClean(entry.head_circumference))
+                    .put("unit", res.getString(R.string.unit_cm))
+                    .format()
+                titleLine = "$activityTitle · $valStr"
+            }
+            is BmiEntry -> {
+                setBadgeVisual(R.drawable.ic_bmi, R.color.bmi_enabled)
+                val valStr = Phrase.from(res, R.string.measurement_bmi_pattern)
+                    .put("value", HorizontalDecIncEditor.formatClean(entry.bmi))
+                    .format()
+                titleLine = valStr.toString()
+            }
+            else -> {
+                when (entry.appType) {
+                    BabyBuddyClient.ACTIVITIES.SLEEP ->
+                        setBadgeVisual(R.drawable.pkg_sleep, R.color.sleep_enabled)
+                    BabyBuddyClient.ACTIVITIES.TUMMY_TIME ->
+                        setBadgeVisual(R.drawable.pkg_crawl, R.color.tummy_time_enabled)
+                    BabyBuddyClient.EVENTS.NOTE ->
+                        setBadgeVisual(R.drawable.pkg_notes, R.color.notes_enabled)
+                    else ->
+                        setBadgeVisual(R.drawable.ic_baby_face, R.color.feeding_enabled)
+                }
+            }
+        }
+
+        binding.entryTitleText.text = titleLine
+        binding.entryTimeText.text = metaLine
+
+        val cleanNotes = entry.notes.trim()
+        if (cleanNotes.isNotEmpty()) {
+            binding.entrySubtitleText.text = cleanNotes
+            binding.entrySubtitleText.visibility = View.VISIBLE
+        } else {
+            binding.entrySubtitleText.visibility = View.GONE
+        }
+    }
+
     private fun defaultPhraseFields(phrase: Phrase): Phrase {
-        val local_start_time = serverTimeToClientTime(entry!!.start)
-        val local_end_time = serverTimeToClientTime(entry!!.end)
+        val e = entry!!
+        val localStartTime = BabySummaryHelper.entryClientStart(e)
+        val localEndTime = BabySummaryHelper.entryClientEnd(e)
 
-        val start_utc = local_start_time.toInstant().atZone(ZoneId.of("UTC"))
-        val end_utc = local_end_time.toInstant().atZone(ZoneId.of("UTC"))
-        val time_diff = end_utc.toEpochSecond() - start_utc.toEpochSecond()
-        val time_diff_hours = time_diff / 3600
-        val time_diff_minutes = max(1, (time_diff % 3600) / 60)
-        val time_diff_minutes_str = time_diff_minutes.toString().padStart(2, '0')
-        val time_diff_string = "$time_diff_hours:${time_diff_minutes_str}"
+        val startUtc = localStartTime.toInstant().atZone(ZoneId.of("UTC"))
+        val endUtc = localEndTime.toInstant().atZone(ZoneId.of("UTC"))
+        val timeDiff = endUtc.toEpochSecond() - startUtc.toEpochSecond()
+        val timeDiffHours = timeDiff / 3600
+        val timeDiffMinutes = max(1, (timeDiff % 3600) / 60)
+        val timeDiffMinutesStr = timeDiffMinutes.toString().padStart(2, '0')
+        val timeDiffString = "$timeDiffHours:$timeDiffMinutesStr"
 
-        val start_time = TIME_FORMAT.format(local_start_time)
-        val end_time = TIME_FORMAT.format(local_end_time)
-        val opt_time_range = if (time_diff < 30) start_time else "$start_time - $end_time ($time_diff_string)"
+        val startTime = TIME_FORMAT.format(localStartTime)
+        val endTime = TIME_FORMAT.format(localEndTime)
+        val optTimeRange = if (timeDiff < 30) startTime else "$startTime - $endTime ($timeDiffString)"
 
         return phrase
-            .putOptional("type", entry!!.appType)
-            .putOptional("start_date", DATE_FORMAT.format(local_start_time))
-            .putOptional("start_time", TIME_FORMAT.format(local_start_time))
-            .putOptional("end_date", DATE_FORMAT.format(local_end_time))
-            .putOptional("end_time", TIME_FORMAT.format(local_end_time))
-            .putOptional("opt_time_range", opt_time_range)
-            .putOptional("time_diff", time_diff_string)
-            .putOptional("notes", entry!!.notes.trim { it <= ' ' })
-    }
-
-    private fun configureDefaultView() {
-        hideAllSubviews()
-        binding.viewGroup.getChildAt(0).visibility = View.VISIBLE
-        val message = defaultPhraseFields(
-            Phrase.from("{type}\n{start_date}  {opt_time_range}")
-        ).format().toString()
-        binding.defaultContent.text = message
-    }
-
-    private fun configureTummyTime() {
-        hideAllSubviews()
-        binding.tummyTimeView.visibility = View.VISIBLE
-        val message = defaultPhraseFields(
-            Phrase.from("{start_date}  {opt_time_range}\n{notes}")
-        ).format().toString().trim { it <= ' ' }
-        binding.tummytimeMilestoneText.text = message
-    }
-
-    private fun configureChange() {
-        hideAllSubviews()
-
-        var amountString = ""
-        binding.diaperView.visibility = View.VISIBLE
-        (entry as ChangeEntry?)?.let { change ->
-            binding.diaperWetImage.visibility =
-                if (change.wet) View.VISIBLE else View.GONE
-            binding.diaperSolidImage.visibility = if (change.solid) View.VISIBLE else View.GONE
-
-            if (change.color.isNotEmpty()) {
-                binding.diaperColorPreview.visibility = View.VISIBLE
-
-                val colorEnumValue = Constants.SolidDiaperColorEnum.byPostName(change.color)
-                fragment.resources.getColor(colorEnumValue.colorResId, null).let { color ->
-                    binding.diaperColorPreview.setBackgroundColor(color)
-                }
-            } else {
-                binding.diaperColorPreview.visibility = View.GONE
-            }
-
-            amountString = interpreteAmountValue(fragment, change.amount)
-        }
-        val message = defaultPhraseFields(
-            Phrase.from("{start_date}  {start_time}\n{amount}{notes}")
-        ).put("amount", amountString).format().toString().trim { it <= ' ' }
-        binding.diaperText.text = message.trim { it <= ' ' }
-    }
-
-    private fun configureSleep() {
-        hideAllSubviews()
-        binding.sleepView.visibility = View.VISIBLE
-        val message = defaultPhraseFields(
-            Phrase.from("{start_date}  {opt_time_range}\n{notes}")
-        ).format().toString().trim { it <= ' ' }
-        binding.sleepText.text = message.trim { it <= ' ' }
-    }
-
-    private fun configureNote() {
-        hideAllSubviews()
-        binding.noteTimeView.visibility = View.VISIBLE
-        val message = defaultPhraseFields(
-            Phrase.from("{start_date}  {start_time}\n{notes}")
-        ).format().toString().trim { it <= ' ' }
-        binding.noteTimeEntryText.text = message.trim { it <= ' ' }
-    }
-
-    private fun configurePumping() {
-        hideAllSubviews()
-        val pumping = entry!! as PumpingEntry
-        binding.pumpingTimeView.visibility = View.VISIBLE
-        val message = defaultPhraseFields(
-            Phrase.from("{start_date}  {opt_time_range}\n{amount}{notes}")
-        ).put(
-            "amount", interpreteAmountValue(fragment, pumping.amount)
-        ).format().toString().trim { it <= ' ' }
-        binding.pumpingTimeNotes.text = message.trim { it <= ' ' }
-    }
-
-    private fun configureFeeding() {
-        hideAllSubviews()
-        binding.feedingView.visibility = View.VISIBLE
-        val feeding = entry!! as FeedingEntry
-        binding.feedingBreastImage.visibility = View.GONE
-        binding.feedingBreastLeftImage.visibility = View.GONE
-        binding.feedingBreastRightImage.visibility = View.GONE
-        binding.feedingBottleImage.visibility = View.GONE
-        binding.solidFoodImage.visibility = View.GONE
-        when (feeding.feedingType) {
-            FeedingTypeEnum.BREAST_MILK -> {
-                val feedingMethod = feeding.feedingMethod
-
-                when (feedingMethod) {
-                    FeedingMethodEnum.LEFT_BREAST ->
-                        binding.feedingBreastLeftImage.visibility = View.VISIBLE
-                    FeedingMethodEnum.RIGHT_BREAST ->
-                        binding.feedingBreastRightImage.visibility = View.VISIBLE
-                    FeedingMethodEnum.BOTH_BREASTS ->
-                        binding.feedingBreastImage.visibility = View.VISIBLE
-
-                    FeedingMethodEnum.BOTTLE,
-                    FeedingMethodEnum.PARENT_FED,
-                    FeedingMethodEnum.SELF_FED ->
-                        binding.feedingBottleImage.visibility = View.VISIBLE
-                }
-            }
-
-            FeedingTypeEnum.FORTIFIED_BREAST_MILK, FeedingTypeEnum.FORMULA -> binding.feedingBottleImage.visibility =
-                View.VISIBLE
-
-            FeedingTypeEnum.SOLID_FOOD -> binding.solidFoodImage.visibility = View.VISIBLE
-            else -> binding.solidFoodImage.visibility = View.VISIBLE
-        }
-
-        val message = defaultPhraseFields(
-            Phrase.from("{start_date}  {opt_time_range}\n{amount}{notes}")
-        ).put(
-            "amount", interpreteAmountValue(fragment, feeding.amount)
-        ).format().toString().trim { it <= ' ' }
-        binding.feedingText.text = message.trim { it <= ' ' }
+            .putOptional("type", fragment.translateActivityName(e.appType))
+            .putOptional("start_date", DATE_FORMAT.format(localStartTime))
+            .putOptional("start_time", TIME_FORMAT.format(localStartTime))
+            .putOptional("end_date", DATE_FORMAT.format(localEndTime))
+            .putOptional("end_time", TIME_FORMAT.format(localEndTime))
+            .putOptional("opt_time_range", optTimeRange)
+            .putOptional("time_diff", timeDiffString)
+            .putOptional("notes", e.notes.trim())
     }
 
     private fun longClickStartStopHandler(v: View, event: MotionEvent) {
@@ -282,7 +301,7 @@ class TimelineEntry(private val fragment: BaseFragment, private var _entry: Time
             fragment.resources.getString(R.string.history_delete_title),
             defaultPhraseFields(
                 Phrase.from(fragment.mainActivity, R.string.history_delete_question)
-            ).format().toString().trim { it <= ' ' },
+            ).format().toString().trim(),
             fragment.resources.getString(R.string.history_delete_question_delete_button),
             fragment.resources.getString(R.string.history_delete_question_cancel_button),
             object : DialogCallback {
@@ -294,6 +313,7 @@ class TimelineEntry(private val fragment: BaseFragment, private var _entry: Time
                     fragment.mainActivity.scope.launch {
                         try {
                             client.v2client.deleteEntry(thisEntry)
+                            (fragment as? LoggedInFragment)?.notifyChildDataChanged(thisEntry.childId)
                             this@TimelineEntry.entry = null
                             modifiedCallback?.run()
                         } catch (e: RequestCodeFailure) {
@@ -301,7 +321,8 @@ class TimelineEntry(private val fragment: BaseFragment, private var _entry: Time
                         } catch (e: IOException) {
                             e.printStackTrace()
                         }
-                    }                }
+                    }
+                }
             }
         )
     }

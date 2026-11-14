@@ -152,4 +152,24 @@ interface ApiInterface {
     @POST("pumping/")
     @Headers("Content-Type: application/json")
     fun sendPumpingEntry(@Body data: JsonNode): Call<PumpingEntry>
+
+    @POST("temperature/")
+    @Headers("Content-Type: application/json")
+    fun sendTemperatureEntry(@Body data: JsonNode): Call<TemperatureEntry>
+
+    @POST("weight/")
+    @Headers("Content-Type: application/json")
+    fun sendWeightEntry(@Body data: JsonNode): Call<WeightEntry>
+
+    @POST("height/")
+    @Headers("Content-Type: application/json")
+    fun sendHeightEntry(@Body data: JsonNode): Call<HeightEntry>
+
+    @POST("head-circumference/")
+    @Headers("Content-Type: application/json")
+    fun sendHeadCircumferenceEntry(@Body data: JsonNode): Call<HeadCircumferenceEntry>
+
+    @POST("bmi/")
+    @Headers("Content-Type: application/json")
+    fun sendBmiEntry(@Body data: JsonNode): Call<BmiEntry>
 }

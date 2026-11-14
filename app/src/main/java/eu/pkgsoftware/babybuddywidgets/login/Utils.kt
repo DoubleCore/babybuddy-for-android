@@ -2,6 +2,7 @@ package eu.pkgsoftware.babybuddywidgets.login
 
 import android.app.AlertDialog
 import android.content.DialogInterface
+import com.squareup.phrase.Phrase
 import eu.pkgsoftware.babybuddywidgets.utils.Promise
 import eu.pkgsoftware.babybuddywidgets.CredStore
 import eu.pkgsoftware.babybuddywidgets.MainActivity
@@ -78,11 +79,15 @@ class Utils(val mainActivity: MainActivity) {
                     if (message == null) {
                         if (error is RequestCodeFailure) {
                             if ((error.code >= 401) || (error.code < 600)) {
-                                promise.failed("Authentication failed (http response: ${error.code})")
+                                promise.failed(
+                                    Phrase.from(mainActivity, R.string.login_auth_failed_http_code)
+                                        .put("code", error.code)
+                                        .format().toString()
+                                )
                                 return
                             }
                         }
-                        promise.failed("Failed")
+                        promise.failed(mainActivity.getString(R.string.login_failed_title))
                     } else {
                         promise.failed(message)
                     }
@@ -90,14 +95,14 @@ class Utils(val mainActivity: MainActivity) {
 
                 override fun response(r: Array<Child?>?) {
                     if (r == null || r.any { it == null }) {
-                        promise.failed("Invalid children list")
+                        promise.failed(mainActivity.getString(R.string.login_invalid_children_list))
                     } else {
                         promise.succeeded(Any())
                     }
                 }
             })
         } else {
-            promise.failed("No app token found.")
+            promise.failed(mainActivity.getString(R.string.login_no_app_token_found))
         }
     }
 

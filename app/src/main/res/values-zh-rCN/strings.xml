@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <array name="timerTypeNames">
+        <item>喂养</item>
+        <item>睡眠</item>
+        <item>趴卧练习</item>
+        <item>吸奶</item>
+    </array>
+    <array name="feedingTypes">
+        <item>母乳</item>
+        <item>配方奶</item>
+        <item>强化母乳</item>
+        <item>辅食</item>
+    </array>
+    <array name="feedingMethods">
+        <item>奶瓶</item>
+        <item>左侧亲喂</item>
+        <item>右侧亲喂</item>
+        <item>双侧亲喂</item>
+        <item>家长喂食</item>
+        <item>自主进食</item>
+    </array>
+    <array name="solidDiaperColors">
+        <item>黑色</item>
+        <item>棕色</item>
+        <item>绿色</item>
+        <item>黄色</item>
+    </array>
+
+    <string name="app_name">Baby Buddy</string>
+
+    <string name="about_text">本 Android 应用是由 &lt;a href=\'http://www.craftware.info\'&gt;Paul Konstantin Gerke&lt;/a&gt; 开发的开源软件，基于 MIT 许可证发布（见下文）。\n\n应用源代码托管于 &lt;a href=\'https://github.com/babybuddy/babybuddy-for-android/\'&gt;https://github.com/babybuddy/babybuddy-for-android/&lt;/a&gt;。\n\n本应用使用了下列遵循署名许可协议的第三方媒体素材。</string>
+    <string name="about_external_media_resources_title">第三方媒体素材</string>
+    <string name="about_external_libraries_title">第三方开源库</string>
+    <string name="about_library_source_template">来源：{url}</string>
+    <string name="about_icon_derived_from_template">图标基于或衍生自以下创作者的作品：\n{title}</string>
+    <string name="about_open_creator_website">打开创作者网站</string>
+
+    <!-- Translations for all events and activities using their activity name as keys without capitalization -->
+    <string name="activity_singular_sleep">睡眠</string>
+    <string name="activity_singular_tummy_times">趴卧练习</string>
+    <string name="activity_singular_feedings">喂养</string>
+    <string name="activity_singular_pumping">吸奶</string>
+    <string name="activity_singular_changes">换尿布</string>
+    <string name="activity_singular_notes">备注</string>
+    <string name="activity_singular_bmi">BMI</string>
+    <string name="activity_singular_temperature">体温</string>
+    <string name="activity_singular_weight">体重</string>
+    <string name="activity_singular_height">身高</string>
+    <string name="activity_singular_head_circumference">头围</string>
+
+    <!-- Feeding store messages -->
+    <string name="feeding_amount_title">喂养量</string>
+    <string name="pumping_amount_title">吸奶量</string>
+    <string name="store_feeding_amount_string">分量：{quantity}</string>
+    <string name="store_feeding_amount_none">无</string>
+
+    <!-- Tutorial Messages -->
+    <string name="tutorial_suggest_visit_help">首次使用时，可在右上角菜单中\n查看「帮助」指南。</string>
+    <string name="tutorial_long_click_notification">长按时间线中的记录条目，即可在浏览器中\n直接打开对应的 Baby Buddy 网页详情。</string>
+
+    <!-- Strings used for fragments for navigation -->
+    <string name="action_settings">设置</string>
+    <string name="first_fragment_label">登录 Baby Buddy</string>
+    <string name="logged_in_label">已登录 Baby Buddy</string>
+    <string name="next">下一步</string>
+    <string name="notes_editor_hint">备注</string>
+
+    <string name="previous">上一步</string>
+    <string name="configure">配置</string>
+    <string name="add_widget">添加小组件</string>
+
+    <string name="about_page_title">关于 Baby&#160;Buddy</string>
+
+    <!-- Menu items -->
+    <string name="logoutMenu">退出登录</string>
+    <string name="showHelpMenuButtonTitle">帮助</string>
+
+    <!-- Login -->
+    <string name="login_explanation">请输入您的 <a href="https://github.com/babybuddy/babybuddy">Baby Buddy 服务端</a>访问地址。如果您尚未部署 Baby Buddy 服务器，请访问项目主页查看自建服务说明。</string>
+
+    <string name="login_button">登录</string>
+
+    <string name="server_address_hint">服务器地址</string>
+    <string name="login_text_hint">用户名</string>
+    <string name="login_password_hint">密码</string>
+
+    <string name="login_http_warning_title">不安全的连接</string>
+    <string name="login_http_warning_message">该服务器地址未以 \'https\' 开头，您输入的密码在传输过程中可能会被截获或泄露！</string>
+    <string name="login_http_warning_cancel">取消（推荐）</string>
+    <string name="login_http_warning_continue_login">仍然继续</string>
+
+    <string name="logging_in_message">正在登录…</string>
+    <string name="login_failed_title">登录失败</string>
+    <string name="login_internal_error_message">内部错误信息：{error}</string>
+    <string name="login_error_token_not_found">未找到访问令牌（API Key）</string>
+    <string name="login_auth_failed_http_code">身份验证失败（HTTP 状态码：{code}）</string>
+    <string name="login_invalid_children_list">获取到的宝宝列表无效</string>
+    <string name="login_no_app_token_found">未找到应用访问令牌。</string>
+    <string name="login_error_server_response">Baby Buddy 登录页面响应异常</string>
+    <string name="login_error_csrf_missing">服务器响应缺少安全令牌（CSRF Token）</string>
+    <string name="login_error_invalid_credentials">用户名或密码错误</string>
+    <string name="login_error_unknown">登录失败，原因未知（请检查服务器状态）</string>
+    <string name="login_error_profile_access">无法访问用户资料接口</string>
+    <string name="login_error_settings_access">无法访问用户设置页面</string>
+    <string name="login_error_apikey_not_found">未能在用户设置中找到 API 密钥</string>
+
+    <string name="login_qrcode_info_text_checking_camera">正在检测相机设备…</string>
+    <string name="login_qrcode_info_text">您也可以使用 Baby&#160;Buddy 登录二维码快捷登录：</string>
+    <string name="login_qrcode_info_text_no_camera">当前设备没有可用的相机，无法使用扫码登录。</string>
+    <string name="login_qrcode_button_text">扫码登录</string>
+
+    <!-- Generic logged in -->
+    <string name="logged_in_no_children_found">（未找到宝宝档案）</string>
+
+    <!-- Store activities -->
+    <string name="diaper_title">尿布</string>
+    <string name="error_storing_activity_failed_title">无法保存记录</string>
+    <string name="error_storing_activity_unsupported">不支持的记录类型</string>
+    <string name="popup_message_storing">正在保存{activity}…</string>
+
+    <string name="activity_notes_hint">备注</string>
+
+    <!-- Store activity: Diaper -->
+    <string name="diaper_color_label">颜色</string>
+    <string name="diaper_amount_title">分量</string>
+
+    <!-- Generic store error -->
+    <string name="activity_store_failure_message">无法保存记录</string>
+    <string name="activity_store_failure_server_error">{message}\n\n服务器返回：{server_message}</string>
+    <string name="activity_store_failure_server_error_general">保存记录时出错</string>
+    <string name="activity_store_failure_server_error_generic_ioerror">保存记录时发生网络或读写错误</string>
+    <string name="activity_store_failure_stop_timer">停止计时器</string>
+    <string name="activity_store_failure_cancel">取消</string>
+    <string name="activity_store_failure_failed_to_stop_title">停止计时</string>
+    <string name="activity_store_failure_failed_to_stop_message">停止计时器失败</string>
+    <string name="activity_store_failure_start_timer_failed">启动计时器失败</string>
+
+    <!--- Cancel timer warning -->
+    <string name="cancel_timer_warning_title">要停止计时吗？</string>
+    <string name="cancel_timer_warning_message">「{activity}」计时器已运行较长时间，确定要停止还是继续计时？</string>
+    <string name="cancel_timer_warning_stop">停止计时</string>
+    <string name="cancel_timer_warning_keep">继续计时</string>
+
+    <!--- Store activities: Conflicts -->
+    <string name="conflicting_activity_title">时间段存在重叠</string>
+    <string name="conflicting_activity_text">当前计时与已保存的记录时间重叠，请选择处理方式。</string>
+    <string name="conflicting_activity_modify_option">调整已有记录</string>
+    <string name="conflicting_activity_cancel_option">取消保存</string>
+    <string name="conflicting_activity_stop_timer_option">放弃本次计时</string>
+    <string name="conflicting_activity_failed_to_correct_conflicts">自动修正重叠的时间记录失败</string>
+
+    <!-- Activities history strings -->
+    <string name="history_delete_title">删除记录</string>
+    <string name="history_delete_question">确定要删除 {start_date} {start_time} - {end_time} 的「{type}」记录吗？</string>
+    <string name="history_delete_question_delete_button">删除</string>
+    <string name="history_delete_question_cancel_button">取消</string>
+    <string name="history_loading_timeline_entry_failed">加载{activity}记录失败。</string>
+    <string name="history_loading_timeline_entry_failed_with_error">加载{activity}记录失败：{error}</string>
+
+    <string name="history_amount_timeline_pattern">分量：{amount}</string>
+
+    <!-- QR Code Login -->
+    <string name="login_qrcode_camera_access_needed_dialog_title">需要相机权限</string>
+    <string name="login_qrcode_camera_access_needed_dialog_body">使用二维码扫描功能需要授予相机访问权限。\n\n您也可以返回登录界面，手动输入服务器地址、用户名和密码进行登录。</string>
+    <string name="login_qrcode_camera_access_needed_dialog_confirm">授予权限</string>
+    <string name="login_qrcode_camera_access_needed_dialog_cancel">取消</string>
+    <string name="login_qrcode_title">扫描二维码</string>
+    <string name="login_qrcode_explanation">打开 Baby Buddy 网页端，点击右上角的用户名，选择「添加设备（Add Device）」即可查看登录二维码。</string>
+    <string name="login_qrcode_status_no_code">[未识别到二维码]</string>
+    <string name="login_qrcode_status_valid_code">[已识别登录码]</string>
+    <string name="login_qrcode_status_invalid_code">[无效的二维码]</string>
+    <string name="login_qrcode_feedback_template">已识别到 Baby Buddy 站点登录码：\n<a href="{url}">{url}</a></string>
+    <string name="login_qrcode_login_button">立即登录</string>
+    <string name="login_qrcode_cancel_button">取消</string>
+    <string name="login_qrcode_camera_access_was_disabled_message">相机权限已被禁用。\n请在 Android 系统设置中开启相机权限后重试。</string>
+
+    <string name="login_qrcode_homeassistant_beta_warning_title">Home Assistant 测试版支持提示</string>
+    <string name="login_qrcode_homeassistant_beta_warning_message">您即将登录通过 Home Assistant Ingress 托管的服务端。该登录方式目前处于测试阶段，使用过程中可能会意外退出登录，届时重新扫码登录即可。</string>
+    <string name="login_qrcode_homeassistant_beta_warning_continue">继续</string>
+
+    <!-- Generic dialog fields -->
+    <string name="dialog_ok">确定</string>
+
+    <!-- Help screen -->
+    <string name="help_title">帮助</string>
+
+    <!-- Upgrade notifications -->
+    <string name="upgrade_latest_info_title">版本更新 {version}</string>
+    <string name="upgrade_latest_info_note">新版本已支持记录所有事件类型，并对界面进行了紧凑且易用的优化。如果您在使用过程中遇到任何问题，欢迎通过主菜单中的「联系开发者」反馈。</string>
+
+    <!-- Disconnect dialog -->
+    <string name="disconnect_dialog_progress_message">正在连接服务器…</string>
+    <string name="disconnect_dialog_logout">退出登录</string>
+
+    <!-- Debugging -->
+    <string name="export_debug_logs_title">导出调试日志</string>
+    <string name="export_debug_logs_menu_item">导出调试日志</string>
+    <string name="export_debug_logs_menu_item_copy_to_clipboard">复制到剪贴板</string>
+    <string name="export_debug_logs_copied_toast">已复制到剪贴板</string>
+
+    <!-- Send message screen -->
+    <string name="send_message_info">如果您在使用应用时遇到错误或问题，可以在此向开发者发送反馈信息。为保护您的隐私，反馈不包含联系方式，开发者无法直接回复。如需直接交流，请前往 <a href="https://github.com/babybuddy/babybuddy-for-android">GitHub</a> 提交问题。</string>
+    <string name="send_message_send_title">联系开发者</string>
+    <string name="send_message_send_button">发送</string>
+    <string name="send_message_back_button">返回</string>
+    <string name="send_message_failed_message">向开发者发送消息失败</string>
+    <string name="send_message_sent_message">消息已发送给开发者</string>
+
+    <!-- Settings screen -->
+    <string name="setting_language">语言</string>
+    <array name="setting_language_options">
+        <item>跟随系统</item>
+        <item>简体中文</item>
+        <item>English</item>
+        <item>Deutsch</item>
+        <item>Nederlands</item>
+    </array>
+    <string name="setting_dark_light_mode">深色/浅色模式</string>
+    <string name="timeline_title_line_title">时间线</string>
+    <array name="setting_dark_light_mode_options">
+        <item>跟随系统</item>
+        <item>浅色</item>
+        <item>深色</item>
+    </array>
+
+    <!-- Navigation & Profile Header -->
+    <string name="nav_tab_record">记录</string>
+    <string name="nav_tab_stats">统计</string>
+    <string name="baby_age_newborn">新生儿</string>
+    <string name="baby_age_days">出生 {days} 天</string>
+    <string name="baby_age_months_days">{months} 个月 {days} 天</string>
+    <string name="baby_age_years_months">{years} 岁 {months} 个月</string>
+    <string name="login_welcome_subtitle">温馨记录宝宝每一次成长与日常照护</string>
+
+    <!-- Quick Status & Today Summary -->
+    <string name="summary_card_title">今日概览</string>
+    <string name="summary_pull_to_refresh_hint">下拉刷新最新数据</string>
+    <string name="summary_last_feeding_label">距上次喂养</string>
+    <string name="summary_last_sleep_label">距上次睡眠</string>
+    <string name="summary_last_diaper_label">距上次换尿布</string>
+    <string name="summary_time_just_now">刚刚</string>
+    <string name="summary_time_ago_m">{minutes} 分钟前</string>
+    <string name="summary_time_ago_hm">{hours} 小时 {minutes} 分钟前</string>
+    <string name="summary_time_ago_d">{days} 天前</string>
+    <string name="summary_no_record">暂无记录</string>
+    <string name="summary_today_feeding">今日喂养</string>
+    <string name="summary_today_feeding_value">{count} 次 · {amount} ml</string>
+    <string name="summary_today_feeding_count_only">{count} 次</string>
+    <string name="summary_today_sleep">今日睡眠</string>
+    <string name="summary_today_sleep_value">{hours} 小时 {minutes} 分钟</string>
+    <string name="summary_today_diaper">今日尿布</string>
+    <string name="summary_today_diaper_value">共 {total} 次（湿 {wet} / 便 {solid}）</string>
+    <string name="section_daily_care">日常照护</string>
+    <string name="section_growth_health">成长与健康</string>
+
+    <!-- Activity Tile Short Labels -->
+    <string name="tile_feeding">喂养</string>
+    <string name="tile_diaper">换尿布</string>
+    <string name="tile_sleep">睡眠</string>
+    <string name="tile_pumping">吸奶</string>
+    <string name="tile_tummy_time">趴卧</string>
+    <string name="tile_notes">备注</string>
+    <string name="tile_temperature">体温</string>
+    <string name="tile_weight">体重</string>
+    <string name="tile_height">身高</string>
+    <string name="tile_head_circumference">头围</string>
+    <string name="tile_bmi">BMI</string>
+
+    <!-- Logging Controls, Manual Mode, Presets & Units -->
+    <string name="logging_save_button">保存记录</string>
+    <string name="logging_mode_timer">实时计时</string>
+    <string name="logging_mode_manual">手动补录</string>
+    <string name="logging_start_label">开始</string>
+    <string name="logging_end_label">结束</string>
+    <string name="logging_time_label">时间</string>
+    <string name="logging_date_label">日期</string>
+    <string name="logging_preset_minus_15m">-15分钟</string>
+    <string name="logging_preset_minus_30m">-30分钟</string>
+    <string name="logging_preset_minus_1h">-1小时</string>
+    <string name="logging_preset_plus_30ml">+30 ml</string>
+    <string name="diaper_wet_label">嘘嘘（湿）</string>
+    <string name="diaper_solid_label">便便</string>
+    <string name="diaper_extra_options_label">颜色与分量</string>
+    <string name="unit_ml">ml</string>
+    <string name="unit_celsius">°C</string>
+    <string name="unit_kg">kg</string>
+    <string name="unit_cm">cm</string>
+    <string name="measurement_value_pattern">{value} {unit}</string>
+    <string name="measurement_bmi_pattern">BMI {value}</string>
+
+    <!-- Timeline Filters, Date Headers & Item Actions -->
+    <string name="filter_all">全部</string>
+    <string name="filter_growth_health">成长健康</string>
+    <string name="timeline_date_today">今天</string>
+    <string name="timeline_date_yesterday">昨天</string>
+    <string name="timeline_empty_filtered">暂无符合筛选条件的记录</string>
+    <string name="timeline_open_web_desc">在网页端打开详情</string>
+    <string name="timeline_delete_desc">删除此条记录</string>
+
+    <!-- Statistics & Charts Tab -->
+    <string name="stats_range_7d">近 7 天</string>
+    <string name="stats_range_14d">近 14 天</string>
+    <string name="stats_range_30d">近 30 天</string>
+    <string name="stats_kpi_avg_milk">日均奶量</string>
+    <string name="stats_kpi_avg_feedings">日均喂养</string>
+    <string name="stats_kpi_avg_sleep">日均睡眠</string>
+    <string name="stats_kpi_avg_diapers">日均尿布</string>
+    <string name="stats_kpi_milk_value">{amount} ml</string>
+    <string name="stats_kpi_count_value">{count} 次</string>
+    <string name="stats_kpi_hours_value">{hours} 小时</string>
+    <string name="stats_chart_feeding_title">每日喂养奶量趋势 (ml)</string>
+    <string name="stats_chart_feeding_subtitle">累计 {total} ml · 共 {count} 次（母乳 {breast} / 配方奶 {bottle} / 辅食 {solid}）</string>
+    <string name="stats_chart_sleep_title">每日睡眠时长 (小时)</string>
+    <string name="stats_chart_sleep_subtitle">累计 {hours} 小时 · 共 {count} 段睡眠</string>
+    <string name="stats_chart_diaper_title">每日换尿布次数（湿 / 便）</string>
+    <string name="stats_chart_diaper_subtitle">嘘嘘：{wet} 次 · 便便：{solid} 次 · 合计：{total} 次</string>
+    <string name="stats_chart_growth_title">成长曲线与体温趋势</string>
+    <string name="stats_growth_latest_summary">最新：{latest}（较上次 {delta}）</string>
+    <string name="stats_growth_latest_single">最新：{latest}</string>
+    <string name="stats_no_data">当前时间范围内暂无记录</string>
+    <string name="stats_loading">正在汇总统计数据…</string>
+</resources>

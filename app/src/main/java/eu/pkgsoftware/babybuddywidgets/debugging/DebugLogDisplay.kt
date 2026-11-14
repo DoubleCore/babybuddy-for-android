@@ -27,6 +27,7 @@ class DebugLogDisplay : BaseFragment() {
         fragment.debugTextArea.setText(stringBuilder)
 
         mainActivity.setTitle(getString(R.string.export_debug_logs_title))
+        mainActivity.enableBackNavigationButton(true)
     }
 
     override fun onCreateView(
@@ -41,7 +42,7 @@ class DebugLogDisplay : BaseFragment() {
                 "BabyBuddy Debug Data", fragment.debugTextArea.text
             ))
 
-            Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, R.string.export_debug_logs_copied_toast, Toast.LENGTH_SHORT).show()
         }
 
         return fragment.root
