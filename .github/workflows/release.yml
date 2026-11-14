@@ -1,0 +1,226 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Release tag (leave blank to use version from app/build.gradle with v prefix, e.g. v2.6.4)'
+        required: false
+        default: ''
+      draft:
+        description: 'Create release as draft'
+        type: boolean
+        required: false
+        default: false
+      prerelease:
+        description: 'Create release as pre-release'
+        type: boolean
+        required: false
+        default: false
+      build_bundle:
+        description: 'Build Google Play App Bundle (.aab)'
+        type: boolean
+        required: false
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Release Android App
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pandoc make gcc g++ imagemagick jq
+
+      - name: Set up Python
+        uses: actions/setup-python@v5.1.0
+        with:
+          python-version: '3.12'
+
+      - name: Install Python packages
+        run: |
+          python -m pip install --upgrade pip
+          pip install pipenv cython
+
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+        with:
+          submodules: true
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4.5.0
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3.2.2
+
+      - name: Check build prerequisites
+        run: |
+          bash check-build-prerequisites.sh
+
+      - name: Determine version and release tag
+        id: vars
+        run: |
+          # Read versionName and versionCode from app/build.gradle
+          GRADLE_VERSION=$(grep -oP 'versionName\s+"?\K[^"\s]+' app/build.gradle)
+          GRADLE_CODE=$(grep -oP 'versionCode\s+\K\d+' app/build.gradle)
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.tag_name }}" ]; then
+            TAG_NAME="${{ github.event.inputs.tag_name }}"
+          elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            TAG_NAME="${GITHUB_REF#refs/tags/}"
+          else
+            TAG_NAME="v${GRADLE_VERSION}"
+          fi
+
+          # Pure version string without leading 'v'
+          VERSION="${TAG_NAME#v}"
+
+          echo "tag_name=${TAG_NAME}" >> $GITHUB_OUTPUT
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "gradle_version=${GRADLE_VERSION}" >> $GITHUB_OUTPUT
+          echo "version_code=${GRADLE_CODE}" >> $GITHUB_OUTPUT
+
+          echo "Determined release tag: ${TAG_NAME}, version: ${VERSION} (build.gradle version: ${GRADLE_VERSION}, code: ${GRADLE_CODE})"
+
+      - name: Prepare Signing Keystore
+        id: keystore
+        env:
+          SIGNING_KEYSTORE_BASE64: ${{ secrets.SIGNING_KEYSTORE_BASE64 || secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.SIGNING_KEYSTORE_PASSWORD || secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS || secrets.KEY_ALIAS || 'key0' }}
+          KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD || secrets.KEY_PASSWORD }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/keystore"
+          KEYSTORE_FILE="$RUNNER_TEMP/keystore/release.jks"
+
+          if [ -n "$SIGNING_KEYSTORE_BASE64" ]; then
+            echo "Using release keystore provided via GitHub Secrets"
+            echo "$SIGNING_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_FILE"
+            KS_PASS="${KEYSTORE_PASSWORD}"
+            K_ALIAS="${KEY_ALIAS}"
+            K_PASS="${KEY_PASSWORD:-$KS_PASS}"
+            echo "custom_signed=true" >> $GITHUB_OUTPUT
+          else
+            echo "::warning::No SIGNING_KEYSTORE_BASE64 secret provided. Creating a temporary self-signed keystore for release artifacts."
+            KS_PASS="android_temp_pass"
+            K_ALIAS="key0"
+            K_PASS="android_temp_pass"
+            keytool -genkeypair -v -keystore "$KEYSTORE_FILE" \
+              -alias "$K_ALIAS" -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass "$KS_PASS" -keypass "$K_PASS" \
+              -dname "CN=BabyBuddy Android, OU=CI, O=BabyBuddy, C=US"
+            echo "custom_signed=false" >> $GITHUB_OUTPUT
+          fi
+
+          echo "store_file=$KEYSTORE_FILE" >> $GITHUB_OUTPUT
+          echo "store_password=$KS_PASS" >> $GITHUB_OUTPUT
+          echo "key_alias=$K_ALIAS" >> $GITHUB_OUTPUT
+          echo "key_password=$K_PASS" >> $GITHUB_OUTPUT
+
+      - name: Build Release APK
+        run: |
+          ./gradlew --no-daemon assembleRelease -PskipIntegrationTests \
+            -Pandroid.injected.signing.store.file="${{ steps.keystore.outputs.store_file }}" \
+            -Pandroid.injected.signing.store.password="${{ steps.keystore.outputs.store_password }}" \
+            -Pandroid.injected.signing.key.alias="${{ steps.keystore.outputs.key_alias }}" \
+            -Pandroid.injected.signing.key.password="${{ steps.keystore.outputs.key_password }}"
+
+      - name: Build Release AAB (Android App Bundle)
+        if: ${{ github.event_name == 'push' || github.event.inputs.build_bundle != 'false' }}
+        run: |
+          ./gradlew --no-daemon bundleRelease -PskipIntegrationTests \
+            -Pandroid.injected.signing.store.file="${{ steps.keystore.outputs.store_file }}" \
+            -Pandroid.injected.signing.store.password="${{ steps.keystore.outputs.store_password }}" \
+            -Pandroid.injected.signing.key.alias="${{ steps.keystore.outputs.key_alias }}" \
+            -Pandroid.injected.signing.key.password="${{ steps.keystore.outputs.key_password }}"
+
+      - name: Organize Release Artifacts & Generate Checksums
+        run: |
+          mkdir -p release-assets
+          TAG_NAME="${{ steps.vars.outputs.tag_name }}"
+
+          # Locate and copy release APK
+          APK_SRC=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
+          if [ -f "$APK_SRC" ]; then
+            APK_NAME="babybuddy-for-android-${TAG_NAME}.apk"
+            cp "$APK_SRC" "release-assets/$APK_NAME"
+            echo "Copied APK to release-assets/$APK_NAME"
+          else
+            echo "::error::Release APK not found in app/build/outputs/apk/release"
+            exit 1
+          fi
+
+          # Locate and copy release AAB if available
+          AAB_SRC=$(find app/build/outputs/bundle/release -name "*.aab" 2>/dev/null | head -n 1 || true)
+          if [ -f "$AAB_SRC" ]; then
+            AAB_NAME="babybuddy-for-android-${TAG_NAME}.aab"
+            cp "$AAB_SRC" "release-assets/$AAB_NAME"
+            echo "Copied AAB to release-assets/$AAB_NAME"
+          fi
+
+          # Generate SHA256 checksums
+          cd release-assets
+          sha256sum * > SHA256SUMS.txt
+          cd ..
+
+      - name: Generate Release Notes Body
+        id: release_notes
+        run: |
+          NOTES_FILE="$RUNNER_TEMP/release_notes.md"
+          TAG_NAME="${{ steps.vars.outputs.tag_name }}"
+
+          echo "### Baby Buddy for Android ${TAG_NAME}" > "$NOTES_FILE"
+          echo "" >> "$NOTES_FILE"
+          echo "#### Downloads" >> "$NOTES_FILE"
+          echo "- **APK**: \`babybuddy-for-android-${TAG_NAME}.apk\`" >> "$NOTES_FILE"
+          if [ -f "release-assets/babybuddy-for-android-${TAG_NAME}.aab" ]; then
+            echo "- **Google Play Bundle (AAB)**: \`babybuddy-for-android-${TAG_NAME}.aab\`" >> "$NOTES_FILE"
+          fi
+          echo "- **Checksums**: \`SHA256SUMS.txt\`" >> "$NOTES_FILE"
+          echo "" >> "$NOTES_FILE"
+
+          if [ "${{ steps.keystore.outputs.custom_signed }}" = "false" ]; then
+            echo "> [!WARNING]" >> "$NOTES_FILE"
+            echo "> This build was signed using a temporary CI self-signed certificate. For production releases, configure \`SIGNING_KEYSTORE_BASE64\` in repository secrets." >> "$NOTES_FILE"
+            echo "" >> "$NOTES_FILE"
+          fi
+
+          # Append Third Party Attributions if available
+          if [ -f "tools/release/attributions-to-release.py" ]; then
+            python3 tools/release/attributions-to-release.py >> "$NOTES_FILE" 2>/dev/null || true
+          fi
+
+          echo "notes_file=$NOTES_FILE" >> $GITHUB_OUTPUT
+
+      - name: Upload Artifacts to Workflow Run
+        uses: actions/upload-artifact@v4
+        with:
+          name: babybuddy-android-${{ steps.vars.outputs.tag_name }}
+          path: release-assets/*
+
+      - name: Create or Update GitHub Release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.vars.outputs.tag_name }}
+          target_commitish: ${{ github.sha }}
+          name: Baby Buddy for Android ${{ steps.vars.outputs.tag_name }}
+          body_path: ${{ steps.release_notes.outputs.notes_file }}
+          draft: ${{ github.event.inputs.draft == 'true' }}
+          prerelease: ${{ github.event.inputs.prerelease == 'true' }}
+          files: release-assets/*
+          generate_release_notes: true
