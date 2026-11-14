@@ -26,6 +26,17 @@ jobs:
       - uses: ./.github/actions/setup-build
       - name: Build debug APK, run unit tests and lint
         run: ./gradlew --no-daemon --stacktrace :app:assembleDebug :app:testDebugUnitTest :app:lintDebug -PskipIntegrationTests
+      - name: Verify release signing and bundle build with a disposable test key
+        env:
+          SIGNING_STORE_FILE: ${{ runner.temp }}/signing-smoke.jks
+          SIGNING_STORE_PASSWORD: android
+          SIGNING_KEY_ALIAS: signing-smoke
+          SIGNING_KEY_PASSWORD: android
+        run: |
+          keytool -genkeypair -keystore "$SIGNING_STORE_FILE" -alias "$SIGNING_KEY_ALIAS" -keyalg RSA -keysize 2048 -validity 1 -storepass:env SIGNING_STORE_PASSWORD -keypass:env SIGNING_KEY_PASSWORD -dname 'CN=CI verification only'
+          ./gradlew --no-daemon --stacktrace :app:assembleRelease :app:bundleRelease -PskipIntegrationTests
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose app/build/outputs/apk/release/app-release.apk
+          jarsigner -verify app/build/outputs/bundle/release/app-release.aab
       - name: Verify translations
         run: bash tools/workflows/check-translations.sh
       - name: Upload installable test APK
@@ -45,6 +56,9 @@ jobs:
             app/build/reports/
             app/build/test-results/
           retention-days: 14
+      - name: Remove disposable signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/signing-smoke.jks"
       - name: Write build summary
         env:
           ARTIFACT_URL: ${{ steps.apk.outputs.artifact-url }}

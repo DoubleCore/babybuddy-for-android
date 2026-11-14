@@ -5,6 +5,7 @@
 推送 main/master、feat/**、ci/**，以及所有 PR，自动运行 `CI checks`；也可手动运行。
 环境统一为 Ubuntu 24.04、JDK 21、Python 3.12、Android 37.0（兼容 AGP 的 android-37 路径）、NDK 27.3.13750724。
 执行 debug APK 编译、离线单元测试、lint 和所有语言目录的翻译检查。
+CI 额外使用一次性测试密钥验证 release APK/AAB 编译及签名；这些验证产物不发布、不供安装，只有 debug APK 上传为测试下载。
 需要真实 Baby Buddy 服务的 ClientV2IntegrationTest 通过项目既有 skipIntegrationTests 参数排除；没有运行设备/UI 测试。
 项目原有 lint.abortOnError=false，因此 lint 报告保留，但 lint 问题不会阻断构建。
 成功后在 Actions → 对应运行 → Artifacts 下载 debug APK；报告保留 14 天，APK 保留 30 天。
