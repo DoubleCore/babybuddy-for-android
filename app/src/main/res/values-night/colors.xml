@@ -44,4 +44,6 @@
     <color name="head_circumference_accent">#FFC58AF9</color>
     <color name="bmi_enabled">#FF4A2835</color>
     <color name="bmi_accent">#FFF48FB1</color>
+    <color name="medication_enabled">#FF4A2533</color>
+    <color name="medication_accent">#FFF48FB1</color>
 </resources>

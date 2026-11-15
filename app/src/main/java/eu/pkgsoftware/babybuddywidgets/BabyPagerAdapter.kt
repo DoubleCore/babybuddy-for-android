@@ -5,6 +5,7 @@ import android.view.ViewGroup
 import android.widget.RelativeLayout
 import androidx.recyclerview.widget.RecyclerView
 import eu.pkgsoftware.babybuddywidgets.databinding.BabyManagerBinding
+import eu.pkgsoftware.babybuddywidgets.logic.ChildListener
 import eu.pkgsoftware.babybuddywidgets.logic.ChildrenStateTracker
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.Child
 
@@ -15,11 +16,13 @@ class BabyPagerAdapter(val stateTracker: ChildrenStateTracker) : RecyclerView.Ad
     private var fragment: BaseFragment? = null
     private var children = emptyArray<Child>()
 
+    private val childListener: ChildListener = { newChildren ->
+        children = newChildren
+        notifyDataSetChanged()
+    }
+
     init {
-        stateTracker.addChildListener({ newChildren ->
-            children = newChildren
-            notifyDataSetChanged()
-        })
+        stateTracker.addChildListener(childListener)
     }
 
     fun postInit(
@@ -30,13 +33,11 @@ class BabyPagerAdapter(val stateTracker: ChildrenStateTracker) : RecyclerView.Ad
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BabyLayoutHolder {
         val babyBinding = BabyManagerBinding.inflate(
-            fragment!!.getLayoutInflater(), null, false
+            fragment!!.layoutInflater, null, false
         )
-        val v: View = babyBinding.getRoot()
-        v.setLayoutParams(
-            RelativeLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
-            )
+        val v: View = babyBinding.root
+        v.layoutParams = RelativeLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
         )
 
         val holder = BabyLayoutHolder(fragment!!, babyBinding)
@@ -69,8 +70,10 @@ class BabyPagerAdapter(val stateTracker: ChildrenStateTracker) : RecyclerView.Ad
     }
 
     fun close() {
+        stateTracker.removeChildListener(childListener)
         for (h in holders) {
             h.close()
         }
+        holders.clear()
     }
 }

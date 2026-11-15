@@ -3,78 +3,49 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/nav_graph"
-    app:startDestination="@id/LoginFragment">
+    app:startDestination="@id/loggedInFragment2">
 
-    <fragment
-        android:id="@+id/LoginFragment"
-        android:name="eu.pkgsoftware.babybuddywidgets.login.LoginFragment"
-        android:label="@string/first_fragment_label"
-        tools:layout="@layout/login_fragment" >
-        <action
-            android:id="@+id/action_LoginFragment_to_loggedInFragment2"
-            app:destination="@id/loggedInFragment2"
-            app:launchSingleTop="false"
-            app:popUpTo="@id/LoginFragment"
-            app:popUpToInclusive="true" />
-        <action
-            android:id="@+id/action_LoginFragment_to_QRCodeLoginFragment"
-            app:destination="@id/QRCodeLoginFragment" />
-    </fragment>
     <fragment
         android:id="@+id/loggedInFragment2"
         android:name="eu.pkgsoftware.babybuddywidgets.LoggedInFragment"
         android:label="@string/logged_in_label"
-        tools:layout="@layout/logged_in_fragment" >
-        <action
-            android:id="@+id/logoutOperation"
-            app:destination="@id/LoginFragment"
-            app:popUpTo="@id/loggedInFragment2"
-            app:popUpToInclusive="true" />
-    </fragment>
+        tools:layout="@layout/logged_in_fragment" />
+
     <fragment
         android:id="@+id/aboutFragment"
         android:name="eu.pkgsoftware.babybuddywidgets.AboutFragment"
         android:label="@string/about_page_title" />
+    <action
+        android:id="@+id/global_aboutFragment"
+        app:destination="@id/aboutFragment" />
 
-    <action android:id="@+id/global_aboutFragment" app:destination="@id/aboutFragment"/>
     <fragment
         android:id="@+id/help"
         android:name="eu.pkgsoftware.babybuddywidgets.Help"
         android:label="@string/help_title"
         tools:layout="@layout/help_fragment" />
-    <action android:id="@+id/global_showHelp" app:destination="@id/help" />
-    <fragment
-        android:id="@+id/QRCodeLoginFragment"
-        android:name="eu.pkgsoftware.babybuddywidgets.login.QRCodeLoginFragment"
-        android:label="@string/login_qrcode_title"
-        tools:layout="@layout/qr_code_login_fragment" >
-        <action
-            android:id="@+id/action_QRCodeLoginFragment_to_loggedInFragment2"
-            app:destination="@id/loggedInFragment2"
-            app:popUpTo="@id/LoginFragment"
-            app:popUpToInclusive="true" />
-        <action
-            android:id="@+id/action_QRCodeLoginFragment_to_LoginFragment_onFailure"
-            app:destination="@id/LoginFragment"
-            app:popUpTo="@id/LoginFragment"
-            app:popUpToInclusive="true" />
-        <argument
-            android:name="noCameraAccess"
-            app:argType="boolean"
-            android:defaultValue="false" />
-    </fragment>
+    <action
+        android:id="@+id/global_showHelp"
+        app:destination="@id/help" />
+
     <fragment
         android:id="@+id/debugLogDisplay"
         android:name="eu.pkgsoftware.babybuddywidgets.debugging.DebugLogDisplay"
         android:label="@string/export_debug_logs_title"
         tools:layout="@layout/fragment_debug_log_display" />
-    <action android:id="@+id/action_global_debugLogDisplay" app:destination="@id/debugLogDisplay"/>
+    <action
+        android:id="@+id/action_global_debugLogDisplay"
+        app:destination="@id/debugLogDisplay" />
+
     <fragment
         android:id="@+id/contactDeveloperFragment"
         android:name="eu.pkgsoftware.babybuddywidgets.ContactDeveloperFragment"
         android:label="@string/send_message_send_title"
         tools:layout="@layout/fragment_contact_developer" />
-    <action android:id="@+id/action_global_contactDeveloperFragment" app:destination="@id/contactDeveloperFragment"/>
+    <action
+        android:id="@+id/action_global_contactDeveloperFragment"
+        app:destination="@id/contactDeveloperFragment" />
+
     <fragment
         android:id="@+id/settingsFragment"
         android:name="eu.pkgsoftware.babybuddywidgets.SettingsFragment"

@@ -41,6 +41,24 @@
             android:layout_weight="1"
             android:orientation="vertical">
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/noteTimeButton"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="34dp"
+                android:layout_marginBottom="4dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:minWidth="0dp"
+                android:paddingStart="6dp"
+                android:paddingEnd="8dp"
+                android:textAllCaps="false"
+                android:textColor="@color/text_secondary_warm"
+                android:textSize="12sp"
+                app:icon="@drawable/ic_schedule_clock"
+                app:iconSize="15dp"
+                app:iconTint="@color/text_secondary_warm" />
+
             <EditText
                 android:id="@+id/noteEditor"
                 android:layout_width="match_parent"
@@ -57,6 +75,51 @@
                 android:paddingEnd="12dp"
                 android:paddingBottom="10dp"
                 android:textSize="14sp" />
+
+            <ImageView
+                android:id="@+id/noteAttachedImage"
+                android:layout_width="match_parent"
+                android:layout_height="136dp"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_soft_pill"
+                android:importantForAccessibility="no"
+                android:scaleType="centerCrop"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/notePickPhotoButton"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="38dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:text="@string/note_attach_photo"
+                    android:textAllCaps="false"
+                    android:textSize="12sp"
+                    app:cornerRadius="10dp"
+                    app:icon="@drawable/ic_photo_outline"
+                    app:iconSize="16dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/noteRemovePhotoButton"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="38dp"
+                    android:layout_marginStart="6dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:text="@string/child_profile_remove_photo"
+                    android:textAllCaps="false"
+                    android:textSize="12sp"
+                    android:visibility="gone" />
+            </LinearLayout>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/sendButton"

@@ -251,7 +251,7 @@ class Help : BaseFragment() {
                     binding.helpPager.setCurrentItem(
                         Math.min(
                             adapter.itemCount - 1,
-                            Math.max(0, binding.helpPager.currentItem)
+                            Math.max(0, binding.helpPager.currentItem + horz)
                         ), true
                     )
                 }

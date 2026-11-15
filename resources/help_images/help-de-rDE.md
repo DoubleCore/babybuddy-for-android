@@ -1,69 +1,71 @@
-# Logging in
+# Offline-Schnellstart
 
-## Login
+## 100% Lokal & Privat
 
-![](direct/help_login_page.png)
+![](ic_baby_face.xml)
 
-Wenn Sie sich mit Ihrem Babybuddy-Server verbinden möchten, haben Sie zwei Möglichkeiten: Entweder Sie geben die URL Ihres Servers, den Benutzernamen und das Passwort ein und drücken Sie dann auf "Anmelden", oder Sie wählen die QR-Code-Option (nach unten scrollen für mehr Details).
+Baby Buddy läuft zu 100% offline auf Ihrem Smartphone — ohne Server, ohne Benutzerkonto und ohne Internet- oder Kameraberechtigungen. Tippen Sie beim ersten Start auf Baby hinzufügen, um ein Profil (Name, Geburtsdatum & optionale Uhrzeit, errechneter Geburtstermin für korrigiertes Frühchen-Alter, Geschlecht für WHO-Wachstumskurven und Foto) anzulegen oder ein Backup wiederherzustellen.
 
-## QR Code login
+## Mehrere Babys verwalten
 
-![](direct/help_login_qrcode.png)
+![](help_overview_2.png)
 
-Um sich mit einem QR-Code anzumelden, melden Sie sich zunächst auf Ihrem Babybuddy-Server mit einem anderen Gerät an. Danach besuchen Sie die Seite "Ein Gerät hinzufügen" und scannen Sie den QR-Code mit der App auf Ihrem Telefon. Wenn der Scan erfolgreich war, können Sie sich mit der App bei Babybuddy anmelden.
+Im Reiter Erfassen sehen Sie oben die Tagesübersicht, darunter die Schnellwahl-Kacheln und unten die Zeitleiste. Bei Zwillingen oder mehreren Kindern können Sie horizontal wischen oder oben auf die Profilleiste tippen, um Profile zu wechseln oder zu bearbeiten.
 
-## Unsicherer Login
+# Live-Timer & Schnell-Timer
 
-![](screenshots/help_insecure_http_warning.png)
+## Live-Timer starten
 
-Wenn Sie eine http-Adresse anstelle einer HTTPS-Adresse verwenden, wird die App eine Warnung anzeigen. Bitte verwenden Sie HTTP Anmeldungen nur für lokale installationen von BabyBuddy-Servern in Ihrem eigenen Netzwerk.
+![](help_play_button_highlight.png)
 
-## Home Assistant Ingress
+Tippen Sie auf Füttern, Schlaf, Bauchlage oder Abpumpen, um einen persistenten Live-Timer zu starten (bleibt auch nach Neustarts erhalten), oder wechseln Sie auf Manuell mit praktischen Schnellbuttons (-15 Min., -30 Min., -1 Std.).
 
-![](direct/help_login_homeassistant.png)
+## Startzeit anpassen & Schnell-Timer
 
-Babybuddy für Android hat teilweise Unterstützung für die Anmeldung bei einem Babybuddy-Server, der auf einem Homeassistant-Ingress-Server gehostet wird. Hierfür muss Sie die QR-Code-Anmeldungs-Option verwendet werden.
+![](help_timer_interface.png)
 
-# Übersicht
+Tippen Sie auf die laufende Timer-Uhr, um die Startzeit anzupassen (-5 Min., -15 Min., genaue Zeit wählen oder neu starten). Über + Schnell-Timer lassen sich beliebig viele benannte Timer parallel starten und mit einem Fingertipp als Schlaf, Mahlzeit, Bauchlage oder Abpumpen speichern.
 
-## Übersicht
+## Speichern & Automatischer Tagschlaf
 
-![](screenshots/help_overview_2.png)
+![](help_save_button_highlight.png)
 
-Nachdem Sie sich angemeldet haben, sehen Sie Schaltflächen zur Aktivitätsprotokollierung am oberen Rand des Bildschirms und eine Ereignisliste kürzlich gespeicherten Aktivitäten darunter. Wenn Sie Aktivitäten für mehrere Kinder protokollieren, können Sie zwischen den Kindern wechseln, indem Sie den Bildschirm nach rechts oder links blättern.
+Tragen Sie die Details ein und tippen Sie auf Eintrag speichern. Schlafphasen innerhalb Ihres konfigurierten Tageszeitfensters werden automatisch als Tagschlaf (Nickerchen) erkannt und können jederzeit manuell umgeschaltet werden.
 
-# Timer-Protokollierung
+# Alle 12 Pflege- & Gesundheitsdaten
 
-## Timer starten
+## Windeln, Meilensteine & Foto-Notizen
 
-![](direct/help_play_button_highlight.png)
+![](help_diaper_logging.png)
 
-Um einen Timer zu starten, drücken Sie eine der Timer-Ereignis-Schaltflächen oben auf dem Bildschirm.
+Erfassen Sie nasse, volle oder trockene Windeln inklusive Menge und allen 8 Stuhlfarben (Schwarz, Braun, Grau, Grün, Orange, Rot, Weiß, Gelb). Notizen unterstützen lokale Fotoanhänge mit Vollbildansicht und Bauchlage speichert Entwicklungsmeilensteine.
 
-## Timer protokollierung
+## Medikamente & Wachstumsmessungen
 
-![](screenshots/help_timer_interface.png)
+![](ic_medication.xml)
 
-Wenn Sie einen Timer gestartet haben, öffnet sich eine Bedienfläche zum Eintragen von Details für den gerade gestarteten Timer. Füllen Sie alle Informationen aus, die Sie protokollieren möchten. Sobald alle erforderlichen Felder ausgefüllt sind, erscheint ein Speichern-Button.
+Protokollieren Sie Medikamente & Präparate (mg, ml, Tabletten, Tropfen) mit Schnellauswahl zuletzt genutzter Namen sowie optionaler Erinnerung für die nächste Dosis (4h/6h/8h/12h/24h). Unter Wachstum & Gesundheit erfassen Sie Temperatur, Gewicht, Größe, Kopfumfang und den automatisch berechneten BMI.
 
-## Timer stoppen
+# Zeitleiste, Tags & Bearbeitung
 
-![](direct/help_save_button_highlight.png)
+## Suche, Farbige Tags & Direktes Bearbeiten
 
-Wenn der Speichern-Button erscheint, können Sie den Timer stoppen, indem Sie den Speichern-Button drücken. Alternativ können Sie auch erneut auf die Timer-Schaltfläche oben auf dem Bildschirm klicken, um den Timer zu abzubrechen und keine Aktivität zu speichern.
+![](help_events.png)
 
-# Ereignisprotokollierung
+Ordnen Sie beliebigen Einträgen farbige Schlagwörter (Tags) zu und filtern Sie die Zeitleiste nach Kategorie, Tag oder Suchbegriff. Tippen Sie auf Bearbeiten oder halten Sie einen Eintrag gedrückt, um alle Felder direkt lokal auf Ihrem Gerät anzupassen.
 
-## Windeln und Notizen
+# Statistik & WHO-Wachstumskurven
 
-![](screenshots/help_diaper_logging.png)
+## 18+ Auswertungen & WHO-Perzentile
 
-Neben Timer-Aktivitäten können Sie auch Ereignisse wie Windelwechsel und allgemeine Notizen speichern. Die Steuerelemente funktionieren genauso wie bei der Timer-Protokollierung, aber ohne die Timerfunktion.
+![](ic_nav_stats.xml)
 
-# Ereignisgeschichte
+Im Reiter Statistik analysieren Sie 7, 14, 30, 90 Tage oder den gesamten Zeitraum: Trinkmengen, Dauer, Fütter- & Wachintervalle, 24h-Schlaf- und Füttermuster, Nacht- vs. Tagschlaf, Brustseiten-Verteilung, Stuhlfarben sowie offizielle WHO-Wachstumskurven (P3–P97) mit Z-Score und korrigiertem Alter.
 
-## Ereignisgeschichte
+# Backup, Export & Wiederherstellung
 
-![](screenshots/help_events.png)
+## ZIP-, JSON- & CSV-Datensicherung
 
-In Ereignisgeschichte auf dem unteren Teil des Bildschirms werden die letzten Aktivitäten des gerade ausgewählten Kindes angezeigt. Sie können Einträge bearbeiten, indem Sie den Eintrag in der Geschichte für drei Sekunden drücken. Um einen Eintrag zu löschen, drücken Sie den roten "Löschen"-Button.
+![](ic_backup_outline.xml)
+
+Über Backup, Export & Wiederherstellung im Menü oder in den Einstellungen exportieren oder teilen Sie vollständige .zip-Archive (Datenbank, Fotos & Einstellungen), .json-Snapshots oder .csv-Tabellen (kompatibel mit Baby-Buddy-Server-CSV-Dateien) — wahlweise per Intelligent zusammenführen oder Alle Daten ersetzen.

@@ -14,46 +14,67 @@
         android:paddingStart="16dp"
         android:paddingTop="8dp"
         android:paddingEnd="16dp"
-        android:paddingBottom="24dp">
+        android:paddingBottom="28dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Period Selector Chips -->
-            <com.google.android.material.chip.ChipGroup
-                android:id="@+id/rangeChipGroup"
+            <!-- Period Selector Chips (7d / 14d / 30d / 90d / All) -->
+            <HorizontalScrollView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:chipSpacingHorizontal="8dp"
-                app:selectionRequired="true"
-                app:singleSelection="true">
+                android:scrollbars="none">
 
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipRange7d"
-                    style="@style/Widget.MaterialComponents.Chip.Choice"
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/rangeChipGroup"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:checked="true"
-                    android:text="@string/stats_range_7d" />
+                    app:chipSpacingHorizontal="8dp"
+                    app:selectionRequired="true"
+                    app:singleLine="true"
+                    app:singleSelection="true">
 
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipRange14d"
-                    style="@style/Widget.MaterialComponents.Chip.Choice"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/stats_range_14d" />
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipRange7d"
+                        style="@style/Widget.MaterialComponents.Chip.Choice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:text="@string/stats_range_7d" />
 
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipRange30d"
-                    style="@style/Widget.MaterialComponents.Chip.Choice"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/stats_range_30d" />
-            </com.google.android.material.chip.ChipGroup>
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipRange14d"
+                        style="@style/Widget.MaterialComponents.Chip.Choice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/stats_range_14d" />
 
-            <!-- KPI Summary Card (2x2 Grid) -->
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipRange30d"
+                        style="@style/Widget.MaterialComponents.Chip.Choice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/stats_range_30d" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipRange90d"
+                        style="@style/Widget.MaterialComponents.Chip.Choice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/stats_range_90d" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipRangeAll"
+                        style="@style/Widget.MaterialComponents.Chip.Choice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/stats_range_all" />
+                </com.google.android.material.chip.ChipGroup>
+            </HorizontalScrollView>
+
+            <!-- KPI Summary Card (card_statistics: 4x2 Grid + Breastfeeding L/R Breakdown) -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -88,7 +109,7 @@
                                 android:layout_height="wrap_content"
                                 android:text="@string/stats_kpi_avg_milk"
                                 android:textColor="@color/text_secondary_warm"
-                                android:textSize="12sp" />
+                                android:textSize="11.5sp" />
 
                             <TextView
                                 android:id="@+id/kpiAvgMilkValue"
@@ -97,7 +118,7 @@
                                 android:layout_marginTop="2dp"
                                 android:text="0 ml"
                                 android:textColor="@color/feeding_accent"
-                                android:textSize="18sp"
+                                android:textSize="17sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
 
@@ -113,7 +134,7 @@
                                 android:layout_height="wrap_content"
                                 android:text="@string/stats_kpi_avg_feedings"
                                 android:textColor="@color/text_secondary_warm"
-                                android:textSize="12sp" />
+                                android:textSize="11.5sp" />
 
                             <TextView
                                 android:id="@+id/kpiAvgFeedingsValue"
@@ -122,7 +143,7 @@
                                 android:layout_marginTop="2dp"
                                 android:text="0x"
                                 android:textColor="@color/text_primary_warm"
-                                android:textSize="18sp"
+                                android:textSize="17sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
                     </LinearLayout>
@@ -130,7 +151,7 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
+                        android:layout_marginTop="6dp"
                         android:baselineAligned="false"
                         android:orientation="horizontal">
 
@@ -146,7 +167,7 @@
                                 android:layout_height="wrap_content"
                                 android:text="@string/stats_kpi_avg_sleep"
                                 android:textColor="@color/text_secondary_warm"
-                                android:textSize="12sp" />
+                                android:textSize="11.5sp" />
 
                             <TextView
                                 android:id="@+id/kpiAvgSleepValue"
@@ -155,7 +176,7 @@
                                 android:layout_marginTop="2dp"
                                 android:text="0 h"
                                 android:textColor="@color/sleep_accent"
-                                android:textSize="18sp"
+                                android:textSize="17sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
 
@@ -171,7 +192,7 @@
                                 android:layout_height="wrap_content"
                                 android:text="@string/stats_kpi_avg_diapers"
                                 android:textColor="@color/text_secondary_warm"
-                                android:textSize="12sp" />
+                                android:textSize="11.5sp" />
 
                             <TextView
                                 android:id="@+id/kpiAvgDiapersValue"
@@ -180,14 +201,141 @@
                                 android:layout_marginTop="2dp"
                                 android:text="0x"
                                 android:textColor="@color/diaper_accent"
-                                android:textSize="18sp"
+                                android:textSize="17sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
                     </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:baselineAligned="false"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:padding="4dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/stats_kpi_feed_interval"
+                                android:textColor="@color/text_secondary_warm"
+                                android:textSize="11.5sp" />
+
+                            <TextView
+                                android:id="@+id/kpiAvgFeedIntervalValue"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="—"
+                                android:textColor="@color/text_primary_warm"
+                                android:textSize="14.5sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:padding="4dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/stats_kpi_awake_window"
+                                android:textColor="@color/text_secondary_warm"
+                                android:textSize="11.5sp" />
+
+                            <TextView
+                                android:id="@+id/kpiAvgAwakeValue"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="—"
+                                android:textColor="@color/text_primary_warm"
+                                android:textSize="14.5sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:baselineAligned="false"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:padding="4dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/stats_kpi_diaper_interval"
+                                android:textColor="@color/text_secondary_warm"
+                                android:textSize="11.5sp" />
+
+                            <TextView
+                                android:id="@+id/kpiAvgDiaperIntervalValue"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="—"
+                                android:textColor="@color/text_primary_warm"
+                                android:textSize="14.5sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:padding="4dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/stats_kpi_growth_rate"
+                                android:textColor="@color/text_secondary_warm"
+                                android:textSize="11.5sp" />
+
+                            <TextView
+                                android:id="@+id/kpiGrowthRateValue"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="—"
+                                android:textColor="@color/weight_accent"
+                                android:textSize="14.5sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/kpiBreastDetailText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:paddingStart="4dp"
+                        android:paddingEnd="4dp"
+                        android:textColor="@color/text_secondary_warm"
+                        android:textSize="11.5sp"
+                        android:visibility="gone" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Feeding Chart Card -->
+            <!-- Feeding Reports Card (5 Reports) -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -212,11 +360,69 @@
                         android:textSize="15sp"
                         android:textStyle="bold" />
 
+                    <HorizontalScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:scrollbars="none">
+
+                        <com.google.android.material.chip.ChipGroup
+                            android:id="@+id/feedingReportChipGroup"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:chipSpacingHorizontal="6dp"
+                            app:selectionRequired="true"
+                            app:singleLine="true"
+                            app:singleSelection="true">
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chipFeedAmounts"
+                                style="@style/Widget.MaterialComponents.Chip.Choice"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:checked="true"
+                                android:text="@string/stats_tab_feed_amounts"
+                                android:textSize="12sp" />
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chipFeedPattern"
+                                style="@style/Widget.MaterialComponents.Chip.Choice"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/stats_tab_24h_pattern"
+                                android:textSize="12sp" />
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chipFeedDurations"
+                                style="@style/Widget.MaterialComponents.Chip.Choice"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/stats_tab_durations"
+                                android:textSize="12sp" />
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chipFeedIntervals"
+                                style="@style/Widget.MaterialComponents.Chip.Choice"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/stats_tab_intervals"
+                                android:textSize="12sp" />
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chipFeedTypes"
+                                style="@style/Widget.MaterialComponents.Chip.Choice"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/stats_tab_types_methods"
+                                android:textSize="12sp" />
+                        </com.google.android.material.chip.ChipGroup>
+                    </HorizontalScrollView>
+
                     <TextView
                         android:id="@+id/feedingChartSubtitle"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="3dp"
+                        android:layout_marginTop="4dp"
                         android:textColor="@color/text_secondary_warm"
                         android:textSize="12sp" />
 
@@ -225,10 +431,24 @@
                         android:layout_width="match_parent"
                         android:layout_height="176dp"
                         android:layout_marginTop="8dp" />
+
+                    <eu.pkgsoftware.babybuddywidgets.stats.DailyPatternChartView
+                        android:id="@+id/feedingPatternChart"
+                        android:layout_width="match_parent"
+                        android:layout_height="220dp"
+                        android:layout_marginTop="8dp"
+                        android:visibility="gone" />
+
+                    <eu.pkgsoftware.babybuddywidgets.stats.CategoryBreakdownView
+                        android:id="@+id/feedingBreakdownView"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:visibility="gone" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Sleep Chart Card -->
+            <!-- Sleep Reports Card (4 Reports) -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -253,23 +473,80 @@
                         android:textSize="15sp"
                         android:textStyle="bold" />
 
+                    <HorizontalScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:scrollbars="none">
+
+                        <com.google.android.material.chip.ChipGroup
+                            android:id="@+id/sleepReportChipGroup"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:chipSpacingHorizontal="6dp"
+                            app:selectionRequired="true"
+                            app:singleLine="true"
+                            app:singleSelection="true">
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chipSleepTotals"
+                                style="@style/Widget.MaterialComponents.Chip.Choice"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:checked="true"
+                                android:text="@string/stats_tab_sleep_totals"
+                                android:textSize="12sp" />
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chipSleepPattern"
+                                style="@style/Widget.MaterialComponents.Chip.Choice"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/stats_tab_24h_pattern"
+                                android:textSize="12sp" />
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chipSleepDurations"
+                                style="@style/Widget.MaterialComponents.Chip.Choice"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/stats_tab_durations"
+                                android:textSize="12sp" />
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chipSleepAwake"
+                                style="@style/Widget.MaterialComponents.Chip.Choice"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/stats_tab_awake_windows"
+                                android:textSize="12sp" />
+                        </com.google.android.material.chip.ChipGroup>
+                    </HorizontalScrollView>
+
                     <TextView
                         android:id="@+id/sleepChartSubtitle"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="3dp"
+                        android:layout_marginTop="4dp"
                         android:textColor="@color/text_secondary_warm"
                         android:textSize="12sp" />
 
                     <eu.pkgsoftware.babybuddywidgets.stats.DailyBarChartView
                         android:id="@+id/sleepBarChart"
                         android:layout_width="match_parent"
-                        android:layout_height="168dp"
+                        android:layout_height="172dp"
                         android:layout_marginTop="8dp" />
+
+                    <eu.pkgsoftware.babybuddywidgets.stats.DailyPatternChartView
+                        android:id="@+id/sleepPatternChart"
+                        android:layout_width="match_parent"
+                        android:layout_height="220dp"
+                        android:layout_marginTop="8dp"
+                        android:visibility="gone" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Diaper Chart Card -->
+            <!-- Diaper Reports Card (4 Reports) -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -294,23 +571,170 @@
                         android:textSize="15sp"
                         android:textStyle="bold" />
 
+                    <HorizontalScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:scrollbars="none">
+
+                        <com.google.android.material.chip.ChipGroup
+                            android:id="@+id/diaperReportChipGroup"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:chipSpacingHorizontal="6dp"
+                            app:selectionRequired="true"
+                            app:singleLine="true"
+                            app:singleSelection="true">
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chipDiaperTypes"
+                                style="@style/Widget.MaterialComponents.Chip.Choice"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:checked="true"
+                                android:text="@string/stats_tab_diaper_types"
+                                android:textSize="12sp" />
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chipDiaperIntervals"
+                                style="@style/Widget.MaterialComponents.Chip.Choice"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/stats_tab_intervals"
+                                android:textSize="12sp" />
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chipDiaperAmounts"
+                                style="@style/Widget.MaterialComponents.Chip.Choice"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/stats_tab_diaper_amounts"
+                                android:textSize="12sp" />
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chipDiaperColors"
+                                style="@style/Widget.MaterialComponents.Chip.Choice"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/stats_tab_stool_colors"
+                                android:textSize="12sp" />
+                        </com.google.android.material.chip.ChipGroup>
+                    </HorizontalScrollView>
+
                     <TextView
                         android:id="@+id/diaperChartSubtitle"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="3dp"
+                        android:layout_marginTop="4dp"
                         android:textColor="@color/text_secondary_warm"
                         android:textSize="12sp" />
 
                     <eu.pkgsoftware.babybuddywidgets.stats.DailyBarChartView
                         android:id="@+id/diaperBarChart"
                         android:layout_width="match_parent"
-                        android:layout_height="160dp"
+                        android:layout_height="164dp"
                         android:layout_marginTop="8dp" />
+
+                    <eu.pkgsoftware.babybuddywidgets.stats.CategoryBreakdownView
+                        android:id="@+id/diaperBreakdownView"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:visibility="gone" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Growth & Temperature Trend Card -->
+            <!-- Pumping, Tummy Time & Medication Card (3 Reports) -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:cardBackgroundColor="@color/card_surface"
+                app:cardCornerRadius="18dp"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/card_stroke"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/stats_chart_care_meds_title"
+                        android:textColor="@color/text_primary_warm"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <HorizontalScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:scrollbars="none">
+
+                        <com.google.android.material.chip.ChipGroup
+                            android:id="@+id/careMedsChipGroup"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:chipSpacingHorizontal="6dp"
+                            app:selectionRequired="true"
+                            app:singleLine="true"
+                            app:singleSelection="true">
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chipCarePumping"
+                                style="@style/Widget.MaterialComponents.Chip.Choice"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:checked="true"
+                                android:text="@string/tile_pumping"
+                                android:textSize="12sp" />
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chipCareTummy"
+                                style="@style/Widget.MaterialComponents.Chip.Choice"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/tile_tummy_time"
+                                android:textSize="12sp" />
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chipCareMedication"
+                                style="@style/Widget.MaterialComponents.Chip.Choice"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/tile_medication"
+                                android:textSize="12sp" />
+                        </com.google.android.material.chip.ChipGroup>
+                    </HorizontalScrollView>
+
+                    <TextView
+                        android:id="@+id/careMedsSubtitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:textColor="@color/text_secondary_warm"
+                        android:textSize="12sp" />
+
+                    <eu.pkgsoftware.babybuddywidgets.stats.DailyBarChartView
+                        android:id="@+id/careMedsBarChart"
+                        android:layout_width="match_parent"
+                        android:layout_height="160dp"
+                        android:layout_marginTop="8dp" />
+
+                    <eu.pkgsoftware.babybuddywidgets.stats.CategoryBreakdownView
+                        android:id="@+id/careMedsBreakdownView"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:visibility="gone" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- WHO Growth Standards & Temperature Trend Card -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -347,6 +771,7 @@
                             android:layout_height="wrap_content"
                             app:chipSpacingHorizontal="6dp"
                             app:selectionRequired="true"
+                            app:singleLine="true"
                             app:singleSelection="true">
 
                             <com.google.android.material.chip.Chip
@@ -387,18 +812,40 @@
                         </com.google.android.material.chip.ChipGroup>
                     </HorizontalScrollView>
 
-                    <TextView
-                        android:id="@+id/growthLatestSummary"
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:textColor="@color/text_secondary_warm"
-                        android:textSize="12sp" />
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/growthLatestSummary"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:textColor="@color/text_secondary_warm"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:id="@+id/growthWhoBadge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_soft_pill"
+                            android:paddingStart="9dp"
+                            android:paddingTop="3dp"
+                            android:paddingEnd="9dp"
+                            android:paddingBottom="3dp"
+                            android:textColor="@color/primary_color"
+                            android:textSize="11sp"
+                            android:textStyle="bold"
+                            android:visibility="gone" />
+                    </LinearLayout>
 
                     <eu.pkgsoftware.babybuddywidgets.stats.TrendLineChartView
                         android:id="@+id/growthTrendChart"
                         android:layout_width="match_parent"
-                        android:layout_height="184dp"
+                        android:layout_height="208dp"
                         android:layout_marginTop="8dp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>

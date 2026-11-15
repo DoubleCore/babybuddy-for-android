@@ -70,12 +70,18 @@
     <color name="head_circumference_accent">#FF7E57C2</color>
     <color name="bmi_enabled">#FFFCE4EC</color>
     <color name="bmi_accent">#FFD85B84</color>
+    <color name="medication_enabled">#FFFFDCE8</color>
+    <color name="medication_accent">#FFD84B78</color>
 
     <color name="gray_400">#FFC7B9B2</color>
     <color name="gray_600">#FF7A6B65</color>
 
     <color name="diaperBlack">#FF2B2B2B</color>
     <color name="diaperBrown">#FFC2781E</color>
+    <color name="diaperGray">#FF8D9399</color>
     <color name="diaperGreen">#FF3A9E52</color>
+    <color name="diaperOrange">#FFEA832B</color>
+    <color name="diaperRed">#FFD64545</color>
+    <color name="diaperWhite">#FFF2EFE9</color>
     <color name="diaperYellow">#FFE6C229</color>
 </resources>

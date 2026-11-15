@@ -71,6 +71,7 @@
                         android:orientation="horizontal">
 
                         <LinearLayout
+                            android:id="@+id/lastFeedingBlock"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
@@ -101,7 +102,7 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="1dp"
                                 android:ellipsize="end"
-                                android:maxLines="1"
+                                android:maxLines="2"
                                 android:textColor="@color/text_muted_warm"
                                 android:textSize="10.5sp"
                                 android:visibility="gone"
@@ -110,6 +111,7 @@
                         </LinearLayout>
 
                         <LinearLayout
+                            android:id="@+id/lastSleepBlock"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="6dp"
@@ -134,9 +136,21 @@
                                 android:textColor="@color/sleep_accent"
                                 android:textSize="13sp"
                                 android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/lastSleepDetail"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="1dp"
+                                android:ellipsize="end"
+                                android:maxLines="1"
+                                android:textColor="@color/text_muted_warm"
+                                android:textSize="10.5sp"
+                                android:visibility="gone" />
                         </LinearLayout>
 
                         <LinearLayout
+                            android:id="@+id/lastDiaperBlock"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="6dp"
@@ -161,6 +175,17 @@
                                 android:textColor="@color/diaper_accent"
                                 android:textSize="13sp"
                                 android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/lastDiaperDetail"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="1dp"
+                                android:ellipsize="end"
+                                android:maxLines="1"
+                                android:textColor="@color/text_muted_warm"
+                                android:textSize="10.5sp"
+                                android:visibility="gone" />
                         </LinearLayout>
                     </LinearLayout>
 
@@ -173,6 +198,7 @@
                         android:orientation="horizontal">
 
                         <LinearLayout
+                            android:id="@+id/todayFeedingBlock"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
@@ -196,6 +222,7 @@
                         </LinearLayout>
 
                         <LinearLayout
+                            android:id="@+id/todaySleepBlock"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
@@ -219,6 +246,7 @@
                         </LinearLayout>
 
                         <LinearLayout
+                            android:id="@+id/todayDiaperBlock"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1.15"
@@ -241,8 +269,56 @@
                                 android:textStyle="bold" />
                         </LinearLayout>
                     </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/todayExtraSummaryRow"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:id="@+id/todayPumpingTummyText"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:textColor="@color/text_secondary_warm"
+                            android:textSize="11.5sp"
+                            android:visibility="gone" />
+
+                        <TextView
+                            android:id="@+id/nextMedicationBadge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_soft_pill"
+                            android:paddingStart="10dp"
+                            android:paddingTop="4dp"
+                            android:paddingEnd="10dp"
+                            android:paddingBottom="4dp"
+                            android:textColor="@color/medication_accent"
+                            android:textSize="11.5sp"
+                            android:textStyle="bold"
+                            android:visibility="gone" />
+                    </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+
+            <!-- Quick Timers Strip -->
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:scrollbars="none">
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/quickTimersChipGroup"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:chipSpacingHorizontal="6dp"
+                    app:singleLine="true" />
+            </HorizontalScrollView>
 
             <!-- Section 1: Daily Care Action Tiles (3x2 Grid) -->
             <TextView
@@ -788,7 +864,7 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Section 2: Growth & Health Action Tiles (5-column Strip) -->
+            <!-- Section 2: Growth & Health Action Tiles (2x3 Grid: Medication + 5 Measurements) -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -804,14 +880,105 @@
                 android:id="@+id/growthHealthButtons"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:baselineAligned="false"
-                android:orientation="horizontal">
+                android:orientation="vertical">
 
-                <!-- Temperature -->
-                <FrameLayout
-                    android:layout_width="0dp"
+                <!-- Growth Row 1: Medication, Temperature, Weight -->
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1">
+                    android:baselineAligned="false"
+                    android:orientation="horizontal">
+
+                    <!-- Medication -->
+                    <FrameLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1">
+
+                        <LinearLayout
+                            android:id="@+id/medicationDisabledButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_tile_idle"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:paddingTop="8dp"
+                            android:paddingBottom="7dp">
+
+                            <FrameLayout
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
+                                android:background="@drawable/bg_badge_rounded"
+                                android:backgroundTint="@color/medication_enabled"
+                                android:padding="6dp">
+
+                                <ImageView
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    app:srcCompat="@drawable/ic_medication"
+                                    app:tint="@color/fixed_color_button_text_color" />
+                            </FrameLayout>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="3dp"
+                                android:ellipsize="end"
+                                android:singleLine="true"
+                                android:text="@string/tile_medication"
+                                android:textColor="@color/text_primary_warm"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/medicationEnabledButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_tile_active"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:paddingTop="8dp"
+                            android:paddingBottom="7dp"
+                            android:visibility="gone">
+
+                            <FrameLayout
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
+                                android:background="@drawable/bg_badge_rounded"
+                                android:backgroundTint="@color/medication_accent"
+                                android:padding="6dp">
+
+                                <ImageView
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    app:srcCompat="@drawable/ic_medication"
+                                    app:tint="@color/white" />
+                            </FrameLayout>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="3dp"
+                                android:ellipsize="end"
+                                android:singleLine="true"
+                                android:text="@string/tile_medication"
+                                android:textColor="@color/primary_color"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </FrameLayout>
+
+                    <!-- Temperature -->
+                    <FrameLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:layout_weight="1">
 
                     <LinearLayout
                         android:id="@+id/temperatureDisabledButton"
@@ -975,13 +1142,21 @@
                             android:textStyle="bold" />
                     </LinearLayout>
                 </FrameLayout>
+                </LinearLayout>
 
-                <!-- Height -->
-                <FrameLayout
-                    android:layout_width="0dp"
+                <!-- Growth Row 2: Height, Head Circumference, BMI -->
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
-                    android:layout_weight="1">
+                    android:layout_marginTop="6dp"
+                    android:baselineAligned="false"
+                    android:orientation="horizontal">
+
+                    <!-- Height -->
+                    <FrameLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1">
 
                     <LinearLayout
                         android:id="@+id/heightDisabledButton"
@@ -1230,6 +1405,7 @@
                             android:textStyle="bold" />
                     </LinearLayout>
                 </FrameLayout>
+                </LinearLayout>
             </LinearLayout>
 
             <!-- Active Logging Editor Panels -->
@@ -1271,6 +1447,47 @@
                     android:layout_height="1.5dp"
                     android:layout_marginStart="10dp"
                     android:layout_weight="1" />
+            </LinearLayout>
+
+            <!-- Timeline Search & Colored Tag Filter Bar -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <EditText
+                    android:id="@+id/timelineSearchInput"
+                    android:layout_width="0dp"
+                    android:layout_height="38dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_soft_pill"
+                    android:hint="@string/timeline_search_hint"
+                    android:importantForAutofill="no"
+                    android:inputType="text"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:singleLine="true"
+                    android:textSize="13sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/timelineTagFilterButton"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="38dp"
+                    android:layout_marginStart="6dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:minWidth="0dp"
+                    android:paddingStart="10dp"
+                    android:paddingEnd="10dp"
+                    android:text="@string/tag_filter_all"
+                    android:textAllCaps="false"
+                    android:textSize="12sp"
+                    app:cornerRadius="12dp"
+                    app:icon="@drawable/ic_tag_outline"
+                    app:iconSize="15dp" />
             </LinearLayout>
 
             <HorizontalScrollView
@@ -1335,6 +1552,14 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/tile_tummy_time"
+                        android:textSize="12sp" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipFilterMedication"
+                        style="@style/Widget.MaterialComponents.Chip.Choice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/tile_medication"
                         android:textSize="12sp" />
 
                     <com.google.android.material.chip.Chip

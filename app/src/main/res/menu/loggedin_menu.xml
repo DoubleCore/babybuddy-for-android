@@ -1,17 +1,21 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     tools:context="eu.pkgsoftware.babybuddywidgets.MainActivity">
     <item
-        android:id="@+id/showHelpMenuMenuItem"
-        android:title="@string/showHelpMenuButtonTitle" />
+        android:id="@+id/manageBabiesMenuItem"
+        android:title="@string/child_manager_title" />
+    <item
+        android:id="@+id/manageTagsMenuItem"
+        android:title="@string/tag_manager_title" />
+    <item
+        android:id="@+id/backupCenterMenuItem"
+        android:title="@string/backup_center_title" />
     <item
         android:id="@+id/settingsMenuMenuItem"
         android:title="@string/action_settings" />
     <item
-        android:id="@+id/logoutMenuButton"
-        android:icon="@android:drawable/ic_menu_revert"
-        android:title="@string/logoutMenu" />
+        android:id="@+id/showHelpMenuMenuItem"
+        android:title="@string/showHelpMenuButtonTitle" />
     <item
         android:id="@+id/contactDeveloperMenuItem"
         android:title="@string/send_message_send_title" />

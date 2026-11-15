@@ -1,64 +1,46 @@
 package eu.pkgsoftware.babybuddywidgets.logic
 
-import android.net.Network
+import android.os.Handler
+import android.os.Looper
 import eu.pkgsoftware.babybuddywidgets.ActivityStore
 import eu.pkgsoftware.babybuddywidgets.BaseFragmentDisconnectInterface
-import eu.pkgsoftware.babybuddywidgets.debugging.GlobalDebugObject
-import eu.pkgsoftware.babybuddywidgets.networking.CoordinatedDisconnectDialog
-import eu.pkgsoftware.babybuddywidgets.networking.NetworkChangeListener
-import eu.pkgsoftware.babybuddywidgets.networking.NetworkMonitor
+import eu.pkgsoftware.babybuddywidgets.local.LocalBabyBuddyRepository
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.Client
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.Child
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.ChildrenList
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import java.io.IOException
 
 typealias ChildListener = (Array<Child>) -> Unit
 
+/**
+ * Event-driven local child state tracker: reacts instantaneously to [LocalBabyBuddyRepository]
+ * updates without any 5-second background network polling.
+ */
 class ChildrenStateTracker(
     val v2Client: Client,
     val activityStore: ActivityStore,
     val requestScheduler: RequestScheduler,
-    val disconnectInterface: BaseFragmentDisconnectInterface
-) : NetworkChangeListener {
-    var children = emptyArray<Child>()
+    val disconnectInterface: BaseFragmentDisconnectInterface,
+) {
+    var children: Array<Child> = emptyArray()
 
-    private var listeners = mutableListOf<ChildListener>()
+    private val listeners = mutableListOf<ChildListener>()
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private val trackerScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
-    init {
-        activityStore.login<ChildrenList>("children-state-tracker")?.let {
-            children = it.children
-        }
-
-        v2Client.networkMonitor.addListener(this);
-        requestScheduler.scheduleInterval(5000) {
+    private val repoListener = LocalBabyBuddyRepository.ChangeListener {
+        trackerScope.launch {
             refreshChildrenList()
-            object : CallResult {
-                override fun isSuccess(): Boolean = true
-                override fun isConnectionFailure(): Boolean = false
-                override fun isFailure(): Boolean = false
-            }
         }
     }
 
-    override fun onNetworkChanged(newNetwork: Network?) {
-        if (newNetwork == null) {
-            disconnectInterface.setDisconnected(
-                "No network connection available.",
-                true
-            )
-        } else {
-            requestScheduler.scheduleOnceNow {
-                refreshChildrenList()
-                object : CallResult {
-                    override fun isSuccess(): Boolean = true
-                    override fun isConnectionFailure(): Boolean = false
-                    override fun isFailure(): Boolean = false
-                }
-            }
-        }
+    init {
+        children = v2Client.repository.listChildren().sortedBy { it.id }.toTypedArray()
+        v2Client.repository.addChangeListener(repoListener)
     }
 
     fun addChildListener(listener: ChildListener, triggerOnAdd: Boolean = true) {
@@ -73,49 +55,30 @@ class ChildrenStateTracker(
     }
 
     suspend fun refreshChildrenList() {
-        val accumulatedChildrenList = mutableListOf<Child>();
-        try {
-            while (true) {
-                val newChildren = v2Client.getEntries(
-                    Child::class,
-                    offset = accumulatedChildrenList.size,
-                    limit = 100
-                )
-                disconnectInterface.setDisconnected("Refreshing children list...", false)
-                if (newChildren.entries.isEmpty()) {
-                    break
-                }
-                accumulatedChildrenList.addAll(newChildren.entries)
-                accumulatedChildrenList.sortBy { it.id }
-                if (accumulatedChildrenList.size >= newChildren.totalCount) {
-                    break
+        val loaded = v2Client.repository.listChildren().sortedBy { it.id }.toTypedArray()
+        disconnectInterface.setDisconnected("Local children loaded", false)
+        mainHandler.post {
+            if (!children.contentEquals(loaded)) {
+                val newChildData = ChildrenList(loaded)
+                children = newChildData.children
+                activityStore.login("children-state-tracker", children)
+                for (listener in ArrayList(listeners)) {
+                    listener(children)
                 }
             }
         }
-        catch (e: IOException) {
-            GlobalDebugObject.log(
-                "ChildrenStateTracker: Failed to refresh children list: ${e.message}"
-            )
-            disconnectInterface.setDisconnected("Failed to retrieve children list.", true)
-            return
-        }
+    }
 
-        coroutineScope {
-            launch(Dispatchers.Main) {
-                if (!children.contentEquals(accumulatedChildrenList.toTypedArray())) {
-                    val newChildData = ChildrenList(accumulatedChildrenList.toTypedArray())
-                    children = newChildData.children
-                    activityStore.login("children-state-tracker", children)
-
-                    for (listener in listeners) {
-                        listener(children)
-                    }
-                }
-            }.join()
+    fun forceNotifyListeners() {
+        val loaded = v2Client.repository.listChildren().sortedBy { it.id }.toTypedArray()
+        children = loaded
+        for (listener in ArrayList(listeners)) {
+            listener(children)
         }
     }
 
     fun destroy() {
-        v2Client.networkMonitor.removeListener(this)
+        v2Client.repository.removeChangeListener(repoListener)
+        trackerScope.cancel()
     }
 }

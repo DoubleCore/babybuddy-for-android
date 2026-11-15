@@ -34,22 +34,26 @@
             android:paddingBottom="10dp">
 
             <LinearLayout
+                android:id="@+id/babyProfileHeaderClickArea"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
                 <FrameLayout
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
+                    android:id="@+id/babyProfileAvatarFrame"
+                    android:layout_width="42dp"
+                    android:layout_height="42dp"
                     android:background="@drawable/bg_badge_rounded"
                     android:backgroundTint="@color/feeding_enabled"
                     android:padding="8dp">
 
                     <ImageView
+                        android:id="@+id/babyProfileAvatarImage"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:importantForAccessibility="no"
+                        android:scaleType="fitCenter"
                         app:srcCompat="@drawable/ic_baby_face"
                         app:tint="@color/feeding_accent" />
                 </FrameLayout>
@@ -71,6 +75,17 @@
                         android:textColor="@color/text_primary_warm"
                         android:textSize="16sp"
                         android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/babyProfileCorrectedAgeBadge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="1dp"
+                        android:textColor="@color/text_secondary_warm"
+                        android:textSize="11.5sp"
+                        android:visibility="gone"
+                        tools:text="矫正月龄: 2 个月 5 天"
+                        tools:visibility="visible" />
                 </LinearLayout>
 
                 <TextView
@@ -88,6 +103,18 @@
                     android:visibility="gone"
                     tools:text="3 个月 12 天"
                     tools:visibility="visible" />
+
+                <ImageButton
+                    android:id="@+id/manageChildrenButton"
+                    android:layout_width="34dp"
+                    android:layout_height="34dp"
+                    android:layout_marginStart="6dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/child_manager_title"
+                    android:padding="7dp"
+                    android:scaleType="fitCenter"
+                    app:srcCompat="@drawable/ic_edit_outline"
+                    app:tint="@color/text_secondary_warm" />
             </LinearLayout>
 
             <HorizontalScrollView
@@ -130,6 +157,90 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/babyProfileHeaderCard" />
+
+    <!-- First-Time Local Onboarding Card (Visible only when 0 children exist) -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/emptyChildrenOnboardingCard"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="24dp"
+        android:visibility="gone"
+        app:cardBackgroundColor="@color/card_surface"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="0dp"
+        app:layout_constraintBottom_toTopOf="@+id/bottomNavigation"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/babyProfileHeaderCard"
+        app:strokeColor="@color/card_stroke_active"
+        app:strokeWidth="1.5dp"
+        tools:visibility="visible">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <FrameLayout
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:background="@drawable/bg_badge_rounded"
+                android:backgroundTint="@color/feeding_enabled"
+                android:padding="14dp">
+
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:importantForAccessibility="no"
+                    app:srcCompat="@drawable/ic_baby_face"
+                    app:tint="@color/feeding_accent" />
+            </FrameLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:gravity="center"
+                android:text="@string/onboarding_welcome_title"
+                android:textColor="@color/text_primary_warm"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:gravity="center"
+                android:text="@string/onboarding_welcome_subtitle"
+                android:textColor="@color/text_secondary_warm"
+                android:textSize="13.5sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/onboardingAddBabyButton"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="18dp"
+                android:text="@string/child_manager_add_baby"
+                android:textAllCaps="false"
+                android:textStyle="bold"
+                app:cornerRadius="12dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/onboardingRestoreBackupButton"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="46dp"
+                android:layout_marginTop="8dp"
+                android:text="@string/backup_restore_action_short"
+                android:textAllCaps="false"
+                app:cornerRadius="12dp"
+                app:icon="@drawable/ic_backup_outline"
+                app:iconGravity="textStart" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNavigation"
