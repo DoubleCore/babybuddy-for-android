@@ -264,7 +264,7 @@ class MultiLaneTimelineView @JvmOverloads constructor(
                             endTimeMs = s,
                             timeText = timeFmt.format(Date(s)),
                             titleText = res.getString(R.string.bf_cat_care),
-                            subText = e.note.take(12)
+                            subText = e.notes.take(12)
                         )
                     )
                 }
