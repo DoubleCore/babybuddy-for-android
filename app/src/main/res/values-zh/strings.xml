@@ -320,4 +320,113 @@
     <string name="stats_growth_latest_single">最新：{latest}</string>
     <string name="stats_no_data">当前时间范围内暂无记录</string>
     <string name="stats_loading">正在汇总统计数据…</string>
+
+    <!-- BabyFlow UI Redesign Strings -->
+    <string name="bf_nav_today">今天</string>
+    <string name="bf_nav_growth">成长</string>
+    <string name="bf_nav_inventory">库存</string>
+    <string name="bf_nav_mine">我的</string>
+
+    <string name="bf_greeting_morning">早上好</string>
+    <string name="bf_greeting_noon">中午好</string>
+    <string name="bf_greeting_afternoon">下午好</string>
+    <string name="bf_greeting_evening">晚上好</string>
+
+    <string name="bf_milestone_growing">成长中</string>
+    <string name="bf_milestone_full_month">满月</string>
+    <string name="bf_milestone_100_days">百天</string>
+    <string name="bf_milestone_days_left">还有 {days} 天</string>
+    <string name="bf_milestone_year_n">{years} 周岁</string>
+
+    <string name="bf_cat_diaper">纸尿裤</string>
+    <string name="bf_cat_supplement">补剂</string>
+    <string name="bf_cat_care">护理</string>
+    <string name="bf_cat_edu">早教</string>
+    <string name="bf_tile_pumping_supp">吸奶/补剂</string>
+    <string name="bf_quick_record_title">快捷记录</string>
+    <string name="bf_recent_records_title">最近记录</string>
+
+    <string name="bf_min_short">分钟</string>
+    <string name="bf_hour_short">小时</string>
+    <string name="bf_times_short">次</string>
+    <string name="bf_diaper_both_short">尿+便</string>
+    <string name="bf_last_prefix">上次 {time}</string>
+
+    <string name="bf_action_close">关闭</string>
+    <string name="bf_daily_timeline_title">今日记录</string>
+    <string name="bf_prev_day">前一天</string>
+    <string name="bf_next_day">后一天</string>
+
+    <string name="bf_vaccine_title">疫苗接种</string>
+    <string name="bf_vaccine_tab_plan">接种记录</string>
+    <string name="bf_vaccine_tab_library">疫苗库</string>
+    <string name="bf_vaccine_next_prefix">下一针：</string>
+    <string name="bf_days_unit">天后</string>
+    <string name="bf_vaccine_all_done">当前计划内疫苗已全部完成</string>
+    <string name="bf_default_baby_name">小宝</string>
+    <string name="bf_vaccine_checklist">疫苗清单</string>
+    <string name="bf_vaccine_in_progress">进行中</string>
+    <string name="bf_vaccine_completed">已完成</string>
+    <string name="bf_vaccine_mandatory">免疫规划 · 免费</string>
+    <string name="bf_vaccine_optional">非免疫规划 · 自费</string>
+    <string name="bf_month_age_unit">月龄</string>
+    <string name="bf_vaccine_done_at">已接种于</string>
+    <string name="bf_vaccine_plan_date">预计接种</string>
+    <string name="bf_vaccine_mark_done">标记已打</string>
+    <string name="bf_vaccine_custom_name_hint">疫苗名称（如：五联疫苗）</string>
+    <string name="bf_vaccine_custom_month_hint">推荐接种月龄（数字，如 2）</string>
+    <string name="bf_vaccine_custom_price_hint">价格说明（如：¥630 / 免费）</string>
+    <string name="bf_vaccine_add_custom">添加自定义疫苗</string>
+    <string name="bf_vaccine_self_paid">自费</string>
+    <string name="bf_vaccine_custom_tag">自定义</string>
+
+    <string name="bf_med_sheet_title">用药与营养补剂</string>
+    <string name="bf_med_empty_hint">暂无用药或补剂记录，点击右上角 + 添加</string>
+    <string name="bf_med_name_hint">药品 / 补剂名称（如：维生素 AD / D3）</string>
+    <string name="bf_med_dose_hint">剂量（如：1 粒 / 400 IU）</string>
+    <string name="bf_med_add_title">新增用药 / 补剂记录</string>
+
+    <string name="bf_calendar_title">日历回顾与搜索</string>
+    <string name="bf_search_hint">搜索记录类型或备注关键词…</string>
+    <string name="bf_search_results">搜索结果</string>
+    <string name="bf_cal_has_vaccine">当日有疫苗接种记录</string>
+    <string name="bf_cal_has_med">当日有用药 / 补剂记录</string>
+    <string name="bf_view_day_timeline">查看当日多泳道时间线</string>
+
+    <string name="bf_inv_title">库存与花费</string>
+    <string name="bf_inv_ledger_title">花费账本</string>
+    <string name="bf_inv_current_baby">当前宝宝累计花费</string>
+    <string name="bf_inv_total_sum">合计 </string>
+    <string name="bf_inv_cat_formula">奶粉</string>
+    <string name="bf_inv_cat_other">其他</string>
+    <string name="bf_inv_show_used_up">显示已用完</string>
+    <string name="bf_inv_expense_details">花费明细</string>
+    <string name="bf_inv_empty_category">该分类暂无库存，点击右上角 + 入库</string>
+    <string name="bf_inv_consuming">使用中</string>
+    <string name="bf_inv_remaining_prefix">剩余 </string>
+    <string name="bf_inv_used_up">已用完</string>
+    <string name="bf_inv_btn_restock">补货</string>
+    <string name="bf_inv_btn_use_one">-1 消耗</string>
+    <string name="bf_inv_btn_mark_empty">标记用完</string>
+    <string name="bf_inv_add_name_hint">物品名称（如：尤妮佳皇家 NB 纸尿裤）</string>
+    <string name="bf_inv_add_qty_hint">总数量（片 / 勺 / 粒）</string>
+    <string name="bf_inv_add_price_hint">购入金额（¥）</string>
+    <string name="bf_inv_add_spec_hint">规格备注（如：70片/包）</string>
+    <string name="bf_inv_add_dialog_title">新增库存与账单</string>
+
+    <string name="bf_growth_add_moment">记录成长瞬间</string>
+    <string name="bf_growth_seg_records">记录</string>
+    <string name="bf_growth_seg_stats">统计</string>
+    <string name="bf_growth_moment_banner_title">成长里程碑与日常瞬间</string>
+    <string name="bf_growth_moment_banner_sub">记录大运动、儿保体检与第一次惊喜</string>
+    <string name="bf_growth_measurements_history">生长测量记录</string>
+    <string name="bf_who_reference_subtitle">含 WHO P10–P90 标准区间与 P50 中位参考线</string>
+    <string name="bf_who_band_legend">浅色带：WHO P10–P90 正常参考区间 · 虚线：P50 中位值</string>
+    <string name="bf_growth_today_moment_count">{count} 条里程碑</string>
+    <string name="bf_growth_add_tag_hint">标签（如：大运动 / 体检 / 语言）</string>
+    <string name="bf_growth_add_title_hint">标题（如：第一次自主翻身啦！）</string>
+    <string name="bf_growth_add_content_hint">详细记录这一刻的感受或体检医嘱</string>
+
+    <string name="bf_mine_switch_child">切换宝宝</string>
+    <string name="bf_mine_med_subtitle">维生素 AD/D3、益生菌与日常用药记录</string>
 </resources>

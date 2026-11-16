@@ -357,4 +357,113 @@
     <string name="stats_growth_latest_single">Latest: {latest}</string>
     <string name="stats_no_data">No data recorded in this period</string>
     <string name="stats_loading">Loading statistics…</string>
+
+    <!-- BabyFlow UI Redesign Strings -->
+    <string name="bf_nav_today">Today</string>
+    <string name="bf_nav_growth">Growth</string>
+    <string name="bf_nav_inventory">Inventory</string>
+    <string name="bf_nav_mine">Me</string>
+
+    <string name="bf_greeting_morning">Good morning</string>
+    <string name="bf_greeting_noon">Good afternoon</string>
+    <string name="bf_greeting_afternoon">Good afternoon</string>
+    <string name="bf_greeting_evening">Good evening</string>
+
+    <string name="bf_milestone_growing">Growing</string>
+    <string name="bf_milestone_full_month">1 Month</string>
+    <string name="bf_milestone_100_days">100 Days</string>
+    <string name="bf_milestone_days_left">{days} days left</string>
+    <string name="bf_milestone_year_n">Year {years}</string>
+
+    <string name="bf_cat_diaper">Diaper</string>
+    <string name="bf_cat_supplement">Supplement</string>
+    <string name="bf_cat_care">Care</string>
+    <string name="bf_cat_edu">Tummy / Play</string>
+    <string name="bf_tile_pumping_supp">Pump / Supp</string>
+    <string name="bf_quick_record_title">Quick Log</string>
+    <string name="bf_recent_records_title">Recent Records</string>
+
+    <string name="bf_min_short"> min</string>
+    <string name="bf_hour_short"> h </string>
+    <string name="bf_times_short">x</string>
+    <string name="bf_diaper_both_short">Wet+Solid</string>
+    <string name="bf_last_prefix">Last {time}</string>
+
+    <string name="bf_action_close">Close</string>
+    <string name="bf_daily_timeline_title">Daily Timeline</string>
+    <string name="bf_prev_day">Prev day</string>
+    <string name="bf_next_day">Next day</string>
+
+    <string name="bf_vaccine_title">Vaccines</string>
+    <string name="bf_vaccine_tab_plan">Schedule</string>
+    <string name="bf_vaccine_tab_library">Vaccine Library</string>
+    <string name="bf_vaccine_next_prefix">Next: </string>
+    <string name="bf_days_unit"> d</string>
+    <string name="bf_vaccine_all_done">All scheduled vaccines completed</string>
+    <string name="bf_default_baby_name">Baby</string>
+    <string name="bf_vaccine_checklist">Vaccine Checklist</string>
+    <string name="bf_vaccine_in_progress">Pending</string>
+    <string name="bf_vaccine_completed">Done</string>
+    <string name="bf_vaccine_mandatory">Class I · Free</string>
+    <string name="bf_vaccine_optional">Class II · Optional</string>
+    <string name="bf_month_age_unit"> mo</string>
+    <string name="bf_vaccine_done_at">Completed on</string>
+    <string name="bf_vaccine_plan_date">Planned:</string>
+    <string name="bf_vaccine_mark_done">Mark Done</string>
+    <string name="bf_vaccine_custom_name_hint">Vaccine name</string>
+    <string name="bf_vaccine_custom_month_hint">Recommended age (months)</string>
+    <string name="bf_vaccine_custom_price_hint">Price / Free</string>
+    <string name="bf_vaccine_add_custom">Add Custom Vaccine</string>
+    <string name="bf_vaccine_self_paid">Self-paid</string>
+    <string name="bf_vaccine_custom_tag">Custom</string>
+
+    <string name="bf_med_sheet_title">Medication &amp; Health Log</string>
+    <string name="bf_med_empty_hint">No medication records yet. Tap + in the top right to add one.</string>
+    <string name="bf_med_name_hint">Medication / Supplement name (e.g. Vitamin D3)</string>
+    <string name="bf_med_dose_hint">Dosage (e.g. 1 drop / 400 IU)</string>
+    <string name="bf_med_add_title">Log Medication</string>
+
+    <string name="bf_calendar_title">Calendar &amp; Search</string>
+    <string name="bf_search_hint">Search activity type or notes…</string>
+    <string name="bf_search_results">Search Results</string>
+    <string name="bf_cal_has_vaccine">Vaccine recorded today</string>
+    <string name="bf_cal_has_med">Medication logged today</string>
+    <string name="bf_view_day_timeline">View Multi-Lane Timeline</string>
+
+    <string name="bf_inv_title">Inventory &amp; Expenses</string>
+    <string name="bf_inv_ledger_title">Expense Ledger</string>
+    <string name="bf_inv_current_baby">Current baby spend</string>
+    <string name="bf_inv_total_sum">Total: </string>
+    <string name="bf_inv_cat_formula">Formula</string>
+    <string name="bf_inv_cat_other">Other</string>
+    <string name="bf_inv_show_used_up">Show empty</string>
+    <string name="bf_inv_expense_details">Expense History</string>
+    <string name="bf_inv_empty_category">No stock items in this category. Tap + to add.</string>
+    <string name="bf_inv_consuming">In use</string>
+    <string name="bf_inv_remaining_prefix">Left: </string>
+    <string name="bf_inv_used_up">Empty</string>
+    <string name="bf_inv_btn_restock">+ Restock</string>
+    <string name="bf_inv_btn_use_one">-1 Use</string>
+    <string name="bf_inv_btn_mark_empty">Mark Empty</string>
+    <string name="bf_inv_add_name_hint">Item name (e.g. Size NB Diapers)</string>
+    <string name="bf_inv_add_qty_hint">Quantity (pieces / scoops / drops)</string>
+    <string name="bf_inv_add_price_hint">Price (¥)</string>
+    <string name="bf_inv_add_spec_hint">Spec / Brand note</string>
+    <string name="bf_inv_add_dialog_title">Add Stock &amp; Expense</string>
+
+    <string name="bf_growth_add_moment">Add Growth Milestone</string>
+    <string name="bf_growth_seg_records">Records</string>
+    <string name="bf_growth_seg_stats">Charts</string>
+    <string name="bf_growth_moment_banner_title">Capture First Milestones</string>
+    <string name="bf_growth_moment_banner_sub">Roll over, first tooth, checkups &amp; precious moments</string>
+    <string name="bf_growth_measurements_history">Body Measurements</string>
+    <string name="bf_who_reference_subtitle">WHO P10–P90 reference corridor &amp; P50 median</string>
+    <string name="bf_who_band_legend">Shaded band: WHO P10–P90 · Dashed: P50</string>
+    <string name="bf_growth_today_moment_count">{count} moments</string>
+    <string name="bf_growth_add_tag_hint">Tag (e.g. Gross Motor / Checkup)</string>
+    <string name="bf_growth_add_title_hint">Milestone title (e.g. Rolled over independently!)</string>
+    <string name="bf_growth_add_content_hint">Notes &amp; details</string>
+
+    <string name="bf_mine_switch_child">Switch Baby</string>
+    <string name="bf_mine_med_subtitle">Vitamin D3, probiotics &amp; medication history</string>
 </resources>

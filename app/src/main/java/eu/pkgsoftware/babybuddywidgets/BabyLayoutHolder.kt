@@ -5,6 +5,8 @@ import android.view.View
 import androidx.recyclerview.widget.RecyclerView
 import com.squareup.phrase.Phrase
 import eu.pkgsoftware.babybuddywidgets.activitycomponents.TimerControl
+import eu.pkgsoftware.babybuddywidgets.babyflow.BabyFlowLocalStore
+import eu.pkgsoftware.babybuddywidgets.babyflow.BabyFlowSheets
 import eu.pkgsoftware.babybuddywidgets.databinding.BabyManagerBinding
 import eu.pkgsoftware.babybuddywidgets.debugging.GlobalDebugObject
 import eu.pkgsoftware.babybuddywidgets.history.BabySummaryHelper
@@ -15,7 +17,9 @@ import eu.pkgsoftware.babybuddywidgets.networking.BabyBuddyClient
 import eu.pkgsoftware.babybuddywidgets.networking.RequestCodeFailure
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.InterruptedException
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.PaginatedResult
+import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.ChangeEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.Child
+import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.FeedingEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.TimeEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.Timer
 import eu.pkgsoftware.babybuddywidgets.timers.FragmentCallbacks
@@ -27,6 +31,7 @@ import eu.pkgsoftware.babybuddywidgets.utils.Promise
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import java.io.IOException
+import java.util.Date
 import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -58,12 +63,16 @@ class BabyLayoutHolder(
 
         binding.babySwipeRefresh.setColorSchemeResources(
             R.color.primary_color,
-            R.color.teal_200
+            R.color.bf_purple_primary
         )
         binding.babySwipeRefresh.setOnRefreshListener {
             childHistoryLoader?.forceRefresh() ?: run {
                 binding.babySwipeRefresh.isRefreshing = false
             }
+        }
+
+        binding.btnOpenTimelineSheet.setOnClickListener {
+            BabyFlowSheets.showDailyTimelineSheet(baseFragment, currentEntriesSnapshot())
         }
 
         binding.timelineFilterChips.setOnCheckedStateChangeListener { _, checkedIds ->
@@ -82,49 +91,65 @@ class BabyLayoutHolder(
         }
     }
 
+    fun currentEntriesSnapshot(): List<TimeEntry> {
+        return childHistoryLoader?.currentEntriesSnapshot().orEmpty()
+    }
+
+    private fun formatLastWithPrefix(res: android.content.res.Resources, pastTime: Date?): String {
+        if (pastTime == null) {
+            return res.getString(R.string.summary_no_record)
+        }
+        val ago = BabySummaryHelper.formatTimeAgo(res, pastTime)
+        return Phrase.from(res, R.string.bf_last_prefix)
+            .put("time", ago)
+            .format()
+            .toString()
+    }
+
     private fun renderTodaySummary(entries: List<TimeEntry>) {
         if (baseFragment.isDetached || baseFragment.context == null) return
         val res = baseFragment.resources
         val summary = BabySummaryHelper.computeTodaySummary(entries)
+        val timesUnit = res.getString(R.string.bf_times_short)
+        val minUnit = res.getString(R.string.bf_min_short)
 
-        binding.lastFeedingTimeAgo.text =
-            BabySummaryHelper.formatTimeAgo(res, summary.lastFeedingClientTime)
-        if (summary.lastFeeding != null) {
-            val detail = BabySummaryHelper.formatFeedingMethodDetail(res, summary.lastFeeding)
-            binding.lastFeedingDetail.text = detail
-            binding.lastFeedingDetail.visibility = if (detail.isNotBlank()) View.VISIBLE else View.GONE
-        } else {
-            binding.lastFeedingDetail.visibility = View.GONE
-        }
-
-        binding.lastSleepTimeAgo.text =
-            BabySummaryHelper.formatTimeAgo(res, summary.lastSleepClientTime)
-        binding.lastDiaperTimeAgo.text =
-            BabySummaryHelper.formatTimeAgo(res, summary.lastDiaperClientTime)
-
+        // Cell 1: Feeding
         binding.todayFeedingSummaryText.text = if (summary.todayFeedingAmountMl > 0.0) {
-            Phrase.from(res, R.string.summary_today_feeding_value)
-                .put("count", summary.todayFeedingCount)
-                .put("amount", summary.todayFeedingAmountMl.roundToInt())
-                .format()
+            "${summary.todayFeedingCount}$timesUnit ${summary.todayFeedingAmountMl.roundToInt()}ml"
         } else {
-            Phrase.from(res, R.string.summary_today_feeding_count_only)
-                .put("count", summary.todayFeedingCount)
-                .format()
+            "${summary.todayFeedingCount}$timesUnit"
         }
+        binding.lastFeedingTimeAgo.text = formatLastWithPrefix(res, summary.lastFeedingClientTime)
+        binding.lastFeedingDetail.visibility = View.GONE
 
+        // Cell 2: Sleep
         val sleepH = summary.todaySleepMinutes / 60
         val sleepM = summary.todaySleepMinutes % 60
         binding.todaySleepSummaryText.text = Phrase.from(res, R.string.summary_today_sleep_value)
             .put("hours", sleepH)
             .put("minutes", sleepM)
             .format()
+        binding.lastSleepTimeAgo.text = formatLastWithPrefix(res, summary.lastSleepClientTime)
 
-        binding.todayDiaperSummaryText.text = Phrase.from(res, R.string.summary_today_diaper_value)
-            .put("total", summary.todayDiaperTotal)
-            .put("wet", summary.todayDiaperWet)
-            .put("solid", summary.todayDiaperSolid)
-            .format()
+        // Cell 3: Diaper
+        binding.todayDiaperSummaryText.text = "${summary.todayDiaperTotal}$timesUnit"
+        binding.lastDiaperTimeAgo.text = formatLastWithPrefix(res, summary.lastDiaperClientTime)
+
+        // Cell 4: Supplement / Pumping
+        binding.todayPumpingSummaryText.text = if (summary.todayPumpingAmountMl > 0.0) {
+            "${summary.todayPumpingCount}$timesUnit ${summary.todayPumpingAmountMl.roundToInt()}ml"
+        } else {
+            "${summary.todayPumpingCount}$timesUnit"
+        }
+        binding.lastPumpingTimeAgo.text = formatLastWithPrefix(res, summary.lastPumpingClientTime)
+
+        // Cell 5: Care / Notes / Temp
+        binding.todayCareSummaryText.text = "${summary.todayCareCount}$timesUnit"
+        binding.lastCareTimeAgo.text = formatLastWithPrefix(res, summary.lastCareClientTime)
+
+        // Cell 6: Early Edu / Tummy Time
+        binding.todayTummySummaryText.text = "${summary.todayTummyMinutes}$minUnit"
+        binding.lastTummyTimeAgo.text = formatLastWithPrefix(res, summary.lastTummyClientTime)
     }
 
     fun updateChild(c: Child) {
@@ -208,6 +233,19 @@ class BabyLayoutHolder(
                     }
 
                     override fun updateTimeline(newEntry: TimeEntry?) {
+                        baseFragment.context?.let { ctx ->
+                            val store = BabyFlowLocalStore(ctx)
+                            when (newEntry) {
+                                is ChangeEntry -> store.consumeOneUnitByCategory(child.id, "diaper")
+                                is FeedingEntry -> {
+                                    if (newEntry.feedingType == Constants.FeedingTypeEnum.FORMULA ||
+                                        newEntry.feedingType == Constants.FeedingTypeEnum.FORTIFIED_BREAST_MILK
+                                    ) {
+                                        store.consumeOneUnitByCategory(child.id, "formula")
+                                    }
+                                }
+                            }
+                        }
                         (baseFragment as? LoggedInFragment)?.notifyChildDataChanged(child.id)
                         if (childHistoryLoader != null) {
                             if (newEntry != null) {

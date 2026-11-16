@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- Cute Baby Avatar -->
+    <path
+        android:fillColor="#FFF5E09B"
+        android:pathData="M16,32 C16,28 32,28 32,32 L34,42 C34,44 14,44 14,42 Z" />
+    <!-- Ears -->
+    <path
+        android:fillColor="#FFFFD8BE"
+        android:pathData="M11,22 A3.5,4 0 1,0 11,22.1 Z" />
+    <path
+        android:fillColor="#FFFFD8BE"
+        android:pathData="M37,22 A3.5,4 0 1,0 37,22.1 Z" />
+    <!-- Face -->
+    <path
+        android:fillColor="#FFFFE3CE"
+        android:pathData="M24,9 C16.5,9 11.5,14.5 11.5,21.5 C11.5,28.5 16.5,33 24,33 C31.5,33 36.5,28.5 36.5,21.5 C36.5,14.5 31.5,9 24,9 Z" />
+    <!-- Hair curl -->
+    <path
+        android:fillColor="#FF7A5238"
+        android:pathData="M22,7 C24,4 28,6 26,10 C25,11.5 22.5,11 22,9.5 Z" />
+    <!-- Blush -->
+    <path
+        android:fillColor="#FFFFB3AB"
+        android:pathData="M16,24.5 A2.5,1.6 0 1,0 16,24.6 Z" />
+    <path
+        android:fillColor="#FFFFB3AB"
+        android:pathData="M32,24.5 A2.5,1.6 0 1,0 32,24.6 Z" />
+    <!-- Eyes -->
+    <path
+        android:fillColor="#FF3D2E28"
+        android:pathData="M19,20.5 A1.6,1.8 0 1,0 19,20.6 Z" />
+    <path
+        android:fillColor="#FF3D2E28"
+        android:pathData="M29,20.5 A1.6,1.8 0 1,0 29,20.6 Z" />
+    <!-- Smile -->
+    <path
+        android:strokeColor="#FF9E5A4B"
+        android:strokeWidth="1.6"
+        android:strokeLineCap="round"
+        android:pathData="M21.5,25.5 Q24,28 26.5,25.5" />
+</vector>

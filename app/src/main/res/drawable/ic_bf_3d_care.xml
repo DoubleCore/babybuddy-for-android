@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- Handle -->
+    <path
+        android:strokeColor="#FFE4BE7E"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M19,15 L19,12 C19,10.5 20.5,9.5 22,9.5 L26,9.5 C27.5,9.5 29,10.5 29,12 L29,15" />
+    <!-- Medical / Care Case Body -->
+    <path
+        android:fillColor="#FFF7DCAC"
+        android:pathData="M11,18 C11,15.8 12.8,14 15,14 L33,14 C35.2,14 37,15.8 37,18 L37,35 C37,37.2 35.2,39 33,39 L15,39 C12.8,39 11,37.2 11,35 Z" />
+    <!-- Lid Band -->
+    <path
+        android:fillColor="#FFFFF6E5"
+        android:pathData="M11,18 C11,15.8 12.8,14 15,14 L33,14 C35.2,14 37,15.8 37,18 L37,22 L11,22 Z" />
+    <!-- Soft Pink Heart/Cross Badge -->
+    <path
+        android:fillColor="#FFE58A92"
+        android:pathData="M24,25 m-5,0 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0" />
+    <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M24,22.5 L24,27.5 M21.5,25 L26.5,25" />
+</vector>

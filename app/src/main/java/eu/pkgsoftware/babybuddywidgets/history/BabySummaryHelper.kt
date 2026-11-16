@@ -9,8 +9,12 @@ import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.ChangeEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.FeedingEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.HeadCircumferenceEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.HeightEntry
+import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.NoteEntry
+import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.PumpingEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.SleepEntry
+import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.TemperatureEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.TimeEntry
+import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.TummyTimeEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.WeightEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.serverTimeToClientTime
 import java.text.DateFormat
@@ -44,13 +48,75 @@ object BabySummaryHelper {
         val lastSleepClientTime: Date?,
         val lastDiaper: ChangeEntry?,
         val lastDiaperClientTime: Date?,
+        val lastPumpingClientTime: Date?,
+        val lastCareClientTime: Date?,
+        val lastTummyClientTime: Date?,
         val todayFeedingCount: Int,
         val todayFeedingAmountMl: Double,
         val todaySleepMinutes: Int,
         val todayDiaperTotal: Int,
         val todayDiaperWet: Int,
         val todayDiaperSolid: Int,
+        val todayPumpingCount: Int,
+        val todayPumpingAmountMl: Double,
+        val todayCareCount: Int,
+        val todayTummyMinutes: Int,
     )
+
+    fun formatGreeting(res: Resources, now: Date = Date(), zoneId: ZoneId = ZoneId.systemDefault()): String {
+        val hour = Instant.ofEpochMilli(now.time).atZone(zoneId).hour
+        return when (hour) {
+            in 5..10 -> res.getString(R.string.bf_greeting_morning)
+            in 11..13 -> res.getString(R.string.bf_greeting_noon)
+            in 14..17 -> res.getString(R.string.bf_greeting_afternoon)
+            else -> res.getString(R.string.bf_greeting_evening)
+        }
+    }
+
+    fun formatMilestoneBadge(
+        res: Resources,
+        birthDate: Date,
+        now: Date = Date(),
+        zoneId: ZoneId = ZoneId.systemDefault()
+    ): Pair<String, String> {
+        val birthLocal = Instant.ofEpochMilli(birthDate.time).atZone(zoneId).toLocalDate()
+        val nowLocal = Instant.ofEpochMilli(now.time).atZone(zoneId).toLocalDate()
+        if (birthLocal.isAfter(nowLocal)) {
+            return Pair(res.getString(R.string.baby_age_newborn), res.getString(R.string.bf_milestone_growing))
+        }
+        val totalDays = java.time.temporal.ChronoUnit.DAYS.between(birthLocal, nowLocal).toInt()
+        val parts = computeAgeParts(birthLocal, nowLocal)
+        return when {
+            totalDays < 30 -> {
+                val left = max(1, 30 - totalDays)
+                Pair(
+                    res.getString(R.string.bf_milestone_full_month),
+                    Phrase.from(res, R.string.bf_milestone_days_left).put("days", left).format().toString()
+                )
+            }
+            totalDays < 100 -> {
+                val left = max(1, 100 - totalDays)
+                Pair(
+                    res.getString(R.string.bf_milestone_100_days),
+                    Phrase.from(res, R.string.bf_milestone_days_left).put("days", left).format().toString()
+                )
+            }
+            parts.years < 1 -> {
+                val oneYear = birthLocal.plusYears(1)
+                val left = max(1, java.time.temporal.ChronoUnit.DAYS.between(nowLocal, oneYear).toInt())
+                Pair(
+                    Phrase.from(res, R.string.bf_milestone_year_n).put("years", 1).format().toString(),
+                    Phrase.from(res, R.string.bf_milestone_days_left).put("days", left).format().toString()
+                )
+            }
+            else -> {
+                Pair(
+                    Phrase.from(res, R.string.bf_milestone_year_n).put("years", parts.years).format().toString(),
+                    res.getString(R.string.bf_milestone_growing)
+                )
+            }
+        }
+    }
 
     fun isDateOnlyEntry(entry: TimeEntry): Boolean {
         return entry is WeightEntry ||
@@ -192,6 +258,9 @@ object BabySummaryHelper {
         var lastSleepTime: Date? = null
         var lastDiaper: ChangeEntry? = null
         var lastDiaperTime: Date? = null
+        var lastPumpingTime: Date? = null
+        var lastCareTime: Date? = null
+        var lastTummyTime: Date? = null
 
         var todayFeedingCount = 0
         var todayFeedingAmount = 0.0
@@ -199,6 +268,10 @@ object BabySummaryHelper {
         var todayDiaperTotal = 0
         var todayDiaperWet = 0
         var todayDiaperSolid = 0
+        var todayPumpingCount = 0
+        var todayPumpingAmount = 0.0
+        var todayCareCount = 0
+        var todayTummyMs = 0L
 
         for (entry in entries) {
             val startClient = entryClientStart(entry, convertServerOffset)
@@ -236,6 +309,33 @@ object BabySummaryHelper {
                         if (entry.solid) todayDiaperSolid++
                     }
                 }
+                is PumpingEntry -> {
+                    if (lastPumpingTime == null || endClient.after(lastPumpingTime)) {
+                        lastPumpingTime = endClient
+                    }
+                    if (startClient.time in dayStartMs until dayEndMs) {
+                        todayPumpingCount++
+                        todayPumpingAmount += entry.amount
+                    }
+                }
+                is TummyTimeEntry -> {
+                    if (lastTummyTime == null || endClient.after(lastTummyTime)) {
+                        lastTummyTime = endClient
+                    }
+                    val overlapStart = max(startClient.time, dayStartMs)
+                    val overlapEnd = min(endClient.time, dayEndMs)
+                    if (overlapEnd > overlapStart) {
+                        todayTummyMs += (overlapEnd - overlapStart)
+                    }
+                }
+                is NoteEntry, is TemperatureEntry -> {
+                    if (lastCareTime == null || startClient.after(lastCareTime)) {
+                        lastCareTime = startClient
+                    }
+                    if (startClient.time in dayStartMs until dayEndMs) {
+                        todayCareCount++
+                    }
+                }
             }
         }
 
@@ -246,12 +346,19 @@ object BabySummaryHelper {
             lastSleepClientTime = lastSleepTime,
             lastDiaper = lastDiaper,
             lastDiaperClientTime = lastDiaperTime,
+            lastPumpingClientTime = lastPumpingTime,
+            lastCareClientTime = lastCareTime,
+            lastTummyClientTime = lastTummyTime,
             todayFeedingCount = todayFeedingCount,
             todayFeedingAmountMl = todayFeedingAmount,
             todaySleepMinutes = (todaySleepMs / 60_000.0).roundToInt(),
             todayDiaperTotal = todayDiaperTotal,
             todayDiaperWet = todayDiaperWet,
             todayDiaperSolid = todayDiaperSolid,
+            todayPumpingCount = todayPumpingCount,
+            todayPumpingAmountMl = todayPumpingAmount,
+            todayCareCount = todayCareCount,
+            todayTummyMinutes = (todayTummyMs / 60_000.0).roundToInt(),
         )
     }
 

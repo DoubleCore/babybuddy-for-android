@@ -30,6 +30,8 @@
         <item name="colorPopoverTextColor">@color/white</item>
     </style>
 
+    <style name="Theme.BabyBuddyWidgets.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
+
     <style name="AppWidgetAttrs">
         <item name="primaryColor">@color/primary_color_dark</item>
         <item name="primaryBgColor">@color/primary_bg_color_dark</item>

@@ -44,19 +44,22 @@
             android:id="@+id/topSpacer"
             android:layout_width="match_parent"
             android:layout_height="20px"
-            android:background="?attr/primaryBgColor" />
+            android:background="@color/surface_background" />
 
         <com.google.android.material.appbar.AppBarLayout
             android:id="@+id/app_toolbar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:background="@color/surface_background"
+            app:elevation="0dp"
             android:theme="@style/Theme.BabyBuddyWidgets.AppBarOverlay">
 
             <androidx.appcompat.widget.Toolbar
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
-                android:background="?attr/primaryColor"
+                android:background="@color/surface_background"
+                app:titleTextColor="@color/text_primary_warm"
                 app:popupTheme="@style/Theme.BabyBuddyWidgets" />
 
         </com.google.android.material.appbar.AppBarLayout>

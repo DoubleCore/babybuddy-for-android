@@ -90,13 +90,26 @@ class TimelineEntry(private val fragment: BaseFragment, private var _entry: Time
         updateUi()
     }
 
-    private fun setBadgeVisual(iconRes: Int, bgColorRes: Int, paddingDp: Int = 8) {
+    private fun setBadgeVisual(
+        iconRes: Int,
+        bgColorRes: Int,
+        paddingDp: Int = 5,
+        multiColor3d: Boolean = true
+    ) {
         val ctx = fragment.requireContext()
         val padPx = (paddingDp * ctx.resources.displayMetrics.density).toInt()
         binding.entryIconBadge.setPadding(padPx, padPx, padPx, padPx)
         binding.entryIconBadge.backgroundTintList =
             ColorStateList.valueOf(ContextCompat.getColor(ctx, bgColorRes))
         binding.entryIconImage.setImageResource(iconRes)
+        if (multiColor3d) {
+            androidx.core.widget.ImageViewCompat.setImageTintList(binding.entryIconImage, null)
+        } else {
+            androidx.core.widget.ImageViewCompat.setImageTintList(
+                binding.entryIconImage,
+                ColorStateList.valueOf(ContextCompat.getColor(ctx, R.color.fixed_color_button_text_color))
+            )
+        }
     }
 
     private fun updateUi() {
@@ -133,18 +146,22 @@ class TimelineEntry(private val fragment: BaseFragment, private var _entry: Time
 
         when (entry) {
             is FeedingEntry -> {
-                val iconRes = when (entry.feedingType) {
+                when (entry.feedingType) {
                     FeedingTypeEnum.BREAST_MILK -> when (entry.feedingMethod) {
-                        FeedingMethodEnum.LEFT_BREAST -> R.drawable.pkg_breast_left
-                        FeedingMethodEnum.RIGHT_BREAST -> R.drawable.pkg_breast_right
-                        FeedingMethodEnum.BOTH_BREASTS -> R.drawable.pkg_breast
-                        else -> R.drawable.pkg_bottle
+                        FeedingMethodEnum.LEFT_BREAST ->
+                            setBadgeVisual(R.drawable.pkg_breast_left, R.color.bf_cell_feeding, 3, false)
+                        FeedingMethodEnum.RIGHT_BREAST ->
+                            setBadgeVisual(R.drawable.pkg_breast_right, R.color.bf_cell_feeding, 3, false)
+                        FeedingMethodEnum.BOTH_BREASTS ->
+                            setBadgeVisual(R.drawable.pkg_breast, R.color.bf_cell_feeding, 8, false)
+                        else ->
+                            setBadgeVisual(R.drawable.ic_bf_3d_bottle, R.color.bf_cell_feeding, 5, true)
                     }
-                    FeedingTypeEnum.SOLID_FOOD -> R.drawable.pkg_solid_food
-                    else -> R.drawable.pkg_bottle
+                    FeedingTypeEnum.SOLID_FOOD ->
+                        setBadgeVisual(R.drawable.pkg_solid_food, R.color.bf_cell_feeding, 8, false)
+                    else ->
+                        setBadgeVisual(R.drawable.ic_bf_3d_bottle, R.color.bf_cell_feeding, 5, true)
                 }
-                val pad = if (iconRes == R.drawable.pkg_breast_left || iconRes == R.drawable.pkg_breast_right) 2 else 8
-                setBadgeVisual(iconRes, R.color.feeding_enabled, pad)
 
                 val detail = BabySummaryHelper.formatFeedingMethodDetail(res, entry)
                 if (detail.isNotBlank()) {
@@ -152,7 +169,7 @@ class TimelineEntry(private val fragment: BaseFragment, private var _entry: Time
                 }
             }
             is ChangeEntry -> {
-                setBadgeVisual(R.drawable.pkg_diaper, R.color.diaper_enabled)
+                setBadgeVisual(R.drawable.ic_bf_3d_diaper, R.color.bf_cell_diaper, 5, true)
                 binding.diaperWetImage.visibility = if (entry.wet) View.VISIBLE else View.GONE
                 binding.diaperSolidImage.visibility = if (entry.solid) View.VISIBLE else View.GONE
                 if (entry.color.isNotEmpty()) {
@@ -171,12 +188,12 @@ class TimelineEntry(private val fragment: BaseFragment, private var _entry: Time
                 }
             }
             is PumpingEntry -> {
-                setBadgeVisual(R.drawable.pkg_pumping, R.color.pumping_enabled)
+                setBadgeVisual(R.drawable.ic_bf_3d_supplement, R.color.bf_cell_supplement, 5, true)
                 val cleanAmt = HorizontalDecIncEditor.formatClean(entry.amount)
                 titleLine = "$activityTitle · $cleanAmt ${res.getString(R.string.unit_ml)}"
             }
             is TemperatureEntry -> {
-                setBadgeVisual(R.drawable.ic_temperature, R.color.temperature_enabled)
+                setBadgeVisual(R.drawable.ic_temperature, R.color.temperature_enabled, 8, false)
                 val valStr = Phrase.from(res, R.string.measurement_value_pattern)
                     .put("value", HorizontalDecIncEditor.formatClean(entry.temperature))
                     .put("unit", res.getString(R.string.unit_celsius))
@@ -184,7 +201,7 @@ class TimelineEntry(private val fragment: BaseFragment, private var _entry: Time
                 titleLine = "$activityTitle · $valStr"
             }
             is WeightEntry -> {
-                setBadgeVisual(R.drawable.ic_weight, R.color.weight_enabled)
+                setBadgeVisual(R.drawable.ic_weight, R.color.weight_enabled, 8, false)
                 val valStr = Phrase.from(res, R.string.measurement_value_pattern)
                     .put("value", HorizontalDecIncEditor.formatClean(entry.weight))
                     .put("unit", res.getString(R.string.unit_kg))
@@ -192,7 +209,7 @@ class TimelineEntry(private val fragment: BaseFragment, private var _entry: Time
                 titleLine = "$activityTitle · $valStr"
             }
             is HeightEntry -> {
-                setBadgeVisual(R.drawable.ic_height, R.color.height_enabled)
+                setBadgeVisual(R.drawable.ic_height, R.color.height_enabled, 8, false)
                 val valStr = Phrase.from(res, R.string.measurement_value_pattern)
                     .put("value", HorizontalDecIncEditor.formatClean(entry.height))
                     .put("unit", res.getString(R.string.unit_cm))
@@ -200,7 +217,7 @@ class TimelineEntry(private val fragment: BaseFragment, private var _entry: Time
                 titleLine = "$activityTitle · $valStr"
             }
             is HeadCircumferenceEntry -> {
-                setBadgeVisual(R.drawable.ic_head_circumference, R.color.head_circumference_enabled)
+                setBadgeVisual(R.drawable.ic_head_circumference, R.color.head_circumference_enabled, 8, false)
                 val valStr = Phrase.from(res, R.string.measurement_value_pattern)
                     .put("value", HorizontalDecIncEditor.formatClean(entry.head_circumference))
                     .put("unit", res.getString(R.string.unit_cm))
@@ -208,7 +225,7 @@ class TimelineEntry(private val fragment: BaseFragment, private var _entry: Time
                 titleLine = "$activityTitle · $valStr"
             }
             is BmiEntry -> {
-                setBadgeVisual(R.drawable.ic_bmi, R.color.bmi_enabled)
+                setBadgeVisual(R.drawable.ic_bmi, R.color.bmi_enabled, 8, false)
                 val valStr = Phrase.from(res, R.string.measurement_bmi_pattern)
                     .put("value", HorizontalDecIncEditor.formatClean(entry.bmi))
                     .format()
@@ -217,13 +234,13 @@ class TimelineEntry(private val fragment: BaseFragment, private var _entry: Time
             else -> {
                 when (entry.appType) {
                     BabyBuddyClient.ACTIVITIES.SLEEP ->
-                        setBadgeVisual(R.drawable.pkg_sleep, R.color.sleep_enabled)
+                        setBadgeVisual(R.drawable.ic_bf_3d_sleep, R.color.bf_cell_sleep, 5, true)
                     BabyBuddyClient.ACTIVITIES.TUMMY_TIME ->
-                        setBadgeVisual(R.drawable.pkg_crawl, R.color.tummy_time_enabled)
+                        setBadgeVisual(R.drawable.ic_bf_3d_edu, R.color.bf_cell_edu, 5, true)
                     BabyBuddyClient.EVENTS.NOTE ->
-                        setBadgeVisual(R.drawable.pkg_notes, R.color.notes_enabled)
+                        setBadgeVisual(R.drawable.ic_bf_3d_care, R.color.bf_cell_care, 5, true)
                     else ->
-                        setBadgeVisual(R.drawable.ic_baby_face, R.color.feeding_enabled)
+                        setBadgeVisual(R.drawable.ic_bf_baby_avatar, R.color.bf_cell_feeding, 4, true)
                 }
             }
         }

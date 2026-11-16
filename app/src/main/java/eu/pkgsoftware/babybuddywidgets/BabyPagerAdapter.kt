@@ -68,6 +68,18 @@ class BabyPagerAdapter(val stateTracker: ChildrenStateTracker) : RecyclerView.Ad
         }
     }
 
+    fun currentEntriesForChild(c: Child?): List<eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.TimeEntry> {
+        active?.let { return it.currentEntriesSnapshot() }
+        if (c != null) {
+            for (h in holders) {
+                if (h.child?.id == c.id) {
+                    return h.currentEntriesSnapshot()
+                }
+            }
+        }
+        return emptyList()
+    }
+
     fun close() {
         for (h in holders) {
             h.close()

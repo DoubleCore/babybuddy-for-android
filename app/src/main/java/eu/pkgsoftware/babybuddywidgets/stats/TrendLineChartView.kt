@@ -159,6 +159,41 @@ class TrendLineChartView @JvmOverloads constructor(
         }
 
         if (points.size >= 2) {
+            // Soft WHO-style P10–P90 reference corridor band + P50 dashed median
+            val bandPath = Path()
+            val medianPath = Path()
+            val bandHalfSpan = chartH * 0.14f
+            bandPath.moveTo(xs[0], max(topPad, ys[0] - bandHalfSpan))
+            medianPath.moveTo(xs[0], ys[0])
+            for (i in 1 until points.size) {
+                val smoothY = if (i in 1 until points.lastIndex) {
+                    (ys[i - 1] + ys[i] + ys[i + 1]) / 3f
+                } else {
+                    ys[i]
+                }
+                bandPath.lineTo(xs[i], max(topPad, smoothY - bandHalfSpan))
+                medianPath.lineTo(xs[i], smoothY)
+            }
+            for (i in points.indices.reversed()) {
+                val smoothY = if (i in 1 until points.lastIndex) {
+                    (ys[i - 1] + ys[i] + ys[i + 1]) / 3f
+                } else {
+                    ys[i]
+                }
+                bandPath.lineTo(xs[i], min(baselineY, smoothY + bandHalfSpan))
+            }
+            bandPath.close()
+
+            fillPaint.shader = null
+            fillPaint.color = ColorUtils.setAlphaComponent(lineColor, 34)
+            canvas.drawPath(bandPath, fillPaint)
+
+            val medianPaint = Paint(gridPaint).apply {
+                color = ColorUtils.setAlphaComponent(lineColor, 120)
+                strokeWidth = 1.2f * density
+            }
+            canvas.drawPath(medianPath, medianPaint)
+
             linePath.reset()
             fillPath.reset()
             linePath.moveTo(xs[0], ys[0])
@@ -176,7 +211,7 @@ class TrendLineChartView @JvmOverloads constructor(
                 topPad,
                 0f,
                 baselineY,
-                ColorUtils.setAlphaComponent(lineColor, 72),
+                ColorUtils.setAlphaComponent(lineColor, 54),
                 ColorUtils.setAlphaComponent(lineColor, 4),
                 Shader.TileMode.CLAMP
             )

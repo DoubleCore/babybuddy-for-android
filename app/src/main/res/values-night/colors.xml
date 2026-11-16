@@ -19,29 +19,56 @@
     <color name="danger_soft_bg">#FF3D2322</color>
     <color name="danger_soft_fg">#FFF28B82</color>
 
+    <!-- BabyFlow Pill & Nav Colors (Night) -->
+    <color name="bf_nav_bar_bg">#FF26211F</color>
+    <color name="bf_nav_pill_selected">#FF3A322E</color>
+    <color name="bf_segment_track">#FF2E2825</color>
+    <color name="bf_timeline_pill_bg">#FF342F49</color>
+    <color name="bf_timeline_pill_fg">#FFC5BFF5</color>
+    <color name="bf_purple_primary">#FFA8A1E3</color>
+    <color name="bf_caramel_primary">#FFE2B580</color>
+    <color name="bf_rose_accent">#FFF2949A</color>
+    <color name="bf_mint_accent">#FF81C995</color>
+
+    <!-- Overview Soft Tinted Cell Backgrounds (Night) -->
+    <color name="bf_cell_feeding">#FF33291F</color>
+    <color name="bf_cell_sleep">#FF282638</color>
+    <color name="bf_cell_diaper">#FF213329</color>
+    <color name="bf_cell_supplement">#FF362428</color>
+    <color name="bf_cell_care">#FF332B1F</color>
+    <color name="bf_cell_edu">#FF2B2838</color>
+
+    <!-- Quick Action Pastel Tile Backgrounds (Night) -->
+    <color name="bf_tile_feeding">#FF3D3022</color>
+    <color name="bf_tile_sleep">#FF312E45</color>
+    <color name="bf_tile_diaper">#FF263B30</color>
+    <color name="bf_tile_supplement">#FF40292D</color>
+    <color name="bf_tile_care">#FF3E3222</color>
+    <color name="bf_tile_edu">#FF333044</color>
+
     <color name="fixed_color_button_text_color">#FFF5EBE6</color>
 
     <color name="timer_button_disabled">#FF2D2725</color>
-    <color name="feeding_enabled">#FF4D2E29</color>
-    <color name="feeding_accent">#FFF28B82</color>
-    <color name="sleep_enabled">#FF263652</color>
-    <color name="sleep_accent">#FF8AB4F8</color>
-    <color name="diaper_enabled">#FF4A3C1E</color>
-    <color name="diaper_accent">#FFFDD663</color>
-    <color name="tummy_time_enabled">#FF214231</color>
-    <color name="tummy_time_accent">#FF81C995</color>
-    <color name="pumping_enabled">#FF432A4A</color>
-    <color name="pumping_accent">#FFD7AEFB</color>
-    <color name="notes_enabled">#FF1F3E43</color>
-    <color name="notes_accent">#FF78D9EC</color>
+    <color name="feeding_enabled">#FF3D3022</color>
+    <color name="feeding_accent">#FFE8B87D</color>
+    <color name="sleep_enabled">#FF312E45</color>
+    <color name="sleep_accent">#FFB9B1F0</color>
+    <color name="diaper_enabled">#FF263B30</color>
+    <color name="diaper_accent">#FF81C995</color>
+    <color name="tummy_time_enabled">#FF333044</color>
+    <color name="tummy_time_accent">#FFB9B1F0</color>
+    <color name="pumping_enabled">#FF40292D</color>
+    <color name="pumping_accent">#FFF49BA7</color>
+    <color name="notes_enabled">#FF3E3222</color>
+    <color name="notes_accent">#FFE6BA7A</color>
     <color name="temperature_enabled">#FF4A311E</color>
     <color name="temperature_accent">#FFFCAD70</color>
-    <color name="weight_enabled">#FF224030</color>
-    <color name="weight_accent">#FF81C995</color>
-    <color name="height_enabled">#FF233952</color>
-    <color name="height_accent">#FF8AB4F8</color>
-    <color name="head_circumference_enabled">#FF362A4D</color>
-    <color name="head_circumference_accent">#FFC58AF9</color>
-    <color name="bmi_enabled">#FF4A2835</color>
-    <color name="bmi_accent">#FFF48FB1</color>
+    <color name="weight_enabled">#FF33291F</color>
+    <color name="weight_accent">#FFE2B580</color>
+    <color name="height_enabled">#FF282638</color>
+    <color name="height_accent">#FFB9B1F0</color>
+    <color name="head_circumference_enabled">#FF213329</color>
+    <color name="head_circumference_accent">#FF81C995</color>
+    <color name="bmi_enabled">#FF362428</color>
+    <color name="bmi_accent">#FFF49BA7</color>
 </resources>

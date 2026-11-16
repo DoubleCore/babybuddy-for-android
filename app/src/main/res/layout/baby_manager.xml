@@ -12,23 +12,23 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:clipToPadding="false"
-        android:paddingStart="14dp"
-        android:paddingTop="8dp"
-        android:paddingEnd="14dp"
-        android:paddingBottom="24dp">
+        android:paddingStart="16dp"
+        android:paddingTop="6dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="108dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Quick Status & Today Summary Card -->
+            <!-- ==================== 1. TODAY OVERVIEW CARD (今日概览 6-Cell Grid) ==================== -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/todaySummaryCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="@color/card_surface_elevated"
-                app:cardCornerRadius="18dp"
+                app:cardBackgroundColor="@color/card_surface"
+                app:cardCornerRadius="24dp"
                 app:cardElevation="0dp"
                 app:strokeColor="@color/card_stroke"
                 app:strokeWidth="1dp">
@@ -39,6 +39,7 @@
                     android:orientation="vertical"
                     android:padding="14dp">
 
+                    <!-- Card Header: 今日概览 + [时间线 >] Pill -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -51,120 +52,229 @@
                             android:layout_weight="1"
                             android:text="@string/summary_card_title"
                             android:textColor="@color/text_primary_warm"
-                            android:textSize="14sp"
+                            android:textSize="16sp"
                             android:textStyle="bold" />
 
-                        <TextView
+                        <LinearLayout
+                            android:id="@+id/btnOpenTimelineSheet"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="@string/summary_pull_to_refresh_hint"
-                            android:textColor="@color/text_muted_warm"
-                            android:textSize="11sp" />
+                            android:background="@drawable/bg_bf_timeline_pill"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:paddingStart="12dp"
+                            android:paddingTop="5dp"
+                            android:paddingEnd="8dp"
+                            android:paddingBottom="5dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/timeline_title_line_title"
+                                android:textColor="@color/bf_timeline_pill_fg"
+                                android:textSize="12.5sp"
+                                android:textStyle="bold" />
+
+                            <ImageView
+                                android:layout_width="15dp"
+                                android:layout_height="15dp"
+                                android:layout_marginStart="2dp"
+                                android:importantForAccessibility="no"
+                                app:srcCompat="@drawable/ic_bf_chevron_right" />
+                        </LinearLayout>
                     </LinearLayout>
 
-                    <!-- Elapsed Time Since Last Care Events -->
+                    <!-- Row 1 of Overview Grid: 喂养 | 睡眠 | 纸尿裤 -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
+                        android:layout_marginTop="12dp"
                         android:baselineAligned="false"
                         android:orientation="horizontal">
 
-                        <LinearLayout
+                        <!-- Cell 1: Feeding -->
+                        <FrameLayout
                             android:layout_width="0dp"
-                            android:layout_height="wrap_content"
+                            android:layout_height="84dp"
                             android:layout_weight="1"
-                            android:background="@drawable/bg_tile_idle"
-                            android:orientation="vertical"
-                            android:padding="8dp">
+                            android:background="@drawable/bg_bf_overview_cell"
+                            android:backgroundTint="@color/bf_cell_feeding"
+                            android:padding="10dp">
 
-                            <TextView
-                                android:layout_width="wrap_content"
+                            <ImageView
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
+                                android:layout_gravity="bottom|end"
+                                android:alpha="0.22"
+                                android:importantForAccessibility="no"
+                                app:srcCompat="@drawable/ic_bf_3d_bottle" />
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:text="@string/summary_last_feeding_label"
-                                android:textColor="@color/text_secondary_warm"
-                                android:textSize="11sp" />
+                                android:orientation="vertical">
 
-                            <TextView
-                                android:id="@+id/lastFeedingTimeAgo"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
-                                android:text="@string/summary_no_record"
-                                android:textColor="@color/feeding_accent"
-                                android:textSize="13sp"
-                                android:textStyle="bold" />
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/tile_feeding"
+                                    android:textColor="@color/feeding_accent"
+                                    android:textSize="11.5sp"
+                                    android:textStyle="bold" />
 
-                            <TextView
-                                android:id="@+id/lastFeedingDetail"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="1dp"
-                                android:ellipsize="end"
-                                android:maxLines="1"
-                                android:textColor="@color/text_muted_warm"
-                                android:textSize="10.5sp"
-                                android:visibility="gone"
-                                tools:text="左侧亲喂 · 90 ml"
-                                tools:visibility="visible" />
-                        </LinearLayout>
+                                <TextView
+                                    android:id="@+id/todayFeedingSummaryText"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="3dp"
+                                    android:ellipsize="end"
+                                    android:maxLines="1"
+                                    android:text="0"
+                                    android:textColor="@color/feeding_accent"
+                                    android:textSize="14.5sp"
+                                    android:textStyle="bold"
+                                    tools:text="3次 120ml" />
 
-                        <LinearLayout
+                                <TextView
+                                    android:id="@+id/lastFeedingTimeAgo"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="3dp"
+                                    android:ellipsize="end"
+                                    android:maxLines="1"
+                                    android:text="@string/summary_no_record"
+                                    android:textColor="@color/text_muted_warm"
+                                    android:textSize="10.5sp"
+                                    tools:text="上次 1 小时前" />
+
+                                <TextView
+                                    android:id="@+id/lastFeedingDetail"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:visibility="gone" />
+                            </LinearLayout>
+                        </FrameLayout>
+
+                        <!-- Cell 2: Sleep -->
+                        <FrameLayout
                             android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="6dp"
+                            android:layout_height="84dp"
+                            android:layout_marginStart="8dp"
                             android:layout_weight="1"
-                            android:background="@drawable/bg_tile_idle"
-                            android:orientation="vertical"
-                            android:padding="8dp">
+                            android:background="@drawable/bg_bf_overview_cell"
+                            android:backgroundTint="@color/bf_cell_sleep"
+                            android:padding="10dp">
 
-                            <TextView
-                                android:layout_width="wrap_content"
+                            <ImageView
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
+                                android:layout_gravity="bottom|end"
+                                android:alpha="0.18"
+                                android:importantForAccessibility="no"
+                                app:srcCompat="@drawable/ic_bf_3d_sleep" />
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:text="@string/summary_last_sleep_label"
-                                android:textColor="@color/text_secondary_warm"
-                                android:textSize="11sp" />
+                                android:orientation="vertical">
 
-                            <TextView
-                                android:id="@+id/lastSleepTimeAgo"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
-                                android:text="@string/summary_no_record"
-                                android:textColor="@color/sleep_accent"
-                                android:textSize="13sp"
-                                android:textStyle="bold" />
-                        </LinearLayout>
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/tile_sleep"
+                                    android:textColor="@color/sleep_accent"
+                                    android:textSize="11.5sp"
+                                    android:textStyle="bold" />
 
-                        <LinearLayout
+                                <TextView
+                                    android:id="@+id/todaySleepSummaryText"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="3dp"
+                                    android:ellipsize="end"
+                                    android:maxLines="1"
+                                    android:text="0"
+                                    android:textColor="@color/sleep_accent"
+                                    android:textSize="14sp"
+                                    android:textStyle="bold"
+                                    tools:text="3小时48分" />
+
+                                <TextView
+                                    android:id="@+id/lastSleepTimeAgo"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="3dp"
+                                    android:ellipsize="end"
+                                    android:maxLines="1"
+                                    android:text="@string/summary_no_record"
+                                    android:textColor="@color/text_muted_warm"
+                                    android:textSize="10.5sp"
+                                    tools:text="上次 3 小时前" />
+                            </LinearLayout>
+                        </FrameLayout>
+
+                        <!-- Cell 3: Diaper -->
+                        <FrameLayout
                             android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="6dp"
+                            android:layout_height="84dp"
+                            android:layout_marginStart="8dp"
                             android:layout_weight="1"
-                            android:background="@drawable/bg_tile_idle"
-                            android:orientation="vertical"
-                            android:padding="8dp">
+                            android:background="@drawable/bg_bf_overview_cell"
+                            android:backgroundTint="@color/bf_cell_diaper"
+                            android:padding="10dp">
 
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/summary_last_diaper_label"
-                                android:textColor="@color/text_secondary_warm"
-                                android:textSize="11sp" />
+                            <ImageView
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
+                                android:layout_gravity="bottom|end"
+                                android:alpha="0.22"
+                                android:importantForAccessibility="no"
+                                app:srcCompat="@drawable/ic_bf_3d_diaper" />
 
-                            <TextView
-                                android:id="@+id/lastDiaperTimeAgo"
-                                android:layout_width="wrap_content"
+                            <LinearLayout
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
-                                android:text="@string/summary_no_record"
-                                android:textColor="@color/diaper_accent"
-                                android:textSize="13sp"
-                                android:textStyle="bold" />
-                        </LinearLayout>
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/bf_cat_diaper"
+                                    android:textColor="@color/diaper_accent"
+                                    android:textSize="11.5sp"
+                                    android:textStyle="bold" />
+
+                                <TextView
+                                    android:id="@+id/todayDiaperSummaryText"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="3dp"
+                                    android:ellipsize="end"
+                                    android:maxLines="1"
+                                    android:text="0"
+                                    android:textColor="@color/diaper_accent"
+                                    android:textSize="14.5sp"
+                                    android:textStyle="bold"
+                                    tools:text="2次" />
+
+                                <TextView
+                                    android:id="@+id/lastDiaperTimeAgo"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="3dp"
+                                    android:ellipsize="end"
+                                    android:maxLines="1"
+                                    android:text="@string/summary_no_record"
+                                    android:textColor="@color/text_muted_warm"
+                                    android:textSize="10.5sp"
+                                    tools:text="上次 42 分钟前" />
+                            </LinearLayout>
+                        </FrameLayout>
                     </LinearLayout>
 
-                    <!-- Today Totals Strip -->
+                    <!-- Row 2 of Overview Grid: 补剂/吸奶 | 护理 | 早教/趴卧 -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -172,88 +282,192 @@
                         android:baselineAligned="false"
                         android:orientation="horizontal">
 
-                        <LinearLayout
+                        <!-- Cell 4: Supplement / Pumping -->
+                        <FrameLayout
                             android:layout_width="0dp"
-                            android:layout_height="wrap_content"
+                            android:layout_height="84dp"
                             android:layout_weight="1"
-                            android:orientation="vertical">
+                            android:background="@drawable/bg_bf_overview_cell"
+                            android:backgroundTint="@color/bf_cell_supplement"
+                            android:padding="10dp">
 
-                            <TextView
-                                android:layout_width="wrap_content"
+                            <ImageView
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
+                                android:layout_gravity="bottom|end"
+                                android:alpha="0.22"
+                                android:importantForAccessibility="no"
+                                app:srcCompat="@drawable/ic_bf_3d_supplement" />
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:text="@string/summary_today_feeding"
-                                android:textColor="@color/text_muted_warm"
-                                android:textSize="10.5sp" />
+                                android:orientation="vertical">
 
-                            <TextView
-                                android:id="@+id/todayFeedingSummaryText"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="0"
-                                android:textColor="@color/text_primary_warm"
-                                android:textSize="12sp"
-                                android:textStyle="bold" />
-                        </LinearLayout>
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/bf_cat_supplement"
+                                    android:textColor="@color/pumping_accent"
+                                    android:textSize="11.5sp"
+                                    android:textStyle="bold" />
 
-                        <LinearLayout
+                                <TextView
+                                    android:id="@+id/todayPumpingSummaryText"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="3dp"
+                                    android:ellipsize="end"
+                                    android:maxLines="1"
+                                    android:text="0"
+                                    android:textColor="@color/pumping_accent"
+                                    android:textSize="14.5sp"
+                                    android:textStyle="bold"
+                                    tools:text="1次" />
+
+                                <TextView
+                                    android:id="@+id/lastPumpingTimeAgo"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="3dp"
+                                    android:ellipsize="end"
+                                    android:maxLines="1"
+                                    android:text="@string/summary_no_record"
+                                    android:textColor="@color/text_muted_warm"
+                                    android:textSize="10.5sp"
+                                    tools:text="上次 2 小时前" />
+                            </LinearLayout>
+                        </FrameLayout>
+
+                        <!-- Cell 5: Care / Notes -->
+                        <FrameLayout
                             android:layout_width="0dp"
-                            android:layout_height="wrap_content"
+                            android:layout_height="84dp"
+                            android:layout_marginStart="8dp"
                             android:layout_weight="1"
-                            android:orientation="vertical">
+                            android:background="@drawable/bg_bf_overview_cell"
+                            android:backgroundTint="@color/bf_cell_care"
+                            android:padding="10dp">
 
-                            <TextView
-                                android:layout_width="wrap_content"
+                            <ImageView
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
+                                android:layout_gravity="bottom|end"
+                                android:alpha="0.22"
+                                android:importantForAccessibility="no"
+                                app:srcCompat="@drawable/ic_bf_3d_care" />
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:text="@string/summary_today_sleep"
-                                android:textColor="@color/text_muted_warm"
-                                android:textSize="10.5sp" />
+                                android:orientation="vertical">
 
-                            <TextView
-                                android:id="@+id/todaySleepSummaryText"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="0"
-                                android:textColor="@color/text_primary_warm"
-                                android:textSize="12sp"
-                                android:textStyle="bold" />
-                        </LinearLayout>
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/bf_cat_care"
+                                    android:textColor="@color/notes_accent"
+                                    android:textSize="11.5sp"
+                                    android:textStyle="bold" />
 
-                        <LinearLayout
+                                <TextView
+                                    android:id="@+id/todayCareSummaryText"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="3dp"
+                                    android:ellipsize="end"
+                                    android:maxLines="1"
+                                    android:text="0"
+                                    android:textColor="@color/notes_accent"
+                                    android:textSize="14.5sp"
+                                    android:textStyle="bold"
+                                    tools:text="1次" />
+
+                                <TextView
+                                    android:id="@+id/lastCareTimeAgo"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="3dp"
+                                    android:ellipsize="end"
+                                    android:maxLines="1"
+                                    android:text="@string/summary_no_record"
+                                    android:textColor="@color/text_muted_warm"
+                                    android:textSize="10.5sp"
+                                    tools:text="上次 1 小时前" />
+                            </LinearLayout>
+                        </FrameLayout>
+
+                        <!-- Cell 6: Early Edu / Tummy Time -->
+                        <FrameLayout
                             android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1.15"
-                            android:orientation="vertical">
+                            android:layout_height="84dp"
+                            android:layout_marginStart="8dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_bf_overview_cell"
+                            android:backgroundTint="@color/bf_cell_edu"
+                            android:padding="10dp">
 
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/summary_today_diaper"
-                                android:textColor="@color/text_muted_warm"
-                                android:textSize="10.5sp" />
+                            <ImageView
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
+                                android:layout_gravity="bottom|end"
+                                android:alpha="0.22"
+                                android:importantForAccessibility="no"
+                                app:srcCompat="@drawable/ic_bf_3d_edu" />
 
-                            <TextView
-                                android:id="@+id/todayDiaperSummaryText"
-                                android:layout_width="wrap_content"
+                            <LinearLayout
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:text="0"
-                                android:textColor="@color/text_primary_warm"
-                                android:textSize="12sp"
-                                android:textStyle="bold" />
-                        </LinearLayout>
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/bf_cat_edu"
+                                    android:textColor="@color/tummy_time_accent"
+                                    android:textSize="11.5sp"
+                                    android:textStyle="bold" />
+
+                                <TextView
+                                    android:id="@+id/todayTummySummaryText"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="3dp"
+                                    android:ellipsize="end"
+                                    android:maxLines="1"
+                                    android:text="0"
+                                    android:textColor="@color/tummy_time_accent"
+                                    android:textSize="14.5sp"
+                                    android:textStyle="bold"
+                                    tools:text="24分钟" />
+
+                                <TextView
+                                    android:id="@+id/lastTummyTimeAgo"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="3dp"
+                                    android:ellipsize="end"
+                                    android:maxLines="1"
+                                    android:text="@string/summary_no_record"
+                                    android:textColor="@color/text_muted_warm"
+                                    android:textSize="10.5sp"
+                                    tools:text="上次 8 小时前" />
+                            </LinearLayout>
+                        </FrameLayout>
                     </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Section 1: Daily Care Action Tiles (3x2 Grid) -->
+            <!-- ==================== 2. QUICK RECORD 3x2 PASTEL TILES (快捷记录) ==================== -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="2dp"
-                android:layout_marginTop="12dp"
-                android:layout_marginBottom="6dp"
-                android:text="@string/section_daily_care"
-                android:textColor="@color/text_secondary_warm"
-                android:textSize="12.5sp"
+                android:layout_marginStart="4dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="8dp"
+                android:text="@string/bf_quick_record_title"
+                android:textColor="@color/text_primary_warm"
+                android:textSize="16sp"
                 android:textStyle="bold" />
 
             <LinearLayout
@@ -262,7 +476,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
-                <!-- Row 1: Feeding, Diaper, Sleep -->
+                <!-- Row 1: 喂养 (Feeding) | 睡眠 (Sleep) | 纸尿裤 (Diaper) -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -278,162 +492,58 @@
                         <LinearLayout
                             android:id="@+id/feedingDisabledButton"
                             android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/bg_tile_idle"
+                            android:layout_height="104dp"
+                            android:background="@drawable/bg_bf_quick_tile"
+                            android:backgroundTint="@color/bf_tile_feeding"
                             android:clickable="true"
                             android:focusable="true"
                             android:gravity="center"
                             android:orientation="vertical"
-                            android:paddingTop="10dp"
-                            android:paddingBottom="8dp">
+                            android:padding="10dp">
 
-                            <FrameLayout
-                                android:layout_width="38dp"
-                                android:layout_height="38dp"
-                                android:background="@drawable/bg_badge_rounded"
-                                android:backgroundTint="@color/feeding_enabled"
-                                android:padding="7dp">
-
-                                <ImageView
-                                    android:layout_width="match_parent"
-                                    android:layout_height="match_parent"
-                                    android:scaleType="fitCenter"
-                                    app:srcCompat="@drawable/pkg_bottle"
-                                    app:tint="@color/fixed_color_button_text_color" />
-                            </FrameLayout>
+                            <ImageView
+                                android:layout_width="50dp"
+                                android:layout_height="50dp"
+                                android:scaleType="fitCenter"
+                                app:srcCompat="@drawable/ic_bf_3d_bottle" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp"
+                                android:layout_marginTop="6dp"
                                 android:singleLine="true"
                                 android:text="@string/tile_feeding"
-                                android:textColor="@color/text_primary_warm"
-                                android:textSize="12sp"
+                                android:textColor="@color/feeding_accent"
+                                android:textSize="13.5sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
 
                         <LinearLayout
                             android:id="@+id/feedingEnabledButton"
                             android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/bg_tile_active"
+                            android:layout_height="104dp"
+                            android:background="@drawable/bg_bf_quick_tile_active"
                             android:clickable="true"
                             android:focusable="true"
                             android:gravity="center"
                             android:orientation="vertical"
-                            android:paddingTop="10dp"
-                            android:paddingBottom="8dp"
+                            android:padding="10dp"
                             android:visibility="gone">
 
-                            <FrameLayout
-                                android:layout_width="38dp"
-                                android:layout_height="38dp"
-                                android:background="@drawable/bg_badge_rounded"
-                                android:backgroundTint="@color/feeding_accent"
-                                android:padding="7dp">
-
-                                <ImageView
-                                    android:layout_width="match_parent"
-                                    android:layout_height="match_parent"
-                                    android:scaleType="fitCenter"
-                                    app:srcCompat="@drawable/pkg_bottle"
-                                    app:tint="@color/white" />
-                            </FrameLayout>
+                            <ImageView
+                                android:layout_width="50dp"
+                                android:layout_height="50dp"
+                                android:scaleType="fitCenter"
+                                app:srcCompat="@drawable/ic_bf_3d_bottle" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp"
+                                android:layout_marginTop="6dp"
                                 android:singleLine="true"
                                 android:text="@string/tile_feeding"
-                                android:textColor="@color/primary_color"
-                                android:textSize="12sp"
-                                android:textStyle="bold" />
-                        </LinearLayout>
-                    </FrameLayout>
-
-                    <!-- Diaper Tile -->
-                    <FrameLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:layout_weight="1">
-
-                        <LinearLayout
-                            android:id="@+id/diaperDisabledButton"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/bg_tile_idle"
-                            android:clickable="true"
-                            android:focusable="true"
-                            android:gravity="center"
-                            android:orientation="vertical"
-                            android:paddingTop="10dp"
-                            android:paddingBottom="8dp">
-
-                            <FrameLayout
-                                android:layout_width="38dp"
-                                android:layout_height="38dp"
-                                android:background="@drawable/bg_badge_rounded"
-                                android:backgroundTint="@color/diaper_enabled"
-                                android:padding="7dp">
-
-                                <ImageView
-                                    android:layout_width="match_parent"
-                                    android:layout_height="match_parent"
-                                    android:scaleType="fitCenter"
-                                    app:srcCompat="@drawable/pkg_diaper"
-                                    app:tint="@color/fixed_color_button_text_color" />
-                            </FrameLayout>
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp"
-                                android:singleLine="true"
-                                android:text="@string/tile_diaper"
-                                android:textColor="@color/text_primary_warm"
-                                android:textSize="12sp"
-                                android:textStyle="bold" />
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:id="@+id/diaperEnabledButton"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/bg_tile_active"
-                            android:clickable="true"
-                            android:focusable="true"
-                            android:gravity="center"
-                            android:orientation="vertical"
-                            android:paddingTop="10dp"
-                            android:paddingBottom="8dp"
-                            android:visibility="gone">
-
-                            <FrameLayout
-                                android:layout_width="38dp"
-                                android:layout_height="38dp"
-                                android:background="@drawable/bg_badge_rounded"
-                                android:backgroundTint="@color/diaper_accent"
-                                android:padding="7dp">
-
-                                <ImageView
-                                    android:layout_width="match_parent"
-                                    android:layout_height="match_parent"
-                                    android:scaleType="fitCenter"
-                                    app:srcCompat="@drawable/pkg_diaper"
-                                    app:tint="@color/white" />
-                            </FrameLayout>
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp"
-                                android:singleLine="true"
-                                android:text="@string/tile_diaper"
-                                android:textColor="@color/primary_color"
-                                android:textSize="12sp"
+                                android:textColor="@color/bf_purple_primary"
+                                android:textSize="13.5sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
                     </FrameLayout>
@@ -442,97 +552,144 @@
                     <FrameLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
+                        android:layout_marginStart="10dp"
                         android:layout_weight="1">
 
                         <LinearLayout
                             android:id="@+id/sleepDisabledButton"
                             android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/bg_tile_idle"
+                            android:layout_height="104dp"
+                            android:background="@drawable/bg_bf_quick_tile"
+                            android:backgroundTint="@color/bf_tile_sleep"
                             android:clickable="true"
                             android:focusable="true"
                             android:gravity="center"
                             android:orientation="vertical"
-                            android:paddingTop="10dp"
-                            android:paddingBottom="8dp">
+                            android:padding="10dp">
 
-                            <FrameLayout
-                                android:layout_width="38dp"
-                                android:layout_height="38dp"
-                                android:background="@drawable/bg_badge_rounded"
-                                android:backgroundTint="@color/sleep_enabled"
-                                android:padding="7dp">
-
-                                <ImageView
-                                    android:layout_width="match_parent"
-                                    android:layout_height="match_parent"
-                                    android:scaleType="fitCenter"
-                                    app:srcCompat="@drawable/pkg_sleep"
-                                    app:tint="@color/fixed_color_button_text_color" />
-                            </FrameLayout>
+                            <ImageView
+                                android:layout_width="50dp"
+                                android:layout_height="50dp"
+                                android:scaleType="fitCenter"
+                                app:srcCompat="@drawable/ic_bf_3d_sleep" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp"
+                                android:layout_marginTop="6dp"
                                 android:singleLine="true"
                                 android:text="@string/tile_sleep"
-                                android:textColor="@color/text_primary_warm"
-                                android:textSize="12sp"
+                                android:textColor="@color/sleep_accent"
+                                android:textSize="13.5sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
 
                         <LinearLayout
                             android:id="@+id/sleepEnabledButton"
                             android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/bg_tile_active"
+                            android:layout_height="104dp"
+                            android:background="@drawable/bg_bf_quick_tile_active"
                             android:clickable="true"
                             android:focusable="true"
                             android:gravity="center"
                             android:orientation="vertical"
-                            android:paddingTop="10dp"
-                            android:paddingBottom="8dp"
+                            android:padding="10dp"
                             android:visibility="gone">
 
-                            <FrameLayout
-                                android:layout_width="38dp"
-                                android:layout_height="38dp"
-                                android:background="@drawable/bg_badge_rounded"
-                                android:backgroundTint="@color/sleep_accent"
-                                android:padding="7dp">
-
-                                <ImageView
-                                    android:layout_width="match_parent"
-                                    android:layout_height="match_parent"
-                                    android:scaleType="fitCenter"
-                                    app:srcCompat="@drawable/pkg_sleep"
-                                    app:tint="@color/white" />
-                            </FrameLayout>
+                            <ImageView
+                                android:layout_width="50dp"
+                                android:layout_height="50dp"
+                                android:scaleType="fitCenter"
+                                app:srcCompat="@drawable/ic_bf_3d_sleep" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp"
+                                android:layout_marginTop="6dp"
                                 android:singleLine="true"
                                 android:text="@string/tile_sleep"
-                                android:textColor="@color/primary_color"
-                                android:textSize="12sp"
+                                android:textColor="@color/bf_purple_primary"
+                                android:textSize="13.5sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </FrameLayout>
+
+                    <!-- Diaper Tile -->
+                    <FrameLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:layout_weight="1">
+
+                        <LinearLayout
+                            android:id="@+id/diaperDisabledButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="104dp"
+                            android:background="@drawable/bg_bf_quick_tile"
+                            android:backgroundTint="@color/bf_tile_diaper"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:padding="10dp">
+
+                            <ImageView
+                                android:layout_width="50dp"
+                                android:layout_height="50dp"
+                                android:scaleType="fitCenter"
+                                app:srcCompat="@drawable/ic_bf_3d_diaper" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="6dp"
+                                android:singleLine="true"
+                                android:text="@string/bf_cat_diaper"
+                                android:textColor="@color/diaper_accent"
+                                android:textSize="13.5sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/diaperEnabledButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="104dp"
+                            android:background="@drawable/bg_bf_quick_tile_active"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:padding="10dp"
+                            android:visibility="gone">
+
+                            <ImageView
+                                android:layout_width="50dp"
+                                android:layout_height="50dp"
+                                android:scaleType="fitCenter"
+                                app:srcCompat="@drawable/ic_bf_3d_diaper" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="6dp"
+                                android:singleLine="true"
+                                android:text="@string/bf_cat_diaper"
+                                android:textColor="@color/bf_purple_primary"
+                                android:textSize="13.5sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
                     </FrameLayout>
                 </LinearLayout>
 
-                <!-- Row 2: Pumping, Tummy Time, Note -->
+                <!-- Row 2: 补剂/吸奶 (Pumping) | 护理/备注 (Notes) | 早教/趴卧 (Tummy Time) -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="10dp"
                     android:baselineAligned="false"
                     android:orientation="horizontal">
 
-                    <!-- Pumping Tile -->
+                    <!-- Supplement / Pumping Tile -->
                     <FrameLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
@@ -541,263 +698,206 @@
                         <LinearLayout
                             android:id="@+id/pumpingDisabledButton"
                             android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/bg_tile_idle"
+                            android:layout_height="104dp"
+                            android:background="@drawable/bg_bf_quick_tile"
+                            android:backgroundTint="@color/bf_tile_supplement"
                             android:clickable="true"
                             android:focusable="true"
                             android:gravity="center"
                             android:orientation="vertical"
-                            android:paddingTop="10dp"
-                            android:paddingBottom="8dp">
+                            android:padding="10dp">
 
-                            <FrameLayout
-                                android:layout_width="38dp"
-                                android:layout_height="38dp"
-                                android:background="@drawable/bg_badge_rounded"
-                                android:backgroundTint="@color/pumping_enabled"
-                                android:padding="7dp">
-
-                                <ImageView
-                                    android:layout_width="match_parent"
-                                    android:layout_height="match_parent"
-                                    android:scaleType="fitCenter"
-                                    app:srcCompat="@drawable/pkg_pumping"
-                                    app:tint="@color/fixed_color_button_text_color" />
-                            </FrameLayout>
+                            <ImageView
+                                android:layout_width="50dp"
+                                android:layout_height="50dp"
+                                android:scaleType="fitCenter"
+                                app:srcCompat="@drawable/ic_bf_3d_supplement" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp"
+                                android:layout_marginTop="6dp"
                                 android:singleLine="true"
-                                android:text="@string/tile_pumping"
-                                android:textColor="@color/text_primary_warm"
-                                android:textSize="12sp"
+                                android:text="@string/bf_tile_pumping_supp"
+                                android:textColor="@color/pumping_accent"
+                                android:textSize="13.5sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
 
                         <LinearLayout
                             android:id="@+id/pumpingEnabledButton"
                             android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/bg_tile_active"
+                            android:layout_height="104dp"
+                            android:background="@drawable/bg_bf_quick_tile_active"
                             android:clickable="true"
                             android:focusable="true"
                             android:gravity="center"
                             android:orientation="vertical"
-                            android:paddingTop="10dp"
-                            android:paddingBottom="8dp"
+                            android:padding="10dp"
                             android:visibility="gone">
 
-                            <FrameLayout
-                                android:layout_width="38dp"
-                                android:layout_height="38dp"
-                                android:background="@drawable/bg_badge_rounded"
-                                android:backgroundTint="@color/pumping_accent"
-                                android:padding="7dp">
-
-                                <ImageView
-                                    android:layout_width="match_parent"
-                                    android:layout_height="match_parent"
-                                    android:scaleType="fitCenter"
-                                    app:srcCompat="@drawable/pkg_pumping"
-                                    app:tint="@color/white" />
-                            </FrameLayout>
+                            <ImageView
+                                android:layout_width="50dp"
+                                android:layout_height="50dp"
+                                android:scaleType="fitCenter"
+                                app:srcCompat="@drawable/ic_bf_3d_supplement" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp"
+                                android:layout_marginTop="6dp"
                                 android:singleLine="true"
-                                android:text="@string/tile_pumping"
-                                android:textColor="@color/primary_color"
-                                android:textSize="12sp"
+                                android:text="@string/bf_tile_pumping_supp"
+                                android:textColor="@color/bf_purple_primary"
+                                android:textSize="13.5sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
                     </FrameLayout>
 
-                    <!-- Tummy Time Tile -->
+                    <!-- Care / Notes Tile -->
                     <FrameLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:layout_weight="1">
-
-                        <LinearLayout
-                            android:id="@+id/tummyTimeDisabledButton"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/bg_tile_idle"
-                            android:clickable="true"
-                            android:focusable="true"
-                            android:gravity="center"
-                            android:orientation="vertical"
-                            android:paddingTop="10dp"
-                            android:paddingBottom="8dp">
-
-                            <FrameLayout
-                                android:layout_width="38dp"
-                                android:layout_height="38dp"
-                                android:background="@drawable/bg_badge_rounded"
-                                android:backgroundTint="@color/tummy_time_enabled"
-                                android:padding="7dp">
-
-                                <ImageView
-                                    android:layout_width="match_parent"
-                                    android:layout_height="match_parent"
-                                    android:scaleType="fitCenter"
-                                    app:srcCompat="@drawable/pkg_crawl"
-                                    app:tint="@color/fixed_color_button_text_color" />
-                            </FrameLayout>
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp"
-                                android:singleLine="true"
-                                android:text="@string/tile_tummy_time"
-                                android:textColor="@color/text_primary_warm"
-                                android:textSize="12sp"
-                                android:textStyle="bold" />
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:id="@+id/tummyTimeEnabledButton"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/bg_tile_active"
-                            android:clickable="true"
-                            android:focusable="true"
-                            android:gravity="center"
-                            android:orientation="vertical"
-                            android:paddingTop="10dp"
-                            android:paddingBottom="8dp"
-                            android:visibility="gone">
-
-                            <FrameLayout
-                                android:layout_width="38dp"
-                                android:layout_height="38dp"
-                                android:background="@drawable/bg_badge_rounded"
-                                android:backgroundTint="@color/tummy_time_accent"
-                                android:padding="7dp">
-
-                                <ImageView
-                                    android:layout_width="match_parent"
-                                    android:layout_height="match_parent"
-                                    android:scaleType="fitCenter"
-                                    app:srcCompat="@drawable/pkg_crawl"
-                                    app:tint="@color/white" />
-                            </FrameLayout>
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp"
-                                android:singleLine="true"
-                                android:text="@string/tile_tummy_time"
-                                android:textColor="@color/primary_color"
-                                android:textSize="12sp"
-                                android:textStyle="bold" />
-                        </LinearLayout>
-                    </FrameLayout>
-
-                    <!-- Note Tile -->
-                    <FrameLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
+                        android:layout_marginStart="10dp"
                         android:layout_weight="1">
 
                         <LinearLayout
                             android:id="@+id/notesDisabledButton"
                             android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/bg_tile_idle"
+                            android:layout_height="104dp"
+                            android:background="@drawable/bg_bf_quick_tile"
+                            android:backgroundTint="@color/bf_tile_care"
                             android:clickable="true"
                             android:focusable="true"
                             android:gravity="center"
                             android:orientation="vertical"
-                            android:paddingTop="10dp"
-                            android:paddingBottom="8dp">
+                            android:padding="10dp">
 
-                            <FrameLayout
-                                android:layout_width="38dp"
-                                android:layout_height="38dp"
-                                android:background="@drawable/bg_badge_rounded"
-                                android:backgroundTint="@color/notes_enabled"
-                                android:padding="7dp">
-
-                                <ImageView
-                                    android:layout_width="match_parent"
-                                    android:layout_height="match_parent"
-                                    android:scaleType="fitCenter"
-                                    app:srcCompat="@drawable/pkg_notes"
-                                    app:tint="@color/fixed_color_button_text_color" />
-                            </FrameLayout>
+                            <ImageView
+                                android:layout_width="50dp"
+                                android:layout_height="50dp"
+                                android:scaleType="fitCenter"
+                                app:srcCompat="@drawable/ic_bf_3d_care" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp"
+                                android:layout_marginTop="6dp"
                                 android:singleLine="true"
-                                android:text="@string/tile_notes"
-                                android:textColor="@color/text_primary_warm"
-                                android:textSize="12sp"
+                                android:text="@string/bf_cat_care"
+                                android:textColor="@color/notes_accent"
+                                android:textSize="13.5sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
 
                         <LinearLayout
                             android:id="@+id/notesEnabledButton"
                             android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/bg_tile_active"
+                            android:layout_height="104dp"
+                            android:background="@drawable/bg_bf_quick_tile_active"
                             android:clickable="true"
                             android:focusable="true"
                             android:gravity="center"
                             android:orientation="vertical"
-                            android:paddingTop="10dp"
-                            android:paddingBottom="8dp"
+                            android:padding="10dp"
                             android:visibility="gone">
 
-                            <FrameLayout
-                                android:layout_width="38dp"
-                                android:layout_height="38dp"
-                                android:background="@drawable/bg_badge_rounded"
-                                android:backgroundTint="@color/notes_accent"
-                                android:padding="7dp">
-
-                                <ImageView
-                                    android:layout_width="match_parent"
-                                    android:layout_height="match_parent"
-                                    android:scaleType="fitCenter"
-                                    app:srcCompat="@drawable/pkg_notes"
-                                    app:tint="@color/white" />
-                            </FrameLayout>
+                            <ImageView
+                                android:layout_width="50dp"
+                                android:layout_height="50dp"
+                                android:scaleType="fitCenter"
+                                app:srcCompat="@drawable/ic_bf_3d_care" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp"
+                                android:layout_marginTop="6dp"
                                 android:singleLine="true"
-                                android:text="@string/tile_notes"
-                                android:textColor="@color/primary_color"
-                                android:textSize="12sp"
+                                android:text="@string/bf_cat_care"
+                                android:textColor="@color/bf_purple_primary"
+                                android:textSize="13.5sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </FrameLayout>
+
+                    <!-- Early Edu / Tummy Time Tile -->
+                    <FrameLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:layout_weight="1">
+
+                        <LinearLayout
+                            android:id="@+id/tummyTimeDisabledButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="104dp"
+                            android:background="@drawable/bg_bf_quick_tile"
+                            android:backgroundTint="@color/bf_tile_edu"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:padding="10dp">
+
+                            <ImageView
+                                android:layout_width="50dp"
+                                android:layout_height="50dp"
+                                android:scaleType="fitCenter"
+                                app:srcCompat="@drawable/ic_bf_3d_edu" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="6dp"
+                                android:singleLine="true"
+                                android:text="@string/bf_cat_edu"
+                                android:textColor="@color/tummy_time_accent"
+                                android:textSize="13.5sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/tummyTimeEnabledButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="104dp"
+                            android:background="@drawable/bg_bf_quick_tile_active"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:padding="10dp"
+                            android:visibility="gone">
+
+                            <ImageView
+                                android:layout_width="50dp"
+                                android:layout_height="50dp"
+                                android:scaleType="fitCenter"
+                                app:srcCompat="@drawable/ic_bf_3d_edu" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="6dp"
+                                android:singleLine="true"
+                                android:text="@string/bf_cat_edu"
+                                android:textColor="@color/bf_purple_primary"
+                                android:textSize="13.5sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
                     </FrameLayout>
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Section 2: Growth & Health Action Tiles (5-column Strip) -->
+            <!-- ==================== 3. GROWTH & HEALTH MEASUREMENTS STRIP ==================== -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="2dp"
-                android:layout_marginTop="12dp"
-                android:layout_marginBottom="6dp"
+                android:layout_marginStart="4dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="8dp"
                 android:text="@string/section_growth_health"
                 android:textColor="@color/text_secondary_warm"
-                android:textSize="12.5sp"
+                android:textSize="13.5sp"
                 android:textStyle="bold" />
 
             <LinearLayout
@@ -817,13 +917,13 @@
                         android:id="@+id/temperatureDisabledButton"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:background="@drawable/bg_tile_idle"
+                        android:background="@drawable/bg_bf_top_capsule"
                         android:clickable="true"
                         android:focusable="true"
                         android:gravity="center"
                         android:orientation="vertical"
-                        android:paddingTop="8dp"
-                        android:paddingBottom="7dp">
+                        android:paddingTop="10dp"
+                        android:paddingBottom="9dp">
 
                         <FrameLayout
                             android:layout_width="32dp"
@@ -836,13 +936,13 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent"
                                 app:srcCompat="@drawable/ic_temperature"
-                                app:tint="@color/fixed_color_button_text_color" />
+                                app:tint="@color/temperature_accent" />
                         </FrameLayout>
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="3dp"
+                            android:layout_marginTop="4dp"
                             android:ellipsize="end"
                             android:singleLine="true"
                             android:text="@string/tile_temperature"
@@ -855,13 +955,13 @@
                         android:id="@+id/temperatureEnabledButton"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:background="@drawable/bg_tile_active"
+                        android:background="@drawable/bg_bf_quick_tile_active"
                         android:clickable="true"
                         android:focusable="true"
                         android:gravity="center"
                         android:orientation="vertical"
-                        android:paddingTop="8dp"
-                        android:paddingBottom="7dp"
+                        android:paddingTop="10dp"
+                        android:paddingBottom="9dp"
                         android:visibility="gone">
 
                         <FrameLayout
@@ -881,11 +981,11 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="3dp"
+                            android:layout_marginTop="4dp"
                             android:ellipsize="end"
                             android:singleLine="true"
                             android:text="@string/tile_temperature"
-                            android:textColor="@color/primary_color"
+                            android:textColor="@color/bf_purple_primary"
                             android:textSize="11sp"
                             android:textStyle="bold" />
                     </LinearLayout>
@@ -902,13 +1002,13 @@
                         android:id="@+id/weightDisabledButton"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:background="@drawable/bg_tile_idle"
+                        android:background="@drawable/bg_bf_top_capsule"
                         android:clickable="true"
                         android:focusable="true"
                         android:gravity="center"
                         android:orientation="vertical"
-                        android:paddingTop="8dp"
-                        android:paddingBottom="7dp">
+                        android:paddingTop="10dp"
+                        android:paddingBottom="9dp">
 
                         <FrameLayout
                             android:layout_width="32dp"
@@ -921,13 +1021,13 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent"
                                 app:srcCompat="@drawable/ic_weight"
-                                app:tint="@color/fixed_color_button_text_color" />
+                                app:tint="@color/weight_accent" />
                         </FrameLayout>
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="3dp"
+                            android:layout_marginTop="4dp"
                             android:ellipsize="end"
                             android:singleLine="true"
                             android:text="@string/tile_weight"
@@ -940,13 +1040,13 @@
                         android:id="@+id/weightEnabledButton"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:background="@drawable/bg_tile_active"
+                        android:background="@drawable/bg_bf_quick_tile_active"
                         android:clickable="true"
                         android:focusable="true"
                         android:gravity="center"
                         android:orientation="vertical"
-                        android:paddingTop="8dp"
-                        android:paddingBottom="7dp"
+                        android:paddingTop="10dp"
+                        android:paddingBottom="9dp"
                         android:visibility="gone">
 
                         <FrameLayout
@@ -966,11 +1066,11 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="3dp"
+                            android:layout_marginTop="4dp"
                             android:ellipsize="end"
                             android:singleLine="true"
                             android:text="@string/tile_weight"
-                            android:textColor="@color/primary_color"
+                            android:textColor="@color/bf_purple_primary"
                             android:textSize="11sp"
                             android:textStyle="bold" />
                     </LinearLayout>
@@ -987,13 +1087,13 @@
                         android:id="@+id/heightDisabledButton"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:background="@drawable/bg_tile_idle"
+                        android:background="@drawable/bg_bf_top_capsule"
                         android:clickable="true"
                         android:focusable="true"
                         android:gravity="center"
                         android:orientation="vertical"
-                        android:paddingTop="8dp"
-                        android:paddingBottom="7dp">
+                        android:paddingTop="10dp"
+                        android:paddingBottom="9dp">
 
                         <FrameLayout
                             android:layout_width="32dp"
@@ -1006,13 +1106,13 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent"
                                 app:srcCompat="@drawable/ic_height"
-                                app:tint="@color/fixed_color_button_text_color" />
+                                app:tint="@color/height_accent" />
                         </FrameLayout>
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="3dp"
+                            android:layout_marginTop="4dp"
                             android:ellipsize="end"
                             android:singleLine="true"
                             android:text="@string/tile_height"
@@ -1025,13 +1125,13 @@
                         android:id="@+id/heightEnabledButton"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:background="@drawable/bg_tile_active"
+                        android:background="@drawable/bg_bf_quick_tile_active"
                         android:clickable="true"
                         android:focusable="true"
                         android:gravity="center"
                         android:orientation="vertical"
-                        android:paddingTop="8dp"
-                        android:paddingBottom="7dp"
+                        android:paddingTop="10dp"
+                        android:paddingBottom="9dp"
                         android:visibility="gone">
 
                         <FrameLayout
@@ -1051,11 +1151,11 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="3dp"
+                            android:layout_marginTop="4dp"
                             android:ellipsize="end"
                             android:singleLine="true"
                             android:text="@string/tile_height"
-                            android:textColor="@color/primary_color"
+                            android:textColor="@color/bf_purple_primary"
                             android:textSize="11sp"
                             android:textStyle="bold" />
                     </LinearLayout>
@@ -1072,13 +1172,13 @@
                         android:id="@+id/headCircumferenceDisabledButton"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:background="@drawable/bg_tile_idle"
+                        android:background="@drawable/bg_bf_top_capsule"
                         android:clickable="true"
                         android:focusable="true"
                         android:gravity="center"
                         android:orientation="vertical"
-                        android:paddingTop="8dp"
-                        android:paddingBottom="7dp">
+                        android:paddingTop="10dp"
+                        android:paddingBottom="9dp">
 
                         <FrameLayout
                             android:layout_width="32dp"
@@ -1091,13 +1191,13 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent"
                                 app:srcCompat="@drawable/ic_head_circumference"
-                                app:tint="@color/fixed_color_button_text_color" />
+                                app:tint="@color/head_circumference_accent" />
                         </FrameLayout>
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="3dp"
+                            android:layout_marginTop="4dp"
                             android:ellipsize="end"
                             android:singleLine="true"
                             android:text="@string/tile_head_circumference"
@@ -1110,13 +1210,13 @@
                         android:id="@+id/headCircumferenceEnabledButton"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:background="@drawable/bg_tile_active"
+                        android:background="@drawable/bg_bf_quick_tile_active"
                         android:clickable="true"
                         android:focusable="true"
                         android:gravity="center"
                         android:orientation="vertical"
-                        android:paddingTop="8dp"
-                        android:paddingBottom="7dp"
+                        android:paddingTop="10dp"
+                        android:paddingBottom="9dp"
                         android:visibility="gone">
 
                         <FrameLayout
@@ -1136,11 +1236,11 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="3dp"
+                            android:layout_marginTop="4dp"
                             android:ellipsize="end"
                             android:singleLine="true"
                             android:text="@string/tile_head_circumference"
-                            android:textColor="@color/primary_color"
+                            android:textColor="@color/bf_purple_primary"
                             android:textSize="11sp"
                             android:textStyle="bold" />
                     </LinearLayout>
@@ -1157,13 +1257,13 @@
                         android:id="@+id/bmiDisabledButton"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:background="@drawable/bg_tile_idle"
+                        android:background="@drawable/bg_bf_top_capsule"
                         android:clickable="true"
                         android:focusable="true"
                         android:gravity="center"
                         android:orientation="vertical"
-                        android:paddingTop="8dp"
-                        android:paddingBottom="7dp">
+                        android:paddingTop="10dp"
+                        android:paddingBottom="9dp">
 
                         <FrameLayout
                             android:layout_width="32dp"
@@ -1176,13 +1276,13 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent"
                                 app:srcCompat="@drawable/ic_bmi"
-                                app:tint="@color/fixed_color_button_text_color" />
+                                app:tint="@color/bmi_accent" />
                         </FrameLayout>
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="3dp"
+                            android:layout_marginTop="4dp"
                             android:ellipsize="end"
                             android:singleLine="true"
                             android:text="@string/tile_bmi"
@@ -1195,13 +1295,13 @@
                         android:id="@+id/bmiEnabledButton"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:background="@drawable/bg_tile_active"
+                        android:background="@drawable/bg_bf_quick_tile_active"
                         android:clickable="true"
                         android:focusable="true"
                         android:gravity="center"
                         android:orientation="vertical"
-                        android:paddingTop="8dp"
-                        android:paddingBottom="7dp"
+                        android:paddingTop="10dp"
+                        android:paddingBottom="9dp"
                         android:visibility="gone">
 
                         <FrameLayout
@@ -1221,11 +1321,11 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="3dp"
+                            android:layout_marginTop="4dp"
                             android:ellipsize="end"
                             android:singleLine="true"
                             android:text="@string/tile_bmi"
-                            android:textColor="@color/primary_color"
+                            android:textColor="@color/bf_purple_primary"
                             android:textSize="11sp"
                             android:textStyle="bold" />
                     </LinearLayout>
@@ -1237,13 +1337,14 @@
                 android:id="@+id/loggingEditors"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
                 android:orientation="vertical" />
 
-            <!-- Timeline Header & Category Filter Chips -->
+            <!-- ==================== 4. RECENT RECORDS LIST & FILTERS ==================== -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="18dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
@@ -1251,7 +1352,7 @@
                     android:id="@+id/leftTimelineTitleLine"
                     style="@style/SeparatorLine"
                     android:layout_width="0dp"
-                    android:layout_height="1.5dp"
+                    android:layout_height="1dp"
                     android:layout_marginEnd="10dp"
                     android:layout_weight="1" />
 
@@ -1259,7 +1360,7 @@
                     android:id="@+id/timelineTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/timeline_title_line_title"
+                    android:text="@string/bf_recent_records_title"
                     android:textColor="@color/text_secondary_warm"
                     android:textSize="13sp"
                     android:textStyle="bold" />
@@ -1268,7 +1369,7 @@
                     android:id="@+id/rightTimelineTitleLine"
                     style="@style/SeparatorLine"
                     android:layout_width="0dp"
-                    android:layout_height="1.5dp"
+                    android:layout_height="1dp"
                     android:layout_marginStart="10dp"
                     android:layout_weight="1" />
             </LinearLayout>
@@ -1318,7 +1419,7 @@
                         style="@style/Widget.MaterialComponents.Chip.Choice"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/tile_diaper"
+                        android:text="@string/bf_cat_diaper"
                         android:textSize="12sp" />
 
                     <com.google.android.material.chip.Chip
@@ -1326,7 +1427,7 @@
                         style="@style/Widget.MaterialComponents.Chip.Choice"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/tile_pumping"
+                        android:text="@string/bf_cat_supplement"
                         android:textSize="12sp" />
 
                     <com.google.android.material.chip.Chip
@@ -1334,7 +1435,7 @@
                         style="@style/Widget.MaterialComponents.Chip.Choice"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/tile_tummy_time"
+                        android:text="@string/bf_cat_edu"
                         android:textSize="12sp" />
 
                     <com.google.android.material.chip.Chip
@@ -1350,7 +1451,7 @@
                         style="@style/Widget.MaterialComponents.Chip.Choice"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/tile_notes"
+                        android:text="@string/bf_cat_care"
                         android:textSize="12sp" />
                 </com.google.android.material.chip.ChipGroup>
             </HorizontalScrollView>

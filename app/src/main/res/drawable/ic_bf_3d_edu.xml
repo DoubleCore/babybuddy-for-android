@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- Open Storybook Cover -->
+    <path
+        android:fillColor="#FFE59A7C"
+        android:pathData="M8,20 L24,24 L40,20 L40,36 L24,40 L8,36 Z" />
+    <!-- Left Page -->
+    <path
+        android:fillColor="#FFFFFBF5"
+        android:pathData="M10,17 L24,21 L24,37 L10,33 Z" />
+    <!-- Right Page -->
+    <path
+        android:fillColor="#FFF7EFE4"
+        android:pathData="M24,21 L38,17 L38,33 L24,37 Z" />
+    <!-- Page Lines & Cute Shapes -->
+    <path
+        android:fillColor="#FF88B2DC"
+        android:pathData="M17,24 m-3,0 a3,3 0 1,0 6,0 a3,3 0 1,0 -6,0" />
+    <path
+        android:strokeColor="#FFC8BAAA"
+        android:strokeWidth="1.6"
+        android:strokeLineCap="round"
+        android:pathData="M28,23 L34,21.5 M28,27 L34,25.5 M28,31 L33,29.8" />
+</vector>

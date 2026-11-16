@@ -206,4 +206,50 @@ class BabySummaryAndStatsTest {
         assertEquals(1, stats.temperatureTrend.size)
         assertEquals(36.8f, stats.temperatureTrend[0].value, 1e-3f)
     }
+
+    @Test
+    fun sixCategorySummaryAndVaccineSchedule() {
+        val now = localTime(2026, 11, 14, 18, 30)
+        val entries = listOf(
+            eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.PumpingEntry(
+                id = 21,
+                childId = 1,
+                _start = localTime(2026, 11, 14, 10, 0),
+                _end = localTime(2026, 11, 14, 10, 15),
+                _notes = "",
+                amount = 110.0,
+                _legacyTime = null
+            ),
+            eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.TummyTimeEntry(
+                id = 22,
+                childId = 1,
+                start = localTime(2026, 11, 14, 11, 0),
+                end = localTime(2026, 11, 14, 11, 24),
+                _notes = ""
+            ),
+            eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.NoteEntry(
+                id = 23,
+                childId = 1,
+                start = localTime(2026, 11, 14, 12, 0),
+                _notes = "抚触护理"
+            )
+        )
+
+        val summary = BabySummaryHelper.computeTodaySummary(
+            entries = entries,
+            nowClientTime = now,
+            zoneId = testZone,
+            convertServerOffset = false
+        )
+        assertEquals(1, summary.todayPumpingCount)
+        assertEquals(110.0, summary.todayPumpingAmountMl, 1e-6)
+        assertEquals(24, summary.todayTummyMinutes)
+        assertEquals(1, summary.todayCareCount)
+
+        val birth = LocalDate.of(2026, 5, 10)
+        assertEquals(
+            LocalDate.of(2026, 11, 10),
+            eu.pkgsoftware.babybuddywidgets.babyflow.BabyFlowLocalStore.computeDueDate(birth, 6)
+        )
+    }
 }

@@ -267,4 +267,113 @@
     <string name="stats_growth_latest_single">Aktuell: {latest}</string>
     <string name="stats_no_data">Keine Daten in diesem Zeitraum</string>
     <string name="stats_loading">Statistiken werden geladen…</string>
+
+    <!-- BabyFlow UI Redesign Strings -->
+    <string name="bf_nav_today">Heute</string>
+    <string name="bf_nav_growth">Wachstum</string>
+    <string name="bf_nav_inventory">Vorrat</string>
+    <string name="bf_nav_mine">Profil</string>
+
+    <string name="bf_greeting_morning">Guten Morgen</string>
+    <string name="bf_greeting_noon">Guten Tag</string>
+    <string name="bf_greeting_afternoon">Guten Nachmittag</string>
+    <string name="bf_greeting_evening">Guten Abend</string>
+
+    <string name="bf_milestone_growing">Wächst</string>
+    <string name="bf_milestone_full_month">1 Monat</string>
+    <string name="bf_milestone_100_days">100 Tage</string>
+    <string name="bf_milestone_days_left">Noch {days} Tage</string>
+    <string name="bf_milestone_year_n">{years}. Jahr</string>
+
+    <string name="bf_cat_diaper">Windel</string>
+    <string name="bf_cat_supplement">Zusatz</string>
+    <string name="bf_cat_care">Pflege</string>
+    <string name="bf_cat_edu">Bauchlage</string>
+    <string name="bf_tile_pumping_supp">Abpumpen</string>
+    <string name="bf_quick_record_title">Schnellerfassung</string>
+    <string name="bf_recent_records_title">Letzte Einträge</string>
+
+    <string name="bf_min_short"> Min.</string>
+    <string name="bf_hour_short"> Std. </string>
+    <string name="bf_times_short">x</string>
+    <string name="bf_diaper_both_short">Nass+Stuhl</string>
+    <string name="bf_last_prefix">Zuletzt {time}</string>
+
+    <string name="bf_action_close">Schließen</string>
+    <string name="bf_daily_timeline_title">Tagesverlauf</string>
+    <string name="bf_prev_day">Vortag</string>
+    <string name="bf_next_day">Folgetag</string>
+
+    <string name="bf_vaccine_title">Impfungen</string>
+    <string name="bf_vaccine_tab_plan">Impfplan</string>
+    <string name="bf_vaccine_tab_library">Impfliste</string>
+    <string name="bf_vaccine_next_prefix">Nächste: </string>
+    <string name="bf_days_unit"> T.</string>
+    <string name="bf_vaccine_all_done">Alle geplanten Impfungen abgeschlossen</string>
+    <string name="bf_default_baby_name">Baby</string>
+    <string name="bf_vaccine_checklist">Impfübersicht</string>
+    <string name="bf_vaccine_in_progress">Offen</string>
+    <string name="bf_vaccine_completed">Erledigt</string>
+    <string name="bf_vaccine_mandatory">Standard · Kostenlos</string>
+    <string name="bf_vaccine_optional">Optional · Wahlleistung</string>
+    <string name="bf_month_age_unit"> Mon.</string>
+    <string name="bf_vaccine_done_at">Geimpft am</string>
+    <string name="bf_vaccine_plan_date">Geplant:</string>
+    <string name="bf_vaccine_mark_done">Abhaken</string>
+    <string name="bf_vaccine_custom_name_hint">Impfstoffname</string>
+    <string name="bf_vaccine_custom_month_hint">Empfohlenes Alter (Monate)</string>
+    <string name="bf_vaccine_custom_price_hint">Preis / Kostenlos</string>
+    <string name="bf_vaccine_add_custom">Eigene Impfung hinzufügen</string>
+    <string name="bf_vaccine_self_paid">Selbstzahler</string>
+    <string name="bf_vaccine_custom_tag">Eigene</string>
+
+    <string name="bf_med_sheet_title">Medikamente &amp; Vitamine</string>
+    <string name="bf_med_empty_hint">Noch keine Einträge. Tippe oben rechts auf + zum Hinzufügen.</string>
+    <string name="bf_med_name_hint">Name (z. B. Vitamin D3)</string>
+    <string name="bf_med_dose_hint">Dosis (z. B. 1 Tropfen)</string>
+    <string name="bf_med_add_title">Medikament eintragen</string>
+
+    <string name="bf_calendar_title">Kalender &amp; Suche</string>
+    <string name="bf_search_hint">Einträge oder Notizen durchsuchen…</string>
+    <string name="bf_search_results">Suchergebnisse</string>
+    <string name="bf_cal_has_vaccine">Impfung an diesem Tag</string>
+    <string name="bf_cal_has_med">Medikament an diesem Tag</string>
+    <string name="bf_view_day_timeline">Mehrspurigen Tagesverlauf öffnen</string>
+
+    <string name="bf_inv_title">Vorrat &amp; Ausgaben</string>
+    <string name="bf_inv_ledger_title">Ausgabenbuch</string>
+    <string name="bf_inv_current_baby">Ausgaben aktuelles Kind</string>
+    <string name="bf_inv_total_sum">Gesamt: </string>
+    <string name="bf_inv_cat_formula">Milchpulver</string>
+    <string name="bf_inv_cat_other">Sonstiges</string>
+    <string name="bf_inv_show_used_up">Aufgebrauchte zeigen</string>
+    <string name="bf_inv_expense_details">Ausgabendetails</string>
+    <string name="bf_inv_empty_category">Kein Vorrat in dieser Kategorie. Tippe auf +.</string>
+    <string name="bf_inv_consuming">In Gebrauch</string>
+    <string name="bf_inv_remaining_prefix">Rest: </string>
+    <string name="bf_inv_used_up">Leer</string>
+    <string name="bf_inv_btn_restock">+ Nachfüllen</string>
+    <string name="bf_inv_btn_use_one">-1 Verbrauch</string>
+    <string name="bf_inv_btn_mark_empty">Als leer markieren</string>
+    <string name="bf_inv_add_name_hint">Artikelname (z. B. Windeln Gr. 1)</string>
+    <string name="bf_inv_add_qty_hint">Menge (Stück / Löffel)</string>
+    <string name="bf_inv_add_price_hint">Preis (¥)</string>
+    <string name="bf_inv_add_spec_hint">Packungsgröße / Notiz</string>
+    <string name="bf_inv_add_dialog_title">Vorrat &amp; Ausgabe hinzufügen</string>
+
+    <string name="bf_growth_add_moment">Meilenstein festhalten</string>
+    <string name="bf_growth_seg_records">Einträge</string>
+    <string name="bf_growth_seg_stats">Kurven</string>
+    <string name="bf_growth_moment_banner_title">Meilensteine festhalten</string>
+    <string name="bf_growth_moment_banner_sub">Erstes Drehen, Vorsorge &amp; besondere Momente</string>
+    <string name="bf_growth_measurements_history">Körpermessungen</string>
+    <string name="bf_who_reference_subtitle">WHO P10–P90 Referenzbereich &amp; P50 Median</string>
+    <string name="bf_who_band_legend">Band: WHO P10–P90 · Gestrichelt: P50</string>
+    <string name="bf_growth_today_moment_count">{count} Momente</string>
+    <string name="bf_growth_add_tag_hint">Kategorie (z. B. Motorik / U-Untersuchung)</string>
+    <string name="bf_growth_add_title_hint">Titel (z. B. Zum ersten Mal gedreht!)</string>
+    <string name="bf_growth_add_content_hint">Notizen &amp; Details</string>
+
+    <string name="bf_mine_switch_child">Kind wechseln</string>
+    <string name="bf_mine_med_subtitle">Vitamin D3, Probiotika &amp; Medikamentenverlauf</string>
 </resources>

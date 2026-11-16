@@ -178,8 +178,13 @@ class MainActivity : AppCompatActivity() {
         binding.root.let {
             val ncv = it.findViewById<FragmentContainerView>(R.id.nav_host_fragment_content_main)
             ncv.findNavController()
-                .addOnDestinationChangedListener { controller, destination, arguments ->
+                .addOnDestinationChangedListener { _, destination, _ ->
                     enableBackNavigationButton(false)
+                    binding.appToolbar.visibility = if (destination.id == R.id.loggedInFragment2) {
+                        android.view.View.GONE
+                    } else {
+                        android.view.View.VISIBLE
+                    }
                 }
         }
     }

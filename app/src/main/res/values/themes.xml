@@ -19,18 +19,18 @@
         <item name="android:textColorPrimary">@color/text_primary_warm</item>
         <item name="android:textColorSecondary">@color/text_secondary_warm</item>
         <!-- Status bar color -->
-        <item name="android:statusBarColor">@color/primary_bg_color</item>
+        <item name="android:statusBarColor">@color/surface_background</item>
 
         <!-- Custom app attributes -->
         <item name="primaryColor">@color/primary_color</item>
-        <item name="primaryBgColor">@color/primary_bg_color</item>
+        <item name="primaryBgColor">@color/surface_background</item>
         <item name="appWidgetBackgroundColor">@color/light_blue_600</item>
         <item name="appWidgetTextColor">@color/light_blue_50</item>
         <item name="colorPopoverBackground">@color/semi_transparent_dark_background</item>
         <item name="colorPopoverTextColor">@color/white</item>
     </style>
 
-    <style name="Theme.BabyBuddyWidgets.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
+    <style name="Theme.BabyBuddyWidgets.AppBarOverlay" parent="ThemeOverlay.AppCompat.Light" />
 
     <style name="AppWidgetAttrs">
         <item name="primaryColor">@color/primary_color</item>

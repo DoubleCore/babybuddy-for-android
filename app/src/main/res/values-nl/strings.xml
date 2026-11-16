@@ -329,4 +329,113 @@
     <string name="stats_growth_latest_single">Laatste: {latest}</string>
     <string name="stats_no_data">Geen gegevens in deze periode</string>
     <string name="stats_loading">Statistieken laden…</string>
+
+    <!-- BabyFlow UI Redesign Strings -->
+    <string name="bf_nav_today">Vandaag</string>
+    <string name="bf_nav_growth">Groei</string>
+    <string name="bf_nav_inventory">Voorraad</string>
+    <string name="bf_nav_mine">Profiel</string>
+
+    <string name="bf_greeting_morning">Goedemorgen</string>
+    <string name="bf_greeting_noon">Goedemiddag</string>
+    <string name="bf_greeting_afternoon">Goedemiddag</string>
+    <string name="bf_greeting_evening">Goedenavond</string>
+
+    <string name="bf_milestone_growing">Groeit</string>
+    <string name="bf_milestone_full_month">1 maand</string>
+    <string name="bf_milestone_100_days">100 dagen</string>
+    <string name="bf_milestone_days_left">Nog {days} dagen</string>
+    <string name="bf_milestone_year_n">Jaar {years}</string>
+
+    <string name="bf_cat_diaper">Luier</string>
+    <string name="bf_cat_supplement">Supplement</string>
+    <string name="bf_cat_care">Verzorging</string>
+    <string name="bf_cat_edu">Buiktijd</string>
+    <string name="bf_tile_pumping_supp">Kolven</string>
+    <string name="bf_quick_record_title">Snel loggen</string>
+    <string name="bf_recent_records_title">Recente items</string>
+
+    <string name="bf_min_short"> min</string>
+    <string name="bf_hour_short"> u </string>
+    <string name="bf_times_short">x</string>
+    <string name="bf_diaper_both_short">Nat+Vast</string>
+    <string name="bf_last_prefix">Laatst {time}</string>
+
+    <string name="bf_action_close">Sluiten</string>
+    <string name="bf_daily_timeline_title">Dagtijdlijn</string>
+    <string name="bf_prev_day">Vorige dag</string>
+    <string name="bf_next_day">Volgende dag</string>
+
+    <string name="bf_vaccine_title">Vaccinaties</string>
+    <string name="bf_vaccine_tab_plan">Schema</string>
+    <string name="bf_vaccine_tab_library">Overzicht</string>
+    <string name="bf_vaccine_next_prefix">Volgende: </string>
+    <string name="bf_days_unit"> d</string>
+    <string name="bf_vaccine_all_done">Alle geplande vaccinaties voltooid</string>
+    <string name="bf_default_baby_name">Baby</string>
+    <string name="bf_vaccine_checklist">Vaccinatielijst</string>
+    <string name="bf_vaccine_in_progress">Gepland</string>
+    <string name="bf_vaccine_completed">Voltooid</string>
+    <string name="bf_vaccine_mandatory">Rijksvaccinatie · Gratis</string>
+    <string name="bf_vaccine_optional">Optioneel</string>
+    <string name="bf_month_age_unit"> mnd</string>
+    <string name="bf_vaccine_done_at">Gegeven op</string>
+    <string name="bf_vaccine_plan_date">Gepland:</string>
+    <string name="bf_vaccine_mark_done">Afronden</string>
+    <string name="bf_vaccine_custom_name_hint">Naam vaccin</string>
+    <string name="bf_vaccine_custom_month_hint">Aanbevolen leeftijd (maanden)</string>
+    <string name="bf_vaccine_custom_price_hint">Prijs / Gratis</string>
+    <string name="bf_vaccine_add_custom">Eigen vaccin toevoegen</string>
+    <string name="bf_vaccine_self_paid">Eigen kosten</string>
+    <string name="bf_vaccine_custom_tag">Eigen</string>
+
+    <string name="bf_med_sheet_title">Medicatie &amp; Supplementen</string>
+    <string name="bf_med_empty_hint">Nog geen medicatie gelogd. Tik rechtsboven op + om toe te voegen.</string>
+    <string name="bf_med_name_hint">Naam middel (bijv. Vitamine D)</string>
+    <string name="bf_med_dose_hint">Dosering (bijv. 1 druppel)</string>
+    <string name="bf_med_add_title">Medicatie loggen</string>
+
+    <string name="bf_calendar_title">Kalender &amp; Zoeken</string>
+    <string name="bf_search_hint">Zoek op activiteit of notitie…</string>
+    <string name="bf_search_results">Zoekresultaten</string>
+    <string name="bf_cal_has_vaccine">Vaccinatie op deze dag</string>
+    <string name="bf_cal_has_med">Medicatie op deze dag</string>
+    <string name="bf_view_day_timeline">Dagtijdlijn bekijken</string>
+
+    <string name="bf_inv_title">Voorraad &amp; Uitgaven</string>
+    <string name="bf_inv_ledger_title">Uitgavenboek</string>
+    <string name="bf_inv_current_baby">Uitgaven huidig kind</string>
+    <string name="bf_inv_total_sum">Totaal: </string>
+    <string name="bf_inv_cat_formula">Flesvoeding</string>
+    <string name="bf_inv_cat_other">Overig</string>
+    <string name="bf_inv_show_used_up">Toon opgebruikt</string>
+    <string name="bf_inv_expense_details">Uitgavenoverzicht</string>
+    <string name="bf_inv_empty_category">Geen voorraad in deze categorie. Tik op +.</string>
+    <string name="bf_inv_consuming">In gebruik</string>
+    <string name="bf_inv_remaining_prefix">Resterend: </string>
+    <string name="bf_inv_used_up">Op</string>
+    <string name="bf_inv_btn_restock">+ Aanvullen</string>
+    <string name="bf_inv_btn_use_one">-1 Gebruik</string>
+    <string name="bf_inv_btn_mark_empty">Markeer op</string>
+    <string name="bf_inv_add_name_hint">Artikelnaam (bijv. Luiers maat 1)</string>
+    <string name="bf_inv_add_qty_hint">Aantal (stuks / schepjes)</string>
+    <string name="bf_inv_add_price_hint">Prijs (¥)</string>
+    <string name="bf_inv_add_spec_hint">Specificatie / merk</string>
+    <string name="bf_inv_add_dialog_title">Voorraad &amp; Uitgave toevoegen</string>
+
+    <string name="bf_growth_add_moment">Mijlpaal vastleggen</string>
+    <string name="bf_growth_seg_records">Logboek</string>
+    <string name="bf_growth_seg_stats">Grafieken</string>
+    <string name="bf_growth_moment_banner_title">Leg mijlpalen vast</string>
+    <string name="bf_growth_moment_banner_sub">Omrollen, tandjes, controles &amp; mooie momenten</string>
+    <string name="bf_growth_measurements_history">Groeimetingen</string>
+    <string name="bf_who_reference_subtitle">WHO P10–P90 referentieband &amp; P50 mediaan</string>
+    <string name="bf_who_band_legend">Band: WHO P10–P90 · Stippellijn: P50</string>
+    <string name="bf_growth_today_moment_count">{count} mijlpalen</string>
+    <string name="bf_growth_add_tag_hint">Label (bijv. Motoriek / Controle)</string>
+    <string name="bf_growth_add_title_hint">Titel (bijv. Zelfstandig omgerold!)</string>
+    <string name="bf_growth_add_content_hint">Notities &amp; details</string>
+
+    <string name="bf_mine_switch_child">Kind wisselen</string>
+    <string name="bf_mine_med_subtitle">Vitamine D, probiotica &amp; medicatiegeschiedenis</string>
 </resources>
