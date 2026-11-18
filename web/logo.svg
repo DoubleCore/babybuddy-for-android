@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <defs>
+    <linearGradient id="nurseryBg" x1="16" y1="8" x2="112" y2="120" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#F29E88"/>
+      <stop offset="55%" stop-color="#E07A5F"/>
+      <stop offset="100%" stop-color="#C8644B"/>
+    </linearGradient>
+    <linearGradient id="softGlow" x1="64" y1="24" x2="64" y2="104" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#FFF5ED"/>
+    </linearGradient>
+  </defs>
+  <!-- Rounded Squircle Background -->
+  <rect width="128" height="128" rx="34" fill="url(#nurseryBg)"/>
+  <!-- Subtle Top Highlight -->
+  <rect x="4" y="4" width="120" height="120" rx="30" stroke="#FFFFFF" stroke-opacity="0.22" stroke-width="2"/>
+  <!-- Cute Baby Head Silhouette with Soft Curl -->
+  <path d="M64 26C57 26 52 31 53 36C41 39 33 50 33 63C33 81 47 95 64 95C81 95 95 81 95 63C95 50 87 39 75 36C75 30 70 26 64 26Z" fill="url(#softGlow)"/>
+  <!-- Little Ears -->
+  <circle cx="32" cy="63" r="7" fill="#FFF5ED"/>
+  <circle cx="96" cy="63" r="7" fill="#FFF5ED"/>
+  <!-- Top Hair Curl -->
+  <path d="M58 32C58 27 63 24 67 27C70 29 69 34 64 35" stroke="#E07A5F" stroke-width="3.2" stroke-linecap="round"/>
+  <!-- Happy Crescent Eyes -->
+  <path d="M47 61C49 58 53 58 55 61" stroke="#2D2522" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M73 61C75 58 79 58 81 61" stroke="#2D2522" stroke-width="3.5" stroke-linecap="round"/>
+  <!-- Rosy Cheeks -->
+  <circle cx="46" cy="69" r="5" fill="#F4A294" fill-opacity="0.65"/>
+  <circle cx="82" cy="69" r="5" fill="#F4A294" fill-opacity="0.65"/>
+  <!-- Sweet Smile -->
+  <path d="M57 72C59.5 76 68.5 76 71 72" stroke="#2D2522" stroke-width="3.4" stroke-linecap="round"/>
+  <!-- Tiny Sage Leaf / Star Sparkle -->
+  <circle cx="98" cy="30" r="5" fill="#FFF5ED" fill-opacity="0.9"/>
+  <path d="M98 22V38M90 30H106" stroke="#FFF5ED" stroke-width="2.2" stroke-linecap="round" stroke-opacity="0.85"/>
+</svg>
