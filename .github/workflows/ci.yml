@@ -1,4 +1,4 @@
-name: CI checks
+name: CI & Multi-Platform Build
 
 on:
   push:
@@ -14,8 +14,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: Build, unit tests and translations
+  build-android:
+    name: Build Android APK & Tests
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
@@ -26,7 +26,7 @@ jobs:
       - uses: ./.github/actions/setup-build
       - name: Build debug APK, run unit tests and lint
         run: ./gradlew --no-daemon --stacktrace :app:assembleDebug :app:testDebugUnitTest :app:lintDebug -PskipIntegrationTests
-      - name: Verify release signing and bundle build with a disposable test key
+      - name: Build test-signed release APK and bundle
         env:
           SIGNING_STORE_FILE: ${{ runner.temp }}/signing-smoke.jks
           SIGNING_STORE_PASSWORD: android
@@ -39,19 +39,26 @@ jobs:
           jarsigner -verify app/build/outputs/bundle/release/app-release.aab
       - name: Verify translations
         run: bash tools/workflows/check-translations.sh
-      - name: Upload installable test APK
+      - name: Upload Android Debug APK
         id: apk
         uses: actions/upload-artifact@v4
         with:
-          name: babybuddy-debug-${{ github.run_number }}
+          name: babybuddy-android-debug-${{ github.run_number }}
           path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload Android Release APK (test-signed)
+        uses: actions/upload-artifact@v4
+        with:
+          name: babybuddy-android-release-test-${{ github.run_number }}
+          path: app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 30
       - name: Upload test and lint reports
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
-          name: reports-${{ github.run_number }}
+          name: android-reports-${{ github.run_number }}
           path: |
             app/build/reports/
             app/build/test-results/
@@ -59,11 +66,51 @@ jobs:
       - name: Remove disposable signing key
         if: always()
         run: rm -f "$RUNNER_TEMP/signing-smoke.jks"
-      - name: Write build summary
+      - name: Write Android build summary
         env:
           ARTIFACT_URL: ${{ steps.apk.outputs.artifact-url }}
         run: |
-          echo '### Build verified' >> "$GITHUB_STEP_SUMMARY"
+          echo '### Android Build Verified' >> "$GITHUB_STEP_SUMMARY"
           echo "[Download debug APK]($ARTIFACT_URL)" >> "$GITHUB_STEP_SUMMARY"
-          echo 'Debug signing is for testing. Lint findings are reported; the existing Gradle lint policy is non-blocking.' >> "$GITHUB_STEP_SUMMARY"
-          sha256sum app/build/outputs/apk/debug/*.apk >> "$GITHUB_STEP_SUMMARY"
+          sha256sum app/build/outputs/apk/debug/*.apk app/build/outputs/apk/release/*.apk >> "$GITHUB_STEP_SUMMARY"
+
+  build-mac:
+    name: Build macOS Desktop App (.dmg / .zip)
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Generate 1024x1024 macOS app icon from web/logo.svg
+        run: |
+          brew install librsvg
+          mkdir -p mac-app/build
+          rsvg-convert -w 1024 -h 1024 web/logo.svg -o mac-app/build/icon.png
+      - name: Install dependencies and package macOS DMG/ZIP
+        working-directory: mac-app
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: |
+          npm install
+          npm run build:mac
+      - name: Upload macOS DMG & ZIP artifacts
+        id: mac_pkg
+        uses: actions/upload-artifact@v4
+        with:
+          name: babybuddy-macos-${{ github.run_number }}
+          path: |
+            mac-app/dist/*.dmg
+            mac-app/dist/*.zip
+          if-no-files-found: error
+          retention-days: 30
+      - name: Write macOS build summary
+        env:
+          ARTIFACT_URL: ${{ steps.mac_pkg.outputs.artifact-url }}
+        run: |
+          echo '### macOS Desktop Build Verified' >> "$GITHUB_STEP_SUMMARY"
+          echo "[Download macOS DMG/ZIP]($ARTIFACT_URL)" >> "$GITHUB_STEP_SUMMARY"
+          shasum -a 256 mac-app/dist/*.dmg mac-app/dist/*.zip >> "$GITHUB_STEP_SUMMARY"
