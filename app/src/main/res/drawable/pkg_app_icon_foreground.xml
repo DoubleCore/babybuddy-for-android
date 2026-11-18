@@ -1,36 +1,51 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
-  <group android:scaleX="0.598752"
-      android:scaleY="0.598752"
-      android:translateX="24.0624"
-      android:translateY="24.0624">
+    android:viewportWidth="128"
+    android:viewportHeight="128">
+    <!-- Left & Right Little Ears -->
     <path
-        android:pathData="M25.477,5.932L74.523,5.932A8.415,8.415 0,0 1,82.937 14.347L82.937,85.653A8.415,8.415 0,0 1,74.523 94.068L25.477,94.068A8.415,8.415 0,0 1,17.063 85.653L17.063,14.347A8.415,8.415 0,0 1,25.477 5.932z"
-        android:strokeLineJoin="round"
+        android:fillColor="#FFF5ED"
+        android:pathData="M34,64m-6.5,0a6.5,6.5 0,1 1,13 0a6.5,6.5 0,1 1,-13 0"/>
+    <path
+        android:fillColor="#FFF5ED"
+        android:pathData="M94,64m-6.5,0a6.5,6.5 0,1 1,13 0a6.5,6.5 0,1 1,-13 0"/>
+    <!-- Cute Baby Head Silhouette -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M64,31C58,31 53.5,35 54.5,39.5C43.5,42.5 36,52.5 36,64C36,80 48.5,92.5 64,92.5C79.5,92.5 92,80 92,64C92,52.5 84.5,42.5 73.5,39.5C73.5,34.5 69,31 64,31Z"/>
+    <!-- Top Soft Hair Curl -->
+    <path
+        android:pathData="M58.5,36.5C58.5,32 63,29.5 66.5,32C69.5,34 68.5,38.5 64,39.5"
         android:strokeWidth="3"
-        android:fillColor="#ececec"
-        android:strokeColor="#000000"/>
+        android:strokeColor="#E07A5F"
+        android:strokeLineCap="round"/>
+    <!-- Happy Crescent Eyes -->
     <path
-        android:pathData="M50,31.115A23.191,23.191 0,0 0,26.809 54.306,23.191 23.191,0 0,0 50,77.497 23.191,23.191 0,0 0,73.191 54.306,23.191 23.191,0 0,0 50,31.115ZM40.41,44.869a4.094,4.094 0,0 1,4.094 4.094,4.094 4.094,0 0,1 -4.094,4.094 4.094,4.094 0,0 1,-4.094 -4.094,4.094 4.094,0 0,1 4.094,-4.094zM61.991,44.869a4.094,4.094 0,0 1,4.094 4.094,4.094 4.094,45 0,1 -4.094,4.094 4.094,4.094 0,0 1,-4.094 -4.094,4.094 4.094,0 0,1 4.094,-4.094z"
-        android:strokeLineJoin="round"
-        android:strokeWidth="3.0000045"
-        android:fillColor="#8c8cff"
-        android:strokeColor="#000000"/>
+        android:pathData="M48.5,62C50.5,59 54,59 56,62"
+        android:strokeWidth="3.2"
+        android:strokeColor="#2D2522"
+        android:strokeLineCap="round"/>
     <path
-        android:pathData="m50.332,31.122c-15.113,-4.846 3.354,-18.378 6.695,-10.819 1.374,9.004 -20.182,4.006 -12.325,-5.916 1.791,-2.18 4.34,-2.94 7.017,-3.104"
-        android:strokeLineJoin="miter"
-        android:strokeWidth="1.99999"
-        android:fillColor="#00000000"
-        android:strokeColor="#000000"
-        android:strokeLineCap="butt"/>
+        android:pathData="M72,62C74,59 77.5,59 79.5,62"
+        android:strokeWidth="3.2"
+        android:strokeColor="#2D2522"
+        android:strokeLineCap="round"/>
+    <!-- Rosy Cheeks -->
     <path
-        android:pathData="M50,86.795m-2.736,0a2.736,2.736 0,1 1,5.472 0a2.736,2.736 0,1 1,-5.472 0"
-        android:strokeLineJoin="round"
-        android:strokeWidth="2"
-        android:fillColor="#000000"
-        android:strokeColor="#000000"/>
-  </group>
+        android:fillColor="#99F4A294"
+        android:pathData="M47.5,69.5m-4.5,0a4.5,4.5 0,1 1,9 0a4.5,4.5 0,1 1,-9 0"/>
+    <path
+        android:fillColor="#99F4A294"
+        android:pathData="M80.5,69.5m-4.5,0a4.5,4.5 0,1 1,9 0a4.5,4.5 0,1 1,-9 0"/>
+    <!-- Sweet Smile -->
+    <path
+        android:pathData="M57.5,72.5C60,76 68,76 70.5,72.5"
+        android:strokeWidth="3.2"
+        android:strokeColor="#2D2522"
+        android:strokeLineCap="round"/>
+    <!-- Warm Sparkle -->
+    <path
+        android:fillColor="#FFF5ED"
+        android:pathData="M96,34m-3.5,0a3.5,3.5 0,1 1,7 0a3.5,3.5 0,1 1,-7 0"/>
 </vector>
