@@ -76,7 +76,7 @@ jobs:
 
   build-mac:
     name: Build macOS Desktop App (.dmg / .zip)
-    runs-on: macos-latest
+    runs-on: macos-15-intel
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4.2.2
@@ -85,17 +85,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Generate 1024x1024 macOS app icon from web/logo.svg
-        run: |
-          brew install librsvg
-          mkdir -p mac-app/build
-          rsvg-convert -w 1024 -h 1024 web/logo.svg -o mac-app/build/icon.png
-      - name: Install dependencies and package macOS DMG/ZIP
+      - name: Install dependencies, generate icon and package macOS DMG/ZIP
         working-directory: mac-app
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
         run: |
           npm install
+          npm install --no-save @resvg/resvg-js
+          mkdir -p build
+          node -e "const fs=require('fs'),{Resvg}=require('@resvg/resvg-js');const svg=fs.readFileSync('../web/logo.svg','utf8');const png=new Resvg(svg,{fitTo:{mode:'width',value:1024}}).render().asPng();fs.writeFileSync('build/icon.png',png);"
           npm run build:mac
       - name: Upload macOS DMG & ZIP artifacts
         id: mac_pkg
