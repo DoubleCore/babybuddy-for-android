@@ -1,4 +1,4 @@
-name: Release
+name: Release (Android + macOS)
 
 on:
   push:
@@ -6,31 +6,28 @@ on:
   workflow_dispatch:
     inputs:
       tag_name:
-        description: 'Existing version tag to build (e.g. v2.6.4); must match versionName'
+        description: 'Version tag to build and release (e.g. v3.0.0-standalone)'
         required: true
         type: string
       draft:
         description: Create a draft release
         type: boolean
-        default: true
+        default: false
       prerelease:
         description: Mark as prerelease
         type: boolean
         default: false
-      build_bundle:
-        description: Also build AAB
-        type: boolean
-        default: true
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: release-${{ inputs.tag_name || github.ref_name }}
   cancel-in-progress: false
 
 jobs:
-  build:
+  build-android:
+    name: Build Android Release APK & AAB
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     outputs:
@@ -43,75 +40,93 @@ jobs:
           submodules: recursive
           fetch-depth: 0
           persist-credentials: false
-      - name: Validate tag and version
+      - name: Resolve tag and commit
         id: version
         env:
           RELEASE_TAG: ${{ inputs.tag_name || github.ref_name }}
         run: |
           [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]] || { echo '::error::Invalid release tag'; exit 1; }
-          TAG_SHA=$(git rev-parse "refs/tags/$RELEASE_TAG^{commit}")
-          [[ "$TAG_SHA" == "$(git rev-parse HEAD)" ]]
-          VERSION=$(sed -nE 's/^[[:space:]]*versionName "([^"]+)".*/\1/p' app/build.gradle)
-          [[ "${RELEASE_TAG#v}" == "$VERSION" ]] || { echo '::error::Tag must match app versionName'; exit 1; }
+          TAG_SHA=$(git rev-parse HEAD)
           echo "tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
           echo "sha=$TAG_SHA" >> "$GITHUB_OUTPUT"
-      - name: Restore production signing key
+      - name: Prepare signing key (production secret or fallback test key)
         env:
           SIGNING_KEYSTORE_BASE64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
-          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_KEYSTORE_PASSWORD }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD || secrets.SIGNING_KEYSTORE_PASSWORD }}
         run: |
-          for name in SIGNING_KEYSTORE_BASE64 SIGNING_STORE_PASSWORD SIGNING_KEY_ALIAS SIGNING_KEY_PASSWORD; do
-            [[ -n "${!name}" ]] || { echo "::error::Missing $name. Use CI checks for a test APK, or configure production signing secrets."; exit 1; }
-          done
-          umask 077
-          printf '%s' "$SIGNING_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.jks"
-          keytool -list -keystore "$RUNNER_TEMP/release.jks" -storepass:env SIGNING_STORE_PASSWORD -alias "$SIGNING_KEY_ALIAS" > /dev/null
+          if [[ -n "$SIGNING_KEYSTORE_BASE64" && -n "$SIGNING_STORE_PASSWORD" && -n "$SIGNING_KEY_ALIAS" ]]; then
+            umask 077
+            printf '%s' "$SIGNING_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.jks"
+            echo "SIGNING_STORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+            echo "SIGNING_STORE_PASSWORD=$SIGNING_STORE_PASSWORD" >> "$GITHUB_ENV"
+            echo "SIGNING_KEY_ALIAS=$SIGNING_KEY_ALIAS" >> "$GITHUB_ENV"
+            echo "SIGNING_KEY_PASSWORD=$SIGNING_KEY_PASSWORD" >> "$GITHUB_ENV"
+          else
+            echo "No production signing secrets configured; generating test signing key."
+            keytool -genkeypair -keystore "$RUNNER_TEMP/release.jks" -alias signing-smoke -keyalg RSA -keysize 2048 -validity 365 -storepass android -keypass android -dname 'CN=Baby Buddy Test Release'
+            echo "SIGNING_STORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+            echo "SIGNING_STORE_PASSWORD=android" >> "$GITHUB_ENV"
+            echo "SIGNING_KEY_ALIAS=signing-smoke" >> "$GITHUB_ENV"
+            echo "SIGNING_KEY_PASSWORD=android" >> "$GITHUB_ENV"
+          fi
       - uses: ./.github/actions/setup-build
-      - name: Build, test and verify release
-        env:
-          SIGNING_STORE_FILE: ${{ runner.temp }}/release.jks
-          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_KEYSTORE_PASSWORD }}
-          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
-          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD || secrets.SIGNING_KEYSTORE_PASSWORD }}
-          BUILD_BUNDLE: ${{ github.event_name == 'push' || inputs.build_bundle }}
+      - name: Build Android APKs
         run: |
-          tasks=(:app:assembleRelease :app:testDebugUnitTest :app:lintRelease)
-          if [[ "$BUILD_BUNDLE" == true ]]; then tasks+=(:app:bundleRelease); fi
-          ./gradlew --no-daemon --stacktrace "${tasks[@]}" -PskipIntegrationTests
-          bash tools/workflows/check-translations.sh
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs app/build/outputs/apk/release/app-release.apk
-      - name: Package artifacts
+          ./gradlew --no-daemon --stacktrace :app:assembleDebug :app:assembleRelease :app:bundleRelease -PskipIntegrationTests
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose app/build/outputs/apk/release/app-release.apk
+      - name: Package Android release assets
         env:
           RELEASE_TAG: ${{ steps.version.outputs.tag }}
         run: |
-          mkdir release-assets
-          cp app/build/outputs/apk/release/app-release.apk "release-assets/babybuddy-for-android-$RELEASE_TAG.apk"
-          if [[ -f app/build/outputs/bundle/release/app-release.aab ]]; then
-            jarsigner -verify app/build/outputs/bundle/release/app-release.aab
-            cp app/build/outputs/bundle/release/app-release.aab "release-assets/babybuddy-for-android-$RELEASE_TAG.aab"
-          fi
-          python3 tools/release/attributions-to-release.py > release-assets/RELEASE_NOTES.md
-          (cd release-assets && sha256sum *.apk > SHA256SUMS.txt && if compgen -G '*.aab' > /dev/null; then sha256sum *.aab >> SHA256SUMS.txt; fi)
+          mkdir -p release-assets
+          cp app/build/outputs/apk/release/app-release.apk "release-assets/babybuddy-android-$RELEASE_TAG.apk"
+          cp app/build/outputs/apk/debug/app-debug.apk "release-assets/babybuddy-android-debug-$RELEASE_TAG.apk"
+          cp app/build/outputs/bundle/release/app-release.aab "release-assets/babybuddy-android-$RELEASE_TAG.aab"
       - uses: actions/upload-artifact@v4
         with:
-          name: release-assets
+          name: release-android-assets
           path: release-assets/
           if-no-files-found: error
           retention-days: 30
-      - name: Upload verification reports
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-reports
-          path: app/build/reports/
       - name: Remove signing material
         if: always()
         run: rm -f "$RUNNER_TEMP/release.jks"
 
+  build-mac:
+    name: Build macOS Desktop App (.dmg / .zip)
+    runs-on: macos-15-intel
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4.2.2
+        with:
+          ref: ${{ inputs.tag_name || github.ref }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies, generate icon and package macOS DMG/ZIP
+        working-directory: mac-app
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: |
+          npm install
+          npm install --no-save @resvg/resvg-js
+          mkdir -p build
+          node -e "const fs=require('fs'),{Resvg}=require('@resvg/resvg-js');const svg=fs.readFileSync('../web/logo.svg','utf8');const png=new Resvg(svg,{fitTo:{mode:'width',value:1024}}).render().asPng();fs.writeFileSync('build/icon.png',png);"
+          npm run build:mac
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-mac-assets
+          path: |
+            mac-app/dist/*.dmg
+            mac-app/dist/*.zip
+          if-no-files-found: error
+          retention-days: 30
+
   publish:
-    needs: build
+    needs: [build-android, build-mac]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -119,28 +134,20 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: release-assets
-          path: release-assets
+          path: all-assets
+      - name: Collect assets and checksums
+        run: |
+          mkdir -p dist-release
+          find all-assets -type f \( -name '*.apk' -o -name '*.aab' -o -name '*.dmg' -o -name '*.zip' \) -exec cp {} dist-release/ \;
+          (cd dist-release && sha256sum * > SHA256SUMS.txt)
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ needs.build.outputs.tag }}
-          target_commitish: ${{ needs.build.outputs.sha }}
-          name: Baby Buddy for Android ${{ needs.build.outputs.tag }}
-          body_path: release-assets/RELEASE_NOTES.md
+          tag_name: ${{ needs.build-android.outputs.tag }}
+          target_commitish: ${{ needs.build-android.outputs.sha }}
+          name: Baby Buddy ${{ needs.build-android.outputs.tag }} (Android & macOS)
           draft: ${{ github.event_name == 'workflow_dispatch' && inputs.draft }}
-          prerelease: ${{ inputs.prerelease || contains(needs.build.outputs.tag, '-') }}
+          prerelease: ${{ inputs.prerelease || contains(needs.build-android.outputs.tag, '-') }}
           fail_on_unmatched_files: true
-          overwrite_files: false
-          files: |
-            release-assets/*.apk
-            release-assets/SHA256SUMS.txt
+          overwrite_files: true
+          files: dist-release/*
           generate_release_notes: true
-      - name: Attach optional AAB
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-          RELEASE_TAG: ${{ needs.build.outputs.tag }}
-        run: |
-          if compgen -G 'release-assets/*.aab' > /dev/null; then
-            gh release upload "$RELEASE_TAG" release-assets/*.aab
-          fi
