@@ -1,93 +1,71 @@
-# Logging in
+# Getting Started Offline
 
-## Login
+## 100% Standalone & Private
 
-![](direct/help_login_page.png)
+![](ic_baby_face.xml)
 
-There are two options for connecting to your Babybuddy server:
-Enter your Babybuddy server URL, username, and password. Then press
-login to connect the Babybuddy app to the Babybuddy server. Or you choose the
-QR Code option (scroll down for details on that option).
+Baby Buddy runs 100% offline on your phone with zero servers, zero accounts, and zero internet permissions. On first launch, tap Add Baby to create your baby profile (name, birth date & optional birth time, optional due date for premature corrected age, sex for WHO growth standards, and local avatar photo), or restore from an existing backup file.
 
-## QR Code login
+## Switching & Managing Babies
 
-![](direct/help_login_qrcode.png)
+![](help_overview_2.png)
 
-Alternatively, you can login to your Babybuddy Server using a login QR-code. Login to
-your Babybuddy Server from another device. Then navigate
-via the user menu (top-right) to the "Add a device" page. This is where you find
-the login QR-code. Scan the QR-code with the app on your phone. If
-scanned successfully, you should get the option to login to Babybuddy
-by pressing the "Login now" button.
+The Record tab shows Today Overview at the top, quick logging tiles in the middle, and the history timeline below. If you care for twins or multiple children, swipe horizontally or tap the baby header chip to switch, add, or edit profiles anytime.
 
-## Insecure Login
+# Timers & Quick Timers
 
-![](screenshots/help_insecure_http_warning.png)
+## Starting Live Timers
 
-If you use an http-address instead of an https-address, the application will
-show you this warning. Only use this feature for local BabyBuddy servers in a
-network that you control!
+![](help_play_button_highlight.png)
 
-## Home Assistant Ingress
+Tap Feeding, Sleep, Tummy Time, or Pumping to start a live timer (persisted safely even if you close the app or reboot your phone), or toggle Manual Time to log a past activity using quick presets (-15m, -30m, -1h).
 
-![](direct/help_login_homeassistant.png)
+## Adjusting & Standalone Quick Timers
 
-Babybuddy for Android has partial support for logging in
-to a Babybuddy server that is hosted on a Homeassistant Ingress-server. You
-will need to use the QR-code login option to login to such a server.
+![](help_timer_interface.png)
 
-# Overview
+Tap a running timer clock to shift its start time (-5m, -15m, pick exact time, or restart). You can also tap + Quick Timer to run multiple named timers in parallel and convert any timer into Sleep, Feeding, Tummy Time, or Pumping in one tap.
 
-## Overview
+## Saving & Auto-Nap Detection
 
-![](screenshots/help_overview_2.png)
+![](help_save_button_highlight.png)
 
-After logging in, you find buttons for logging activities in the upper part of the screen
-and a history of recently logged activities in the lower part of the screen.
-If you log activities for multiple children, you can swipe horizontally to switch between children.
+Fill in the activity details (such as left/right breast, bottle amount, or tummy milestone) and tap Save Record. Sleep entries starting inside your configured daytime window are automatically marked as Daytime Naps, and you can toggle Nap manually anytime.
 
-# Using Timer Logging
+# All 12 Care & Health Records
 
-## Using Timers
+## Diapers, Milestones & Photo Notes
 
-![](direct/help_play_button_highlight.png)
+![](help_diaper_logging.png)
 
-To start a timer, press any of the timer-event buttons in the upper part of the
-application. This will start a timer.
+Log Wet, Solid, or Clean/Dry diapers with optional amount and all 8 stool colors (Black, Brown, Gray, Green, Orange, Red, White, Yellow). Notes support attaching local photos with full-screen preview, and Tummy Time records developmental milestones.
 
-## Using Timers
+## Medications & Growth Measurements
 
-![](screenshots/help_timer_interface.png)
+![](ic_medication.xml)
 
-Starting a time will open an interface related to the timer that was just
-started. Fill in all the information you want to log. Once all required fields
-are entered a save-button will appear.
+Log Medications & supplements (mg, ml, tablets, drops) with quick recent-medicine chips and optional next-dose intervals (4h/6h/8h/12h/24h) for live countdowns and local reminders. Under Growth & Health, log Temperature, Weight, Height, Head Circumference, and 1-tap auto-calculated BMI.
 
-## Using Timers
+# Timeline, Tags & Editing
 
-![](direct/help_save_button_highlight.png)
+## Search, Colored Tags & In-Place Edit
 
-Once the save-field appears, the timer can be stopped by pressing the 
-save-button. You can also click the timer-button top-row again to cancel a timer
-instead of saving it.
+![](help_events.png)
 
-# Using Event Logging
+Attach custom colored Tags to any record and filter the timeline by category, tag, or keyword search. Tap the Edit icon or long-press any timeline entry to edit all of its fields directly on your device, or tap Delete to remove it.
 
-## Logging Diapers and Notes
+# Statistics & WHO Growth Curves
 
-![](screenshots/help_diaper_logging.png)
+## 18+ Reports & WHO Percentiles
 
-In addition to timer events the top-row allows logging of non-timer events, like
-diaper changes and generic notes. The controls function the same way as for the
-timer logging, but without a timer.
+![](ic_nav_stats.xml)
 
-# Event history
+Switch to the Statistics tab to view 7d, 14d, 30d, 90d, or All-Time analytics: daily milk, durations, feeding & awake intervals, 24h sleep/feeding pattern charts, night vs daytime nap totals, L/R breast balance, stool colors, medication counts, and official WHO P3–P97 growth curves with Z-scores and corrected-age support.
 
-## Event history
+# Backup, Export & Restore
 
-![](screenshots/help_events.png)
+## ZIP, JSON & CSV Data Portability
 
-The history at the bottom of the screen shows the most recent activities of
-the selected child. You can edit entries by pressing the entry in the history for three
-seconds. This will open the corresponding page in the BabyBuddy app.
-To delete an entry, press the red "delete" button.
+![](ic_backup_outline.xml)
+
+Open Backup, Export & Restore from the top menu or Settings to export or share a complete .zip backup (database, photos, and settings), a .json snapshot, or a .csv spreadsheet (also compatible with Baby Buddy server CSV exports). When importing, choose Smart Merge (skipping duplicates) or Replace All.

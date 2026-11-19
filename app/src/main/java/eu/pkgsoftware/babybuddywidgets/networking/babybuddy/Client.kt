@@ -1,208 +1,36 @@
 package eu.pkgsoftware.babybuddywidgets.networking.babybuddy
 
-import android.util.Log
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.node.ObjectNode
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import eu.pkgsoftware.babybuddywidgets.debugging.GlobalDebugObject
-import eu.pkgsoftware.babybuddywidgets.networking.INetworkMonitorInterface
-import eu.pkgsoftware.babybuddywidgets.networking.NetworkChangeListener
-import eu.pkgsoftware.babybuddywidgets.networking.RequestCodeFailure
-import eu.pkgsoftware.babybuddywidgets.networking.ServerAccessProviderInterface
-import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.ApiInterface
-import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.ChildKey
-import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.IncorrectApiConfiguration
-import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.PaginatedEntries
+import eu.pkgsoftware.babybuddywidgets.local.LocalBabyBuddyRepository
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.Profile
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.TimeEntry
-import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.classAPIPath
-import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.classUIPath
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.Interceptor
-import okhttp3.OkHttpClient
-import okhttp3.Response
-import okio.Buffer
-import retrofit2.Call
-import retrofit2.Retrofit
-import retrofit2.converter.jackson.JacksonConverterFactory
-import java.io.ByteArrayOutputStream
-import java.net.MalformedURLException
-import java.net.URL
-import kotlin.coroutines.suspendCoroutine
-import kotlin.random.Random
+import java.util.Random
 import kotlin.reflect.KClass
-import kotlin.reflect.KFunction
-import kotlin.reflect.KTypeProjection
-import kotlin.reflect.KVariance
-import kotlin.reflect.full.createType
-import kotlin.reflect.full.findAnnotation
-import kotlin.reflect.full.findParameterByName
-import kotlin.reflect.full.functions
-import kotlin.reflect.jvm.javaMethod
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
-val LOGTAG = "ClientV2"
+const val LOGTAG = "ClientV2Local"
 
 fun genRequestId(): String {
-    return Random.nextInt(0xFFFFFF + 1).toString(16).padStart(6, '0')
+    return Random().nextInt(0xFFFFFF + 1).toString(16).padStart(6, '0')
 }
 
-class AuthInterceptor(
-    private val authToken: String,
-    private val cookies: Map<String, String>
-) : Interceptor {
-    override fun intercept(chain: Interceptor.Chain): Response {
-        val originalRequest = chain.request()
-        val requestWithAuth = originalRequest.newBuilder()
-            .header("Authorization", authToken)
-            .header("Cookie", cookies.map { "${it.key}=${it.value}" }.joinToString("; "))
-            .build()
-        return chain.proceed(requestWithAuth)
-    }
-}
+class InvalidBody : Exception("Invalid body")
 
-class DebugNetworkInterceptor : Interceptor {
-    override fun intercept(chain: Interceptor.Chain): Response {
-        val request = chain.request()
-        val response = chain.proceed(request)
-
-        val cookie = request.header("Cookie")?.let {
-            "Cookie: $it"
-        } ?: "No cookies"
-
-        val buf = Buffer();
-        request.body?.writeTo(buf) ?: buf.writeUtf8("null");
-        val bodyStream = ByteArrayOutputStream(10000)
-        buf.copyTo(bodyStream)
-
-        GlobalDebugObject.log(
-            "Raw request: ${request.url} - " +
-            "Request body: ${bodyStream} - " +
-            "Response: ${response.message} - " +
-            cookie
-        )
-        return response
-    }
-}
-
-class ServerTimeOffsetInterceptor(val tracker: ServerTimeOffsetTracker) : Interceptor {
-    override fun intercept(chain: Interceptor.Chain): Response {
-        val response = chain.proceed(chain.request())
-        response.header("Date")?.let { serverTime ->
-            tracker.updateServerTime(serverTime)
-        }
-        return response
-    }
-}
-
-class InvalidBody() : Exception("Invalid body")
-
-data class PaginatedResult<T> (
+data class PaginatedResult<T>(
     val entries: List<T>,
     val offset: Int,
     val totalCount: Int,
 )
 
-class Client(val credStore: ServerAccessProviderInterface, val networkMonitor: INetworkMonitorInterface) {
-    val httpClient = OkHttpClient.Builder()
-        .addInterceptor(ServerTimeOffsetInterceptor(SystemServerTimeOffsetTracker))
-        .addInterceptor(AuthInterceptor("Token " + credStore.appToken, credStore.authCookies))
-        .addInterceptor(DebugNetworkInterceptor())
-        .build()
+/**
+ * Pure local standalone client facade delegating directly to [LocalBabyBuddyRepository]
+ * with zero HTTP/network calls.
+ */
+class Client(val repository: LocalBabyBuddyRepository) {
 
-    val retrofit = Retrofit.Builder()
-        .baseUrl(credStore.serverUrl.trimEnd('/') + "/api/")
-        .addConverterFactory(JacksonConverterFactory.create())
-        .client(httpClient)
-        .build()
-
-    private val api = retrofit.create(ApiInterface::class.java)
-
-    private suspend fun <T> executeCallAsync(call: Call<T>, ignoredBody: T? = null): T {
-        while (true) {
-            val thisCall = call.clone()
-
-            val networkManagerListener = object : NetworkChangeListener {
-                override fun onNetworkChanged(newNetwork: android.net.Network?) {
-                    thisCall.cancel()
-                }
-            }
-
-            networkMonitor.addListener(networkManagerListener)
-            var result : T? = null
-            try {
-                result = suspendCoroutine <T?> { continuation ->
-                    thisCall.enqueue(object : retrofit2.Callback<T> {
-                        override fun onResponse(call: Call<T>, response: retrofit2.Response<T>) {
-                            if (response.isSuccessful) {
-                                if (ignoredBody != null) {
-                                    continuation.resume(ignoredBody)
-                                    return
-                                }
-                                val p = response.body() ?: run {
-                                    continuation.resumeWithException(InvalidBody())
-                                    return
-                                }
-                                continuation.resume(p)
-                            } else {
-                                continuation.resumeWithException(
-                                    RequestCodeFailure(
-                                        response.code(),
-                                        "Failed",
-                                        response.errorBody()?.charStream()?.readText() ?: "[no message]",
-                                    )
-                                )
-                            }
-                        }
-
-                        override fun onFailure(call: Call<T>, t: Throwable) {
-                            if (thisCall.isCanceled) {
-                                Log.d(LOGTAG, "Request was cancelled due to network change")
-                                continuation.resume(null)
-                            } else {
-                                continuation.resumeWithException(t)
-                            }
-                        }
-                    })
-                }
-            }
-            finally {
-                networkMonitor.removeListener(networkManagerListener)
-            }
-
-            if (!thisCall.isCanceled && result != null) {
-                return result
-            }
-        }
-    }
-
-    fun pathToUrl(path: String): URL {
-        val prefix = credStore.serverUrl.trimEnd('/')
-        val trimmedPath = path.trimStart('/')
-        return URL("$prefix/$trimmedPath")
-    }
-
-    @Throws(MalformedURLException::class)
-    fun entryUserPath(entry: TimeEntry): URL {
-        val uiPath = classUIPath(entry::class)
-        return pathToUrl("$uiPath/${entry.id}/")
-    }
-
-    suspend fun getProfile(): Profile {
-        val REQID = genRequestId()
-        return withContext(Dispatchers.IO) {
-            GlobalDebugObject.log("${REQID} V2Client::getProfile")
-            try {
-                val call = api.getProfile()
-                return@withContext executeCallAsync(call)
-            }
-            catch (e: Exception) {
-                GlobalDebugObject.log("${REQID} V2Client::getProfile !exception! ${e.message}")
-                throw e
-            }
-        }
+    suspend fun getProfile(): Profile = withContext(Dispatchers.IO) {
+        repository.getLocalProfile()
     }
 
     suspend fun <T : Any> getEntries(
@@ -210,131 +38,35 @@ class Client(val credStore: ServerAccessProviderInterface, val networkMonitor: I
         offset: Int = 0,
         limit: Int = 100,
         childId: Int? = null,
-        extraArgs: Map<String, String> = mapOf(),
-    ): PaginatedResult<T> {
-        val REQID = genRequestId()
-
-        return withContext(Dispatchers.IO) {
-            try {
-                GlobalDebugObject.log("${REQID} V2Client::getEntries ${itemClass.simpleName} childId=${childId} offset=${offset} limit=${limit}")
-
-                val selected: KFunction<*> = selectPaginatedGetterFunction(itemClass)
-                    ?: throw IncorrectApiConfiguration("getter for ${itemClass.qualifiedName} is missing")
-
-                val lExtraArgs = extraArgs.toMutableMap()
-                if (childId != null) {
-                    val childKeyAnn = selected.findAnnotation<ChildKey>()
-                        ?: throw IncorrectApiConfiguration(
-                            "ChildKey annotation for ${selected.name} is missing"
-                        )
-                    lExtraArgs[childKeyAnn.name] = childId.toString()
-                }
-
-                val call: Call<PaginatedEntries<T>> = selected.javaMethod!!.invoke(
-                    api, offset, limit, lExtraArgs
-                ) as Call<PaginatedEntries<T>>
-                val callResult = executeCallAsync(call)
-
-                GlobalDebugObject.log("${REQID} V2Client::getEntries ${itemClass.simpleName} retrieved ${callResult.count} results")
-                PaginatedResult(callResult.entries, offset, callResult.count)
-            }
-            catch (e: Exception) {
-                GlobalDebugObject.log("${REQID} V2Client::getEntries ${itemClass.simpleName} !exception! ${e.message}")
-                throw e
-            }
-        }
-    }
-
-    suspend fun <T : TimeEntry> deleteEntry(item: T) {
-        val REQID = genRequestId()
-        val klass = item.javaClass.kotlin
-
-        return withContext(Dispatchers.IO) {
-            try {
-
-                GlobalDebugObject.log("${REQID} V2Client::deleteEntry ${klass.simpleName} id=${item.id}")
-                val apiPath = classAPIPath(klass)
-
-                val call = api.genericDeleteEntry(apiPath, item.id)
-                executeCallAsync(call, ignoredBody = Unit)
-
-                GlobalDebugObject.log("${REQID} V2Client::deleteEntry ${klass.simpleName} deleted")
-            }
-            catch (e: Exception) {
-                GlobalDebugObject.log("${REQID} V2Client::deleteEntry ${klass.simpleName} !exception! ${e.message}")
-                throw e
-            }
-        }
-    }
-
-    private fun <T : Any> selectPaginatedGetterFunction(itemClass: KClass<T>): KFunction<*>? {
-        val desiredReturnType = Call::class.createType(
-            arguments = listOf(
-                KTypeProjection(
-                    KVariance.INVARIANT,
-                    PaginatedEntries::class.createType(
-                        arguments = listOf(
-                            KTypeProjection(
-                                KVariance.INVARIANT,
-                                itemClass.createType()
-                            )
-                        )
-                    )
-                )
-            )
+        extraArgs: Map<String, String> = emptyMap(),
+    ): PaginatedResult<T> = withContext(Dispatchers.IO) {
+        val reqId = genRequestId()
+        GlobalDebugObject.log("$reqId LocalClient::getEntries ${itemClass.simpleName} childId=$childId offset=$offset limit=$limit")
+        repository.getEntries(
+            itemClass = itemClass,
+            offset = offset,
+            limit = limit,
+            childId = childId,
+            extraArgs = extraArgs,
         )
-
-        var selected: KFunction<*>? = null
-        for (func in ApiInterface::class.functions) {
-            if (func.returnType == desiredReturnType) {
-                selected = func
-            }
-        }
-        return selected
     }
 
-    suspend fun <T : TimeEntry> createEntry(itemClass: KClass<T>, item: T): T {
-        val REQID = genRequestId()
-        val klass = item.javaClass.kotlin
+    suspend fun <T : TimeEntry> createEntry(itemClass: KClass<T>, item: T): T = withContext(Dispatchers.IO) {
+        val reqId = genRequestId()
+        GlobalDebugObject.log("$reqId LocalClient::createEntry ${itemClass.simpleName}")
+        repository.createEntry(item)
+    }
 
-        val desiredArgumentType = JsonNode::class.createType()
-        val desiredReturnType = Call::class.createType(
-            arguments = listOf(
-                KTypeProjection(
-                    KVariance.INVARIANT,
-                    itemClass.createType()
-                )
-            )
-        )
-        var selected: KFunction<*>? = null
-        for (func in ApiInterface::class.functions) {
-            if (desiredArgumentType == func.findParameterByName("data")?.type) {
-                if (desiredReturnType == func.returnType) {
-                    selected = func
-                }
-            }
-        }
+    suspend fun <T : TimeEntry> updateEntry(item: T): T = withContext(Dispatchers.IO) {
+        val reqId = genRequestId()
+        GlobalDebugObject.log("$reqId LocalClient::updateEntry ${item::class.simpleName} id=${item.id}")
+        repository.updateEntry(item)
+    }
 
-        if (selected == null) {
-            throw IncorrectApiConfiguration(
-                "${REQID} V2Client::createEntry setter for ${klass.qualifiedName} is missing"
-            )
-        }
-
-        val mapper = jacksonObjectMapper()
-        val node = mapper.valueToTree<ObjectNode>(item)
-        node.remove("id")
-
-        GlobalDebugObject.log("${REQID} V2Client::createEntry ${klass.simpleName}")
-        return withContext(Dispatchers.IO) {
-            try {
-                val call: Call<T> = selected.javaMethod!!.invoke(api, node) as Call<T>
-                return@withContext executeCallAsync(call)
-            }
-            catch (e: Exception) {
-                GlobalDebugObject.log("${REQID} V2Client::createEntry ${klass.simpleName} !exception! ${e.message}")
-                throw e
-            }
-        }
+    suspend fun <T : TimeEntry> deleteEntry(item: T) = withContext(Dispatchers.IO) {
+        val reqId = genRequestId()
+        GlobalDebugObject.log("$reqId LocalClient::deleteEntry ${item::class.simpleName} id=${item.id}")
+        repository.deleteEntry(item)
+        Unit
     }
 }

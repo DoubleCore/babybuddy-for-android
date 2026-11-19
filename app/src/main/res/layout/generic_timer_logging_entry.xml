@@ -103,6 +103,35 @@
                 android:id="@+id/timerModeSection"
                 layout="@layout/include_timer_mode_controls" />
 
+            <com.google.android.material.chip.Chip
+                android:id="@+id/sleepNapChip"
+                style="@style/Widget.MaterialComponents.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="@string/sleep_nap_label"
+                android:textSize="12sp"
+                android:visibility="gone" />
+
+            <EditText
+                android:id="@+id/milestoneEditor"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_soft_pill"
+                android:gravity="top|start"
+                android:hint="@string/tummy_milestone_hint"
+                android:importantForAutofill="no"
+                android:inputType="textCapSentences|text"
+                android:minHeight="42dp"
+                android:paddingStart="12dp"
+                android:paddingTop="8dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="8dp"
+                android:singleLine="true"
+                android:textSize="14sp"
+                android:visibility="gone" />
+
             <EditText
                 android:id="@+id/noteEditor"
                 android:layout_width="match_parent"

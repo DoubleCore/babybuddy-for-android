@@ -17,11 +17,15 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.card.MaterialCardView
 import com.squareup.phrase.Phrase
 import eu.pkgsoftware.babybuddywidgets.BaseFragment
+import eu.pkgsoftware.babybuddywidgets.Constants.MedicationDosageUnitEnum
 import eu.pkgsoftware.babybuddywidgets.R
 import eu.pkgsoftware.babybuddywidgets.history.BabySummaryHelper
+import eu.pkgsoftware.babybuddywidgets.history.EntryEditBottomSheet
+import eu.pkgsoftware.babybuddywidgets.local.MedicationReminderScheduler
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.ChangeEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.Child
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.FeedingEntry
+import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.MedicationEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.NoteEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.PumpingEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.SleepEntry
@@ -600,10 +604,12 @@ object BabyFlowSheets {
     fun showMedicationSheet(
         fragment: BaseFragment,
         child: Child?,
-        store: BabyFlowLocalStore
+        store: BabyFlowLocalStore,
+        onChanged: () -> Unit = {}
     ) {
         val ctx = fragment.requireContext()
         val childId = child?.id ?: 0
+        val repo = fragment.mainActivity.repository
         val (dialog, root) = makeFullSheet(fragment)
 
         val addBtn = ImageView(ctx).apply {
@@ -631,8 +637,16 @@ object BabyFlowSheets {
 
         fun render() {
             listContainer.removeAllViews()
-            val meds = store.getMedications(childId)
-            if (meds.isEmpty()) {
+            val repoMeds = if (childId > 0) {
+                repo.getAllTimelineEntries(childId = childId, limit = 0)
+                    .filterIsInstance<MedicationEntry>()
+                    .sortedByDescending { it.start.time }
+            } else {
+                emptyList()
+            }
+            val legacyMeds = store.getMedications(childId)
+
+            if (repoMeds.isEmpty() && legacyMeds.isEmpty()) {
                 listContainer.addView(TextView(ctx).apply {
                     text = ctx.getString(R.string.bf_med_empty_hint)
                     gravity = Gravity.CENTER
@@ -643,7 +657,49 @@ object BabyFlowSheets {
                 return
             }
             val fmt = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
-            for (m in meds) {
+
+            for (entry in repoMeds) {
+                val card = MaterialCardView(ctx).apply {
+                    radius = 16.dp(fragment).toFloat()
+                    cardElevation = 0f
+                    setCardBackgroundColor(ContextCompat.getColor(ctx, R.color.bf_cell_supplement))
+                    strokeWidth = 0
+                    layoutParams = LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT
+                    ).apply { bottomMargin = 8.dp(fragment) }
+                    setOnClickListener {
+                        EntryEditBottomSheet.show(fragment, entry) {
+                            render()
+                            onChanged()
+                        }
+                    }
+                }
+                val col = LinearLayout(ctx).apply {
+                    orientation = LinearLayout.VERTICAL
+                    setPadding(14.dp(fragment), 12.dp(fragment), 14.dp(fragment), 12.dp(fragment))
+                }
+                val doseClean = BabySummaryHelper.formatCleanNumber(entry.dosage)
+                col.addView(TextView(ctx).apply {
+                    text = "${entry.name} · $doseClean ${entry.dosageUnit.post_name}"
+                    setTextColor(ContextCompat.getColor(ctx, R.color.text_primary_warm))
+                    textSize = 14.5f
+                    setTypeface(typeface, Typeface.BOLD)
+                })
+                val intervalSuffix = entry.nextDoseIntervalMinutes?.takeIf { it > 0 }?.let { mins ->
+                    val hPart = if (mins >= 60) "${mins / 60}h${if (mins % 60 > 0) "${mins % 60}m" else ""}" else "${mins}m"
+                    " · ⏱ $hPart"
+                } ?: ""
+                col.addView(TextView(ctx).apply {
+                    text = fmt.format(entry.start) + intervalSuffix + if (entry.notes.isNotBlank()) " · ${entry.notes}" else ""
+                    setTextColor(ContextCompat.getColor(ctx, R.color.text_secondary_warm))
+                    textSize = 12f
+                })
+                card.addView(col)
+                listContainer.addView(card)
+            }
+
+            for (m in legacyMeds) {
                 val card = MaterialCardView(ctx).apply {
                     radius = 16.dp(fragment).toFloat()
                     cardElevation = 0f
@@ -680,27 +736,49 @@ object BabyFlowSheets {
                 setPadding(20.dp(fragment), 10.dp(fragment), 20.dp(fragment), 4.dp(fragment))
             }
             val nameEd = EditText(ctx).apply { hint = ctx.getString(R.string.bf_med_name_hint) }
-            val doseEd = EditText(ctx).apply { hint = ctx.getString(R.string.bf_med_dose_hint) }
+            val doseEd = EditText(ctx).apply {
+                hint = ctx.getString(R.string.medication_dosage_label) + " (ml)"
+                inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
+            }
+            val intervalEd = EditText(ctx).apply {
+                hint = ctx.getString(R.string.medication_interval_label) + " (h)"
+                inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
+            }
             val noteEd = EditText(ctx).apply { hint = ctx.getString(R.string.activity_notes_hint) }
             box.addView(nameEd)
             box.addView(doseEd)
+            box.addView(intervalEd)
             box.addView(noteEd)
             AlertDialog.Builder(ctx)
                 .setTitle(ctx.getString(R.string.bf_med_add_title))
                 .setView(box)
                 .setPositiveButton(R.string.dialog_ok) { _, _ ->
                     val name = nameEd.text.toString().trim()
-                    if (name.isNotEmpty()) {
-                        store.addMedication(
-                            childId,
-                            MedicationRecord(
+                    if (name.isNotEmpty() && childId > 0) {
+                        val doseVal = doseEd.text.toString().trim().toDoubleOrNull() ?: 1.0
+                        val intervalHours = intervalEd.text.toString().trim().toDoubleOrNull()
+                        val intervalMins = intervalHours?.takeIf { it > 0.0 }?.let { (it * 60.0).roundToInt() }
+                        val created = repo.createEntry(
+                            MedicationEntry(
+                                id = 0,
+                                childId = childId,
+                                start = Date(),
                                 name = name,
-                                dosage = doseEd.text.toString().trim().ifBlank { "1 次" },
-                                note = noteEd.text.toString().trim(),
-                                dateStr = LocalDate.now().toString()
+                                dosage = doseVal,
+                                dosageUnit = MedicationDosageUnitEnum.ML,
+                                nextDoseIntervalMinutes = intervalMins,
+                                _notes = noteEd.text.toString().trim().ifEmpty { null }
                             )
                         )
+                        if (created is MedicationEntry) {
+                            MedicationReminderScheduler.scheduleIfNeeded(
+                                ctx,
+                                created,
+                                child?.fullName ?: ""
+                            )
+                        }
                         render()
+                        onChanged()
                     }
                 }
                 .setNegativeButton(R.string.history_delete_question_cancel_button, null)
@@ -764,7 +842,10 @@ object BabyFlowSheets {
                 val matched = entries.filter { e ->
                     val typeStr = fragment.translateActivityName(e.appType).lowercase(Locale.getDefault())
                     val notesStr = e.notes.lowercase(Locale.getDefault())
-                    typeStr.contains(q) || notesStr.contains(q)
+                    val medName = (e as? MedicationEntry)?.name?.lowercase(Locale.getDefault()).orEmpty()
+                    val milestoneStr = (e as? TummyTimeEntry)?.milestone?.lowercase(Locale.getDefault()).orEmpty()
+                    val tagsMatch = e.tags.any { it.lowercase(Locale.getDefault()).contains(q) }
+                    typeStr.contains(q) || notesStr.contains(q) || medName.contains(q) || milestoneStr.contains(q) || tagsMatch
                 }
                 bodyContainer.addView(TextView(ctx).apply {
                     text = "${ctx.getString(R.string.bf_search_results)} (${matched.size})"
@@ -785,19 +866,29 @@ object BabyFlowSheets {
                             ViewGroup.LayoutParams.MATCH_PARENT,
                             ViewGroup.LayoutParams.WRAP_CONTENT
                         ).apply { bottomMargin = 6.dp(fragment) }
+                        setOnClickListener {
+                            EntryEditBottomSheet.show(fragment, e) {
+                                render()
+                            }
+                        }
                     }
                     val col = LinearLayout(ctx).apply {
                         orientation = LinearLayout.VERTICAL
                         setPadding(12.dp(fragment), 10.dp(fragment), 12.dp(fragment), 10.dp(fragment))
                     }
+                    val titleLabel = if (e is MedicationEntry && e.name.isNotBlank()) {
+                        "${fragment.translateActivityName(e.appType)} · ${e.name}"
+                    } else {
+                        fragment.translateActivityName(e.appType)
+                    }
                     col.addView(TextView(ctx).apply {
-                        text = fragment.translateActivityName(e.appType)
+                        text = titleLabel
                         setTextColor(ContextCompat.getColor(ctx, R.color.text_primary_warm))
                         textSize = 14f
                         setTypeface(typeface, Typeface.BOLD)
                     })
                     col.addView(TextView(ctx).apply {
-                        val tStr = fmt.format(BabySummaryHelper.entryClientStart(e))
+                        val tStr = fmt.format(BabySummaryHelper.entryClientStart(e, convertServerOffset = false))
                         text = if (e.notes.isNotBlank()) "$tStr · ${e.notes}" else tStr
                         setTextColor(ContextCompat.getColor(ctx, R.color.text_secondary_warm))
                         textSize = 12f
@@ -866,7 +957,7 @@ object BabyFlowSheets {
 
             // Dates with activity dots
             val activeDates = entries.map {
-                BabySummaryHelper.toLocalDate(BabySummaryHelper.entryClientStart(it), zone)
+                BabySummaryHelper.toLocalDate(BabySummaryHelper.entryClientStart(it, convertServerOffset = false), zone)
             }.toSet()
 
             val firstOfMonth = currentMonth.atDay(1)
@@ -934,7 +1025,10 @@ object BabyFlowSheets {
             // Vaccine / Medication banners for selectedDay
             val dateStr = selectedDay.toString()
             val vaxOnDay = store.getVaccines(childId).count { it.completedDate == dateStr }
-            val medOnDay = store.getMedications(childId).count { it.dateStr == dateStr }
+            val repoMedOnDay = entries.count {
+                it is MedicationEntry && BabySummaryHelper.toLocalDate(it.start, zone) == selectedDay
+            }
+            val medOnDay = repoMedOnDay + store.getMedications(childId).count { it.dateStr == dateStr }
 
             if (vaxOnDay > 0) {
                 bodyContainer.addView(TextView(ctx).apply {
@@ -967,7 +1061,12 @@ object BabyFlowSheets {
             val endOfSelectedDay = Date(
                 selectedDay.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1000L
             )
-            val daySummary = BabySummaryHelper.computeTodaySummary(entries, nowClientTime = endOfSelectedDay, zoneId = zone)
+            val daySummary = BabySummaryHelper.computeTodaySummary(
+                entries,
+                nowClientTime = endOfSelectedDay,
+                zoneId = zone,
+                convertServerOffset = false
+            )
 
             val summaryCard = MaterialCardView(ctx).apply {
                 radius = 18.dp(fragment).toFloat()

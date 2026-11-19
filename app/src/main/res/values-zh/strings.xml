@@ -23,7 +23,11 @@
     <array name="solidDiaperColors">
         <item>黑色</item>
         <item>棕色</item>
+        <item>灰色</item>
         <item>绿色</item>
+        <item>橙色</item>
+        <item>红色</item>
+        <item>白色</item>
         <item>黄色</item>
     </array>
 
@@ -57,7 +61,7 @@
 
     <!-- Tutorial Messages -->
     <string name="tutorial_suggest_visit_help">首次使用时，可在右上角菜单中\n查看「帮助」指南。</string>
-    <string name="tutorial_long_click_notification">长按时间线中的记录条目，即可在浏览器中\n直接打开对应的 Baby Buddy 网页详情。</string>
+    <string name="tutorial_long_click_notification">点击编辑按钮或长按时间线中的记录条目，即可直接在手机本地修改详情。</string>
 
     <!-- Strings used for fragments for navigation -->
     <string name="action_settings">设置</string>
@@ -187,7 +191,7 @@
 
     <!-- Upgrade notifications -->
     <string name="upgrade_latest_info_title">版本更新 {version}</string>
-    <string name="upgrade_latest_info_note">新版本已支持记录所有事件类型，并对界面进行了紧凑且易用的优化。如果您在使用过程中遇到任何问题，欢迎通过主菜单中的「联系开发者」反馈。</string>
+    <string name="upgrade_latest_info_note">Baby Buddy 现已升级为 100% 纯本地离线独立版！多宝宝档案、喂养/睡眠/尿布/用药等全部 12 类记录、标签筛选、18+ 统计图表、WHO 生长发育曲线以及 ZIP/JSON/CSV 备份恢复均在手机本地运行，无需任何服务器。</string>
 
     <!-- Disconnect dialog -->
     <string name="disconnect_dialog_progress_message">正在连接服务器…</string>
@@ -295,7 +299,7 @@
     <string name="timeline_date_today">今天</string>
     <string name="timeline_date_yesterday">昨天</string>
     <string name="timeline_empty_filtered">暂无符合筛选条件的记录</string>
-    <string name="timeline_open_web_desc">在网页端打开详情</string>
+    <string name="timeline_open_web_desc">编辑此条记录</string>
     <string name="timeline_delete_desc">删除此条记录</string>
 
     <!-- Statistics & Charts Tab -->
@@ -429,4 +433,132 @@
 
     <string name="bf_mine_switch_child">切换宝宝</string>
     <string name="bf_mine_med_subtitle">维生素 AD/D3、益生菌与日常用药记录</string>
+    <!-- Standalone Local App Additions -->
+    <string name="activity_singular_medications">用药</string>
+    <string name="activity_singular_medication">用药</string>
+    <string name="common_clear">清除</string>
+    <string name="common_edit">编辑</string>
+    <string name="common_none">无</string>
+    <string name="onboarding_welcome_title">欢迎使用 Baby Buddy 本地版</string>
+    <string name="onboarding_welcome_subtitle">100% 手机本地离线存储，隐私安全无忧——请先创建第一个宝宝档案，或从已有备份文件恢复数据。</string>
+    <string name="child_manager_title">管理宝宝档案</string>
+    <string name="child_manager_add_baby">添加宝宝</string>
+    <string name="child_manager_delete_confirm">确定要永久删除「{name}」及其所有历史记录吗？此操作无法撤销。</string>
+    <string name="child_profile_add_title">新建宝宝档案</string>
+    <string name="child_profile_edit_title">编辑宝宝档案</string>
+    <string name="child_profile_first_name_hint">名字 / 小名</string>
+    <string name="child_profile_last_name_hint">姓氏（选填）</string>
+    <string name="child_profile_error_first_name_required">请输入宝宝的名字或小名</string>
+    <string name="child_profile_birth_date_label">出生日期</string>
+    <string name="child_profile_birth_time_optional">出生时间（选填）</string>
+    <string name="child_profile_due_date_label">预产期（早产儿矫正月龄）</string>
+    <string name="child_profile_due_date_optional">预产期（选填，用于计算矫正月龄）</string>
+    <string name="child_profile_corrected_age_badge">矫正 {age}</string>
+    <string name="child_profile_sex_label">性别（用于匹配 WHO 生长标准）</string>
+    <string name="child_profile_sex_boy">男宝</string>
+    <string name="child_profile_sex_girl">女宝</string>
+    <string name="child_profile_sex_unspecified">未指定</string>
+    <string name="child_profile_pick_photo">选择头像照片</string>
+    <string name="child_profile_remove_photo">移除照片</string>
+    <string name="tile_medication">用药</string>
+    <string name="sleep_nap_label">白天小睡</string>
+    <string name="diaper_empty_label">干净/仅更换</string>
+    <string name="tummy_milestone_label">发育里程碑</string>
+    <string name="tummy_milestone_hint">里程碑（如：抬头 45°、自主翻身）</string>
+    <string name="note_attach_photo">添加照片附件</string>
+    <string name="bmi_auto_calc_chip">根据最新体重与身高自动计算：{bmi}</string>
+    <string name="medication_name_label">药品/补剂名称</string>
+    <string name="medication_name_hint">如：维生素 AD、维生素 D3、布洛芬、对乙酰氨基酚</string>
+    <string name="medication_dosage_label">剂量</string>
+    <string name="medication_interval_label">下次服药间隔提醒</string>
+    <string name="medication_unit_mg">mg (毫克)</string>
+    <string name="medication_unit_ml">ml (毫升)</string>
+    <string name="medication_unit_tablets">片/粒</string>
+    <string name="medication_unit_drops">滴</string>
+    <string name="medication_error_name_required">请输入药品或营养补剂名称</string>
+    <string name="medication_error_dosage_positive">请输入大于 0 的有效剂量</string>
+    <string name="medication_next_dose_at_pattern">下次可服 ≥ {time}</string>
+    <string name="medication_next_dose_in_pattern">{name} · 距下次可服还有 {time}</string>
+    <string name="medication_next_dose_ready">已到下次可服药时间</string>
+    <string name="medication_notification_channel_name">服药间隔到点提醒</string>
+    <string name="medication_notification_channel_desc">当设定的最小服药间隔到达时发送本地通知提醒</string>
+    <string name="medication_notification_ready_body">「{medication}」的设定期限已到，如需再次服药可点击记录。</string>
+    <string name="timer_adjust_title">调整计时开始时间</string>
+    <string name="timer_adjust_minus_5m">提前 5 分钟开始 (-5m)</string>
+    <string name="timer_adjust_minus_15m">提前 15 分钟开始 (-15m)</string>
+    <string name="timer_adjust_pick_time">手动选择准确开始时间…</string>
+    <string name="timer_adjust_restart_now">从现在重新开始计时</string>
+    <string name="quick_timer_add_chip">+ 快捷计时器</string>
+    <string name="quick_timer_name_hint">计时备注名称（选填，如：上午小睡、洗澡）</string>
+    <string name="quick_timer_stop_delete">停止并丢弃此计时器</string>
+    <string name="summary_awake_for_pattern">已清醒 {time}</string>
+    <string name="summary_sleep_nap_night_pattern">{hours}小时{minutes}分（小睡 {nap_m}分）</string>
+    <string name="summary_pumping_tummy_pattern">今日吸奶 {pumping_ml} ml · 趴卧练习 {tummy_m} 分钟</string>
+    <string name="timeline_search_hint">搜索备注、里程碑、药品名称、标签…</string>
+    <string name="tag_manager_title">标签管理</string>
+    <string name="tag_manager_empty">暂无自定义标签。您可以创建彩色标签来归类辅食过敏、症状观察、里程碑或日常备注。</string>
+    <string name="tag_add_chip">+ 标签</string>
+    <string name="tag_add_title">新建标签</string>
+    <string name="tag_edit_title">编辑标签</string>
+    <string name="tag_name_hint">标签名称（如：添加新辅食、发烧观察、猛涨期）</string>
+    <string name="tag_name_required">请输入标签名称</string>
+    <string name="tag_filter_all">全部标签</string>
+    <string name="tag_usage_count_pattern">已关联 {count} 条记录</string>
+    <string name="tag_delete_confirm">确定要删除标签「{name}」吗？已关联该标签的历史记录不会被删除。</string>
+    <string name="stats_range_90d">近 90 天</string>
+    <string name="stats_range_all">全部时间</string>
+    <string name="stats_kpi_feed_interval">平均喂养间隔</string>
+    <string name="stats_kpi_awake_window">平均清醒间隔</string>
+    <string name="stats_kpi_diaper_interval">平均换尿布间隔</string>
+    <string name="stats_kpi_growth_rate">体重增长速率</string>
+    <string name="stats_kpi_weekly_weight_pattern">{grams} 克/周</string>
+    <string name="stats_kpi_breast_lr_pattern">左:{left} 右:{right} 双:{both}</string>
+    <string name="stats_tab_feed_amounts">每日奶量</string>
+    <string name="stats_tab_durations">单次时长</string>
+    <string name="stats_tab_intervals">间隔趋势</string>
+    <string name="stats_tab_24h_pattern">24h 作息图</string>
+    <string name="stats_tab_types_methods">类型与方式</string>
+    <string name="stats_tab_sleep_totals">夜睡+小睡</string>
+    <string name="stats_tab_awake_windows">清醒间隔</string>
+    <string name="stats_tab_diaper_types">湿/便频次</string>
+    <string name="stats_tab_stool_colors">便便颜色</string>
+    <string name="stats_tab_diaper_amounts">尿布分量</string>
+    <string name="stats_sleep_night_label">夜间睡眠</string>
+    <string name="stats_sleep_nap_label">白天小睡</string>
+    <string name="stats_chart_care_meds_title">吸奶量、趴卧练习与用药统计</string>
+    <string name="stats_pumping_subtitle_pattern">累计吸奶 {total_ml} ml · 共 {count} 次</string>
+    <string name="stats_tummy_subtitle_pattern">累计趴卧 {total_m} 分钟 · 共 {count} 次 · {milestones} 个里程碑</string>
+    <string name="stats_medication_subtitle_pattern">累计服药/补剂记录：共 {count} 次</string>
+    <string name="stats_who_percentile_badge">WHO 百分位 P{percentile} (Z {zscore})</string>
+    <string name="stats_who_corrected_suffix">按早产矫正月龄</string>
+    <string name="backup_center_title">本地备份、导出与恢复</string>
+    <string name="backup_center_subtitle">所有数据均保存在手机本地。支持导出完整 ZIP 归档（含数据库、头像与照片附件）、JSON 快照或 CSV 表格，并兼容原版 Baby Buddy 网页端导出的 CSV 文件。</string>
+    <string name="backup_export_zip_button">导出完整备份包（.zip 含照片与设置）</string>
+    <string name="backup_share_zip_button">一键分享完整备份包（.zip）</string>
+    <string name="backup_restore_zip_button">从完整备份包恢复（.zip）</string>
+    <string name="backup_export_json_button">导出数据快照（.json）</string>
+    <string name="backup_import_json_button">导入数据快照（.json）</string>
+    <string name="backup_export_csv_button">导出电子表格（.csv）</string>
+    <string name="backup_import_csv_button">导入本地或服务端 CSV 表格（.csv）</string>
+    <string name="backup_choose_import_mode_title">选择导入合并方式</string>
+    <string name="backup_mode_merge">智能合并（保留现有数据并自动跳过重复项）</string>
+    <string name="backup_mode_replace">完全覆盖当前本地数据</string>
+    <string name="backup_export_success">备份导出成功</string>
+    <string name="backup_import_success_pattern">成功导入 {entries} 条记录（共 {children} 个宝宝档案）</string>
+    <string name="backup_restore_action_short">恢复备份数据</string>
+    <string name="setting_category_behavior">照护规则与智能记录</string>
+    <string name="setting_category_data">本地数据、档案与备份管理</string>
+    <string name="setting_nap_start_min">白天小睡自动识别起始时间</string>
+    <string name="setting_nap_start_max">白天小睡自动识别结束时间</string>
+    <string name="setting_dashboard_hide_empty">隐藏今日概览中的空白指标</string>
+    <string name="setting_dashboard_hide_empty_summary">自动收起今日尚无记录的统计项，让概览卡片更加紧凑清爽</string>
+    <string name="setting_auto_trim_overlaps">自动裁剪重叠的睡眠/趴卧时间段</string>
+    <string name="setting_auto_trim_overlaps_summary">保存时间段若有重叠，自动微调相邻历史记录边界而不再弹窗询问</string>
+    <string name="setting_medication_notifications">服药间隔本地通知提醒</string>
+    <string name="setting_medication_notifications_summary">当记录了下次服药间隔时，在到点后发送手机本地通知提醒</string>
+    <string name="setting_clear_all_data">清空全部本地数据</string>
+    <string name="setting_clear_all_data_summary">永久擦除本机上的所有宝宝档案、历史记录、标签及本地照片</string>
+    <string name="setting_clear_all_data_confirm_1">确定要清空本机上的全部宝宝档案、历史记录和照片吗？建议操作前先导出 .zip 完整备份包。</string>
+    <string name="setting_clear_all_data_confirm_2">最终确认：此操作将彻底清空本地数据库且不可恢复，确定立即清空吗？</string>
+    <string name="setting_clear_all_data_done">已清空全部本地数据</string>
 </resources>

@@ -1,6 +1,8 @@
 package eu.pkgsoftware.babybuddywidgets.babyflow
 
+import android.graphics.BitmapFactory
 import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -14,11 +16,17 @@ import androidx.navigation.Navigation
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
+import com.squareup.phrase.Phrase
 import eu.pkgsoftware.babybuddywidgets.BaseFragment
+import eu.pkgsoftware.babybuddywidgets.LoggedInFragment
 import eu.pkgsoftware.babybuddywidgets.R
+import eu.pkgsoftware.babybuddywidgets.backup.BackupCenterBottomSheet
+import eu.pkgsoftware.babybuddywidgets.children.ChildManagerBottomSheet
+import eu.pkgsoftware.babybuddywidgets.children.ChildProfileDialog
 import eu.pkgsoftware.babybuddywidgets.debugging.GlobalDebugObject
 import eu.pkgsoftware.babybuddywidgets.history.BabySummaryHelper
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.Child
+import eu.pkgsoftware.babybuddywidgets.tags.TagManagerDialog
 import kotlin.math.roundToInt
 
 class MineTabController(
@@ -29,9 +37,11 @@ class MineTabController(
     private val ctx = fragment.requireContext()
     val rootView: View
 
+    private val avatarImage: ImageView
+    private val avatarFrame: FrameLayout
     private val babyNameTv: TextView
     private val babyAgeTv: TextView
-    private val serverUrlTv: TextView
+    private val localPrivacyBadgeTv: TextView
     private val childChipGroup: ChipGroup
     private val childSwitcherSection: LinearLayout
 
@@ -66,7 +76,7 @@ class MineTabController(
             setPadding(0, 2.dp(), 0, 14.dp())
         })
 
-        // Baby & Server Status Card
+        // Baby Profile & Local Offline Status Card
         val profileCard = MaterialCardView(ctx).apply {
             radius = 22.dp().toFloat()
             cardElevation = 0f
@@ -77,6 +87,7 @@ class MineTabController(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
             ).apply { bottomMargin = 14.dp() }
+            setOnClickListener { openChildManager() }
         }
         val profileInner = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL
@@ -86,10 +97,25 @@ class MineTabController(
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
         }
-        profileRow.addView(ImageView(ctx).apply {
-            setImageResource(R.drawable.ic_bf_baby_avatar)
+        avatarFrame = FrameLayout(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(54.dp(), 54.dp()).apply { marginEnd = 12.dp() }
-        })
+            background = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(ContextCompat.getColor(ctx, R.color.bf_cell_feeding))
+            }
+            clipToOutline = true
+        }
+        avatarImage = ImageView(ctx).apply {
+            setImageResource(R.drawable.ic_bf_baby_avatar)
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            layoutParams = FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+        }
+        avatarFrame.addView(avatarImage)
+        profileRow.addView(avatarFrame)
+
         val pTextCol = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
@@ -105,17 +131,23 @@ class MineTabController(
             textSize = 12.5f
             setTextColor(ContextCompat.getColor(ctx, R.color.text_secondary_warm))
         }
-        serverUrlTv = TextView(ctx).apply {
-            val url = fragment.mainActivity.credStore.serverUrl ?: ""
-            text = "☁ $url"
+        localPrivacyBadgeTv = TextView(ctx).apply {
+            text = "🔒 ${ctx.getString(R.string.onboarding_welcome_title)}"
             textSize = 11.5f
             setTextColor(ContextCompat.getColor(ctx, R.color.bf_purple_primary))
             setPadding(0, 3.dp(), 0, 0)
         }
         pTextCol.addView(babyNameTv)
         pTextCol.addView(babyAgeTv)
-        pTextCol.addView(serverUrlTv)
+        pTextCol.addView(localPrivacyBadgeTv)
         profileRow.addView(pTextCol)
+        profileRow.addView(ImageView(ctx).apply {
+            setImageResource(R.drawable.ic_edit_outline)
+            imageTintList = android.content.res.ColorStateList.valueOf(
+                ContextCompat.getColor(ctx, R.color.text_muted_warm)
+            )
+            layoutParams = LinearLayout.LayoutParams(20.dp(), 20.dp())
+        })
         profileInner.addView(profileRow)
 
         childSwitcherSection = LinearLayout(ctx).apply {
@@ -138,7 +170,7 @@ class MineTabController(
         profileCard.addView(profileInner)
         col.addView(profileCard)
 
-        // Quick Feature Cards (Vaccine Plan + Medication Log)
+        // Health & Care Management Card (Vaccines, Medication, Child Profiles, Tags, Backup)
         val quickCard = MaterialCardView(ctx).apply {
             radius = 22.dp().toFloat()
             cardElevation = 0f
@@ -169,12 +201,48 @@ class MineTabController(
             title = ctx.getString(R.string.bf_med_sheet_title),
             subtitle = ctx.getString(R.string.bf_mine_med_subtitle)
         ) {
-            BabyFlowSheets.showMedicationSheet(fragment, selectedChild, store)
+            BabyFlowSheets.showMedicationSheet(fragment, selectedChild, store) {
+                selectedChild?.let { c ->
+                    (fragment as? LoggedInFragment)?.notifyChildDataChanged(c.id)
+                }
+            }
+        })
+        quickCol.addView(makeDivider())
+        quickCol.addView(makeMenuRow(
+            iconRes = R.drawable.ic_baby_face,
+            badgeBgRes = R.color.bf_cell_feeding,
+            title = ctx.getString(R.string.child_manager_title),
+            subtitle = ctx.getString(R.string.child_manager_add_baby),
+            tintIcon = true
+        ) {
+            openChildManager()
+        })
+        quickCol.addView(makeDivider())
+        quickCol.addView(makeMenuRow(
+            iconRes = R.drawable.ic_tag_outline,
+            badgeBgRes = R.color.bf_cell_edu,
+            title = ctx.getString(R.string.tag_manager_title),
+            subtitle = ctx.getString(R.string.tag_filter_all),
+            tintIcon = true
+        ) {
+            TagManagerDialog.showManager(fragment.mainActivity)
+        })
+        quickCol.addView(makeDivider())
+        quickCol.addView(makeMenuRow(
+            iconRes = R.drawable.ic_backup_outline,
+            badgeBgRes = R.color.bf_cell_diaper,
+            title = ctx.getString(R.string.backup_center_title),
+            subtitle = "ZIP / JSON / CSV",
+            tintIcon = true
+        ) {
+            BackupCenterBottomSheet.show(fragment.mainActivity) {
+                (fragment as? LoggedInFragment)?.refreshChildrenNow()
+            }
         })
         quickCard.addView(quickCol)
         col.addView(quickCard)
 
-        // App Settings, Help, About, Contact, Logout Card
+        // App Settings, Help, About, Debug Card (No server logout in offline standalone edition)
         val sysCard = MaterialCardView(ctx).apply {
             radius = 22.dp().toFloat()
             cardElevation = 0f
@@ -235,45 +303,54 @@ class MineTabController(
         sysCard.addView(sysCol)
         col.addView(sysCard)
 
-        // Logout Pill Button
-        val logoutBtn = TextView(ctx).apply {
-            text = ctx.getString(R.string.logoutMenu)
-            gravity = Gravity.CENTER
-            textSize = 14.5f
-            setTypeface(typeface, Typeface.BOLD)
-            setBackgroundResource(R.drawable.bg_bf_overview_cell)
-            backgroundTintList = android.content.res.ColorStateList.valueOf(
-                ContextCompat.getColor(ctx, R.color.danger_soft_bg)
-            )
-            setTextColor(ContextCompat.getColor(ctx, R.color.danger_soft_fg))
-            setPadding(16.dp(), 13.dp(), 16.dp(), 13.dp())
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            )
-            setOnClickListener {
-                val v = fragment.view ?: return@setOnClickListener
-                fragment.mainActivity.logout()
-                Navigation.findNavController(v).navigate(R.id.logoutOperation)
-            }
-        }
-        col.addView(logoutBtn)
-
         scroll.addView(col)
         rootView = scroll
+    }
+
+    private fun openChildManager() {
+        val act = fragment.mainActivity
+        if (children.isEmpty()) {
+            ChildProfileDialog.show(act) { created ->
+                (fragment as? LoggedInFragment)?.refreshChildrenNow()
+                onSelectChild(created)
+            }
+        } else {
+            ChildManagerBottomSheet.show(act, selectedChild?.slug) { chosen ->
+                (fragment as? LoggedInFragment)?.refreshChildrenNow()
+                onSelectChild(chosen)
+            }
+        }
     }
 
     fun updateChildren(allChildren: List<Child>, active: Child?) {
         this.children = allChildren
         this.selectedChild = active
 
-        serverUrlTv.text = "☁ ${fragment.mainActivity.credStore.serverUrl ?: ""}"
+        val mediaFile = active?.picture?.let { fragment.mainActivity.repository.mediaStorage.resolveMediaFile(it) }
+        val bmp = mediaFile?.let { BitmapFactory.decodeFile(it.absolutePath) }
+        if (bmp != null) {
+            avatarImage.scaleType = ImageView.ScaleType.CENTER_CROP
+            avatarImage.setImageBitmap(bmp)
+        } else {
+            avatarImage.scaleType = ImageView.ScaleType.FIT_CENTER
+            avatarImage.setImageResource(R.drawable.ic_bf_baby_avatar)
+        }
+
         if (active == null) {
             babyNameTv.text = ctx.getString(R.string.logged_in_no_children_found)
-            babyAgeTv.text = ""
+            babyAgeTv.text = ctx.getString(R.string.child_manager_add_baby)
         } else {
-            babyNameTv.text = "${active.firstName} ${active.lastName}".trim()
-            babyAgeTv.text = BabySummaryHelper.formatBabyAge(fragment.resources, active.birthData)
+            babyNameTv.text = active.fullName.ifBlank { "${active.firstName} ${active.lastName}".trim() }
+            val baseAge = BabySummaryHelper.formatBabyAge(fragment.resources, active.birthData)
+            if (active.hasCorrectedPrematureAge && active.dueDate != null) {
+                val corrAge = BabySummaryHelper.formatBabyAge(fragment.resources, active.dueDate)
+                val corrBadge = Phrase.from(fragment.resources, R.string.child_profile_corrected_age_badge)
+                    .put("age", corrAge)
+                    .format()
+                babyAgeTv.text = "$baseAge · $corrBadge"
+            } else {
+                babyAgeTv.text = baseAge
+            }
         }
 
         childChipGroup.removeAllViews()
@@ -283,7 +360,7 @@ class MineTabController(
             childSwitcherSection.visibility = View.VISIBLE
             for (c in allChildren) {
                 val chip = Chip(ctx).apply {
-                    text = c.firstName.ifBlank { "${c.firstName} ${c.lastName}".trim() }
+                    text = c.firstName.ifBlank { c.fullName }
                     isCheckable = true
                     isChecked = (c.slug == active?.slug)
                     setOnClickListener { onSelectChild(c) }
@@ -308,6 +385,7 @@ class MineTabController(
         badgeBgRes: Int,
         title: String,
         subtitle: String,
+        tintIcon: Boolean = false,
         onClick: () -> Unit
     ): View {
         return LinearLayout(ctx).apply {
@@ -326,7 +404,14 @@ class MineTabController(
                     ContextCompat.getColor(ctx, badgeBgRes)
                 )
                 setPadding(7.dp(), 7.dp(), 7.dp(), 7.dp())
-                addView(ImageView(ctx).apply { setImageResource(iconRes) })
+                addView(ImageView(ctx).apply {
+                    setImageResource(iconRes)
+                    if (tintIcon) {
+                        imageTintList = android.content.res.ColorStateList.valueOf(
+                            ContextCompat.getColor(ctx, R.color.text_primary_warm)
+                        )
+                    }
+                })
             })
 
             addView(LinearLayout(ctx).apply {

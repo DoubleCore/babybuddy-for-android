@@ -1,18 +1,27 @@
 package eu.pkgsoftware.babybuddywidgets.history
 
 import android.content.res.ColorStateList
+import android.graphics.BitmapFactory
+import android.graphics.Color
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewGroup
+import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.core.content.ContextCompat
 import com.squareup.phrase.Phrase
 import eu.pkgsoftware.babybuddywidgets.BaseFragment
 import eu.pkgsoftware.babybuddywidgets.Constants
 import eu.pkgsoftware.babybuddywidgets.Constants.FeedingMethodEnum
 import eu.pkgsoftware.babybuddywidgets.Constants.FeedingTypeEnum
+import eu.pkgsoftware.babybuddywidgets.Constants.MedicationDosageUnitEnum
 import eu.pkgsoftware.babybuddywidgets.DialogCallback
 import eu.pkgsoftware.babybuddywidgets.LoggedInFragment
 import eu.pkgsoftware.babybuddywidgets.R
 import eu.pkgsoftware.babybuddywidgets.databinding.TimelineItemBinding
+import eu.pkgsoftware.babybuddywidgets.local.MedicationReminderScheduler
 import eu.pkgsoftware.babybuddywidgets.networking.BabyBuddyClient
 import eu.pkgsoftware.babybuddywidgets.networking.RequestCodeFailure
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.BmiEntry
@@ -20,14 +29,18 @@ import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.ChangeEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.FeedingEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.HeadCircumferenceEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.HeightEntry
+import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.MedicationEntry
+import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.NoteEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.PumpingEntry
+import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.SleepEntry
+import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.TagEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.TemperatureEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.TimeEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.WeightEntry
+import eu.pkgsoftware.babybuddywidgets.tags.TagManagerDialog
 import eu.pkgsoftware.babybuddywidgets.widgets.HorizontalDecIncEditor
 import kotlinx.coroutines.launch
 import java.io.IOException
-import java.net.MalformedURLException
 import java.text.DateFormat
 import java.text.NumberFormat
 import java.time.ZoneId
@@ -57,12 +70,12 @@ class TimelineEntry(private val fragment: BaseFragment, private var _entry: Time
     private val binding = TimelineItemBinding.inflate(fragment.mainActivity.layoutInflater)
     private var modifiedCallback: Runnable? = null
 
+    var tagColorLookup: Map<String, TagEntry> = emptyMap()
+    var onEditClickListener: ((TimeEntry) -> Unit)? = null
+
     var entry: TimeEntry?
         get() = _entry
         set(v) {
-            if (v == _entry) {
-                return
-            }
             _entry = v
             updateUi()
         }
@@ -80,12 +93,13 @@ class TimelineEntry(private val fragment: BaseFragment, private var _entry: Time
     }
 
     init {
-        binding.entryCard.setOnLongClickListener { longClick() }
+        binding.entryCard.setOnClickListener { openEditor() }
+        binding.entryCard.setOnLongClickListener { openEditor() }
         binding.entryCard.setOnTouchListener { v, event ->
             longClickStartStopHandler(v, event)
             false
         }
-        binding.openWebButton.setOnClickListener { longClick() }
+        binding.openWebButton.setOnClickListener { openEditor() }
         binding.removeButton.setOnClickListener { removeClick() }
         updateUi()
     }
@@ -122,7 +136,9 @@ class TimelineEntry(private val fragment: BaseFragment, private var _entry: Time
         binding.diaperWetImage.visibility = View.GONE
         binding.diaperSolidImage.visibility = View.GONE
         binding.diaperColorPreview.visibility = View.GONE
+        binding.notePhotoPreview.visibility = View.GONE
 
+        val ctx = fragment.requireContext()
         val res = fragment.resources
         val localStart = BabySummaryHelper.entryClientStart(entry)
         val localEnd = BabySummaryHelper.entryClientEnd(entry)
@@ -168,14 +184,23 @@ class TimelineEntry(private val fragment: BaseFragment, private var _entry: Time
                     titleLine = "$activityTitle · $detail"
                 }
             }
+            is SleepEntry -> {
+                setBadgeVisual(R.drawable.ic_bf_3d_sleep, R.color.bf_cell_sleep, 5, true)
+                if (entry.isNap) {
+                    titleLine = "$activityTitle · ${res.getString(R.string.sleep_nap_label)}"
+                }
+            }
             is ChangeEntry -> {
                 setBadgeVisual(R.drawable.ic_bf_3d_diaper, R.color.bf_cell_diaper, 5, true)
                 binding.diaperWetImage.visibility = if (entry.wet) View.VISIBLE else View.GONE
                 binding.diaperSolidImage.visibility = if (entry.solid) View.VISIBLE else View.GONE
+                if (!entry.wet && !entry.solid) {
+                    titleLine = "$activityTitle · ${res.getString(R.string.diaper_empty_label)}"
+                }
                 if (entry.color.isNotEmpty()) {
                     try {
                         val colorEnum = Constants.SolidDiaperColorEnum.byPostName(entry.color)
-                        val c = ContextCompat.getColor(fragment.requireContext(), colorEnum.colorResId)
+                        val c = ContextCompat.getColor(ctx, colorEnum.colorResId)
                         binding.diaperColorPreview.backgroundTintList = ColorStateList.valueOf(c)
                         binding.diaperColorPreview.visibility = View.VISIBLE
                     } catch (_: Exception) {
@@ -191,6 +216,40 @@ class TimelineEntry(private val fragment: BaseFragment, private var _entry: Time
                 setBadgeVisual(R.drawable.ic_bf_3d_supplement, R.color.bf_cell_supplement, 5, true)
                 val cleanAmt = HorizontalDecIncEditor.formatClean(entry.amount)
                 titleLine = "$activityTitle · $cleanAmt ${res.getString(R.string.unit_ml)}"
+            }
+            is MedicationEntry -> {
+                setBadgeVisual(R.drawable.ic_medication, R.color.medication_enabled, 8, false)
+                val unitLabel = when (entry.dosageUnit) {
+                    MedicationDosageUnitEnum.ML -> res.getString(R.string.medication_unit_ml)
+                    MedicationDosageUnitEnum.MG -> res.getString(R.string.medication_unit_mg)
+                    MedicationDosageUnitEnum.DROPS -> res.getString(R.string.medication_unit_drops)
+                    MedicationDosageUnitEnum.TABLETS -> res.getString(R.string.medication_unit_tablets)
+                }
+                val cleanDosage = HorizontalDecIncEditor.formatClean(entry.dosage)
+                titleLine = "${entry.name} · $cleanDosage $unitLabel"
+                entry.nextDoseTime?.let { nextTime ->
+                    val nextStr = if (entry.isNextDoseReady()) {
+                        res.getString(R.string.medication_next_dose_ready)
+                    } else {
+                        Phrase.from(res, R.string.medication_next_dose_at_pattern)
+                            .put("time", TIME_FORMAT.format(nextTime))
+                            .format()
+                            .toString()
+                    }
+                    metaLine = "$timeRangeStr · $nextStr"
+                }
+            }
+            is NoteEntry -> {
+                setBadgeVisual(R.drawable.ic_bf_3d_care, R.color.bf_cell_care, 5, true)
+                val file = fragment.mainActivity.repository.mediaStorage.resolveMediaFile(entry.imagePath)
+                val bmp = file?.let { BitmapFactory.decodeFile(it.absolutePath) }
+                if (bmp != null) {
+                    binding.notePhotoPreview.setImageBitmap(bmp)
+                    binding.notePhotoPreview.visibility = View.VISIBLE
+                    binding.notePhotoPreview.setOnClickListener {
+                        EntryEditBottomSheet.showImagePreview(fragment.mainActivity, entry.imagePath)
+                    }
+                }
             }
             is TemperatureEntry -> {
                 setBadgeVisual(R.drawable.ic_temperature, R.color.temperature_enabled, 8, false)
@@ -255,6 +314,42 @@ class TimelineEntry(private val fragment: BaseFragment, private var _entry: Time
         } else {
             binding.entrySubtitleText.visibility = View.GONE
         }
+
+        renderTagPills(ctx, entry.tags)
+    }
+
+    private fun renderTagPills(ctx: android.content.Context, tags: List<String>) {
+        binding.entryTagsRow.removeAllViews()
+        if (tags.isEmpty()) {
+            binding.entryTagsScroll.visibility = View.GONE
+            return
+        }
+        val density = ctx.resources.displayMetrics.density
+        fun dp(v: Int): Int = (v * density).toInt()
+
+        for (tagName in tags) {
+            val tagEntry = tagColorLookup[tagName]
+            val bgHex = tagEntry?.color ?: TagEntry.DEFAULT_COLORS[0]
+            val fgHex = tagEntry?.complementaryTextColorHex() ?: "#FFFFFF"
+
+            val pill = TextView(ctx).apply {
+                text = "#$tagName"
+                textSize = 10.5f
+                setTypeface(typeface, Typeface.BOLD)
+                setTextColor(TagManagerDialog.parseColorSafe(fgHex, Color.WHITE))
+                setPadding(dp(8), dp(2), dp(8), dp(2))
+                background = GradientDrawable().apply {
+                    cornerRadius = dp(10).toFloat()
+                    setColor(TagManagerDialog.parseColorSafe(bgHex))
+                }
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply { marginEnd = dp(5) }
+            }
+            binding.entryTagsRow.addView(pill)
+        }
+        binding.entryTagsScroll.visibility = View.VISIBLE
     }
 
     private fun defaultPhraseFields(phrase: Phrase): Phrase {
@@ -298,17 +393,18 @@ class TimelineEntry(private val fragment: BaseFragment, private var _entry: Time
         }
     }
 
-    private fun longClick(): Boolean {
+    private fun openEditor(): Boolean {
         binding.longclickBubble.stopGrow()
         val thisEntry = entry ?: return false
-        val client = fragment.mainActivity.client.v2client
-        return try {
-            fragment.showUrlInBrowser(client.entryUserPath(thisEntry).toString())
-            true
-        } catch (e: MalformedURLException) {
-            e.printStackTrace()
-            false
+        val listener = onEditClickListener
+        if (listener != null) {
+            listener(thisEntry)
+        } else {
+            EntryEditBottomSheet.show(fragment, thisEntry) {
+                modifiedCallback?.run()
+            }
         }
+        return true
     }
 
     private fun removeClick() {
@@ -329,6 +425,9 @@ class TimelineEntry(private val fragment: BaseFragment, private var _entry: Time
                     val client = fragment.mainActivity.client
                     fragment.mainActivity.scope.launch {
                         try {
+                            if (thisEntry is MedicationEntry) {
+                                MedicationReminderScheduler.cancel(fragment.mainActivity, thisEntry.id)
+                            }
                             client.v2client.deleteEntry(thisEntry)
                             (fragment as? LoggedInFragment)?.notifyChildDataChanged(thisEntry.childId)
                             this@TimelineEntry.entry = null

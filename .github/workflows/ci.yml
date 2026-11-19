@@ -1,9 +1,6 @@
 name: CI & Multi-Platform Build
 
 on:
-  push:
-    branches: [main, master, 'feat/**', 'ci/**']
-  pull_request:
   workflow_dispatch:
 
 permissions:

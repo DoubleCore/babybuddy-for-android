@@ -1,6 +1,7 @@
 package eu.pkgsoftware.babybuddywidgets
 
 import android.content.res.ColorStateList
+import android.graphics.BitmapFactory
 import android.graphics.Typeface
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -16,11 +17,15 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.widget.ImageViewCompat
 import androidx.viewpager2.widget.ViewPager2.OnPageChangeCallback
 import com.google.android.material.chip.Chip
+import com.squareup.phrase.Phrase
 import eu.pkgsoftware.babybuddywidgets.UpdateNotifications.Companion.showUpdateNotice
 import eu.pkgsoftware.babybuddywidgets.babyflow.BabyFlowLocalStore
 import eu.pkgsoftware.babybuddywidgets.babyflow.BabyFlowSheets
 import eu.pkgsoftware.babybuddywidgets.babyflow.InventoryExpenseController
 import eu.pkgsoftware.babybuddywidgets.babyflow.MineTabController
+import eu.pkgsoftware.babybuddywidgets.backup.BackupCenterBottomSheet
+import eu.pkgsoftware.babybuddywidgets.children.ChildManagerBottomSheet
+import eu.pkgsoftware.babybuddywidgets.children.ChildProfileDialog
 import eu.pkgsoftware.babybuddywidgets.databinding.LoggedInFragmentBinding
 import eu.pkgsoftware.babybuddywidgets.history.BabySummaryHelper
 import eu.pkgsoftware.babybuddywidgets.logic.ChildrenStateTracker
@@ -100,6 +105,29 @@ class LoggedInFragment : BaseFragment() {
 
         binding.babyViewPagerSwitcher.adapter = emptyBabyPagerAdapter
 
+        // Profile header & onboarding actions (standalone offline child management + backup restore)
+        binding.babyProfileHeaderClickArea.setOnClickListener {
+            if (children.isEmpty()) {
+                ChildProfileDialog.show(mainActivity) { created ->
+                    selectChild(created)
+                }
+            } else {
+                ChildManagerBottomSheet.show(mainActivity, selectedChildSlug) { chosen ->
+                    selectChild(chosen)
+                }
+            }
+        }
+        binding.onboardingAddBabyButton.setOnClickListener {
+            ChildProfileDialog.show(mainActivity) { created ->
+                selectChild(created)
+            }
+        }
+        binding.onboardingRestoreBackupButton.setOnClickListener {
+            BackupCenterBottomSheet.show(mainActivity) {
+                stateTracker?.forceNotifyListeners()
+            }
+        }
+
         // Tab 2: Growth & Stats
         val sc = BabyStatsController(this)
         statsController = sc
@@ -125,11 +153,19 @@ class LoggedInFragment : BaseFragment() {
             BabyFlowSheets.showVaccineSheet(this, selectedChild(), localStore)
         }
         binding.btnTopMedkit.setOnClickListener {
-            BabyFlowSheets.showMedicationSheet(this, selectedChild(), localStore)
+            BabyFlowSheets.showMedicationSheet(this, selectedChild(), localStore) {
+                selectedChild()?.let { c -> notifyChildDataChanged(c.id) }
+                babyAdapter?.refreshActiveView()
+            }
         }
         binding.btnTopCalendar.setOnClickListener {
-            val entries = babyAdapter?.currentEntriesForChild(selectedChild()).orEmpty()
-            BabyFlowSheets.showCalendarAndSearchSheet(this, selectedChild(), entries, localStore)
+            val child = selectedChild()
+            val entries = if (child != null) {
+                mainActivity.repository.getAllTimelineEntries(childId = child.id, limit = 0)
+            } else {
+                babyAdapter?.currentEntriesForChild(null).orEmpty()
+            }
+            BabyFlowSheets.showCalendarAndSearchSheet(this, child, entries, localStore)
         }
 
         // Floating Capsule Bottom Dock
@@ -171,14 +207,16 @@ class LoggedInFragment : BaseFragment() {
     }
 
     private fun applyTabVisibility(tabIndex: Int) {
+        val hasChildren = children.isNotEmpty()
         val showToday = (tabIndex == 0)
         val showGrowth = (tabIndex == 1)
         val showInventory = (tabIndex == 2)
         val showMine = (tabIndex == 3)
 
         binding.todayTopBar.visibility = if (showToday) View.VISIBLE else View.GONE
-        binding.babyProfileHeaderCard.visibility = if (showToday) View.VISIBLE else View.GONE
-        binding.babyViewPagerSwitcher.visibility = if (showToday) View.VISIBLE else View.GONE
+        binding.babyProfileHeaderCard.visibility = if (showToday && hasChildren) View.VISIBLE else View.GONE
+        binding.emptyChildrenOnboardingCard.visibility = if (showToday && !hasChildren) View.VISIBLE else View.GONE
+        binding.babyViewPagerSwitcher.visibility = if (showToday && hasChildren) View.VISIBLE else View.GONE
 
         binding.statsContainer.visibility = if (showGrowth) View.VISIBLE else View.GONE
         binding.inventoryContainer.visibility = if (showInventory) View.VISIBLE else View.GONE
@@ -221,8 +259,10 @@ class LoggedInFragment : BaseFragment() {
                 }
                 selectChild(matched ?: this.children[0])
             } else {
+                selectedChildSlug = ""
                 updateTitle()
             }
+            applyTabVisibility(selectedTabIndex)
         }, true)
     }
 
@@ -239,7 +279,7 @@ class LoggedInFragment : BaseFragment() {
         for (child in children) {
             val chip = Chip(ctx).apply {
                 id = View.generateViewId()
-                text = child.firstName.ifBlank { "${child.firstName} ${child.lastName}".trim() }
+                text = child.firstName.ifBlank { child.fullName }
                 isCheckable = true
                 isChecked = (child.slug == selectedChildSlug)
                 setOnClickListener {
@@ -264,7 +304,7 @@ class LoggedInFragment : BaseFragment() {
 
         mainActivity.addMenuProvider(menu)
 
-        if (babyAdapter == null) {
+        if (babyAdapter == null && stateTracker != null) {
             babyAdapter = run {
                 val bpa = BabyPagerAdapter(stateTracker!!)
                 bpa.postInit(this)
@@ -273,12 +313,16 @@ class LoggedInFragment : BaseFragment() {
             }
         }
 
+        stateTracker?.forceNotifyListeners()
+
         val childSlug = selectedChildSlug
         val childIndex = Child.childIndexBySlug(children.toTypedArray(), childSlug)
         val clampedIndex = max(0, childIndex)
-        binding.babyViewPagerSwitcher.setCurrentItem(clampedIndex, false)
-        if (childIndex >= 0) {
-            babyAdapter?.activeViewChanged(children[clampedIndex])
+        if (children.isNotEmpty()) {
+            binding.babyViewPagerSwitcher.setCurrentItem(clampedIndex, false)
+            if (childIndex >= 0) {
+                babyAdapter?.activeViewChanged(children[clampedIndex])
+            }
         }
 
         rebuildChildSwitcherChips()
@@ -328,6 +372,20 @@ class LoggedInFragment : BaseFragment() {
         inventoryController?.render()
     }
 
+    fun refreshChildrenNow() {
+        stateTracker?.forceNotifyListeners()
+    }
+
+    fun selectChildBySlugOrFirst(slug: String?) {
+        val target = slug?.let { s -> children.firstOrNull { it.slug == s } } ?: children.firstOrNull()
+        if (target != null) {
+            selectChild(target)
+        } else {
+            updateTitle()
+            applyTabVisibility(selectedTabIndex)
+        }
+    }
+
     private fun selectedChild(): Child? {
         val childCount = children.size
         if (childCount == 0) return null
@@ -342,7 +400,7 @@ class LoggedInFragment : BaseFragment() {
         return children[0]
     }
 
-    private fun selectChild(c: Child) {
+    fun selectChild(c: Child) {
         val childIndex = Child.childIndexBySlug(children.toTypedArray(), c.slug)
         mainActivity.storage.login<String>("selected-child-slug", c.slug)
         selectedChildSlug = c.slug
@@ -365,21 +423,54 @@ class LoggedInFragment : BaseFragment() {
         updateTitle()
     }
 
+    private fun renderAvatar(child: Child?) {
+        if (context == null) return
+        val mediaFile = child?.picture?.let { mainActivity.repository.mediaStorage.resolveMediaFile(it) }
+        val bmp = mediaFile?.let { BitmapFactory.decodeFile(it.absolutePath) }
+
+        if (bmp != null) {
+            binding.babyProfileAvatarFrame.setPadding(0, 0, 0, 0)
+            binding.babyProfileAvatarFrame.clipToOutline = true
+            ImageViewCompat.setImageTintList(binding.babyProfileAvatarImage, null)
+            binding.babyProfileAvatarImage.scaleType = ImageView.ScaleType.CENTER_CROP
+            binding.babyProfileAvatarImage.setImageBitmap(bmp)
+        } else {
+            binding.babyProfileAvatarFrame.setPadding(0, 0, 0, 0)
+            binding.babyProfileAvatarFrame.clipToOutline = false
+            ImageViewCompat.setImageTintList(binding.babyProfileAvatarImage, null)
+            binding.babyProfileAvatarImage.scaleType = ImageView.ScaleType.FIT_CENTER
+            binding.babyProfileAvatarImage.setImageResource(R.drawable.ic_bf_baby_avatar)
+        }
+    }
+
     private fun updateTitle() {
         binding.babyGreetingText.text = BabySummaryHelper.formatGreeting(resources)
         val child = selectedChild()
+        renderAvatar(child)
         if (child == null) {
             val noChildStr = getString(R.string.logged_in_no_children_found)
             mainActivity.setTitle(noChildStr)
             binding.babyProfileName.text = noChildStr
             binding.babyProfileAgeBadge.visibility = View.GONE
+            binding.babyProfileCorrectedAgeBadge.visibility = View.GONE
             binding.babyMilestoneBox.visibility = View.GONE
         } else {
-            val fullName = "${child.firstName} ${child.lastName}".trim()
+            val fullName = child.fullName.ifBlank { "${child.firstName} ${child.lastName}".trim() }
             mainActivity.setTitle(fullName)
             binding.babyProfileName.text = fullName
             binding.babyProfileAgeBadge.text = BabySummaryHelper.formatBabyAge(resources, child.birthData)
             binding.babyProfileAgeBadge.visibility = View.VISIBLE
+
+            if (child.hasCorrectedPrematureAge && child.dueDate != null) {
+                val correctedStr = BabySummaryHelper.formatBabyAge(resources, child.dueDate)
+                binding.babyProfileCorrectedAgeBadge.text =
+                    Phrase.from(resources, R.string.child_profile_corrected_age_badge)
+                        .put("age", correctedStr)
+                        .format()
+                binding.babyProfileCorrectedAgeBadge.visibility = View.VISIBLE
+            } else {
+                binding.babyProfileCorrectedAgeBadge.visibility = View.GONE
+            }
 
             val (mTitle, mSub) = BabySummaryHelper.formatMilestoneBadge(resources, child.birthData)
             binding.babyMilestoneTitle.text = mTitle
