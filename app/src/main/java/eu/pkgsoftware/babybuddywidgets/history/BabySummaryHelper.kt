@@ -3,12 +3,14 @@ package eu.pkgsoftware.babybuddywidgets.history
 import android.content.res.Resources
 import com.squareup.phrase.Phrase
 import eu.pkgsoftware.babybuddywidgets.R
+import eu.pkgsoftware.babybuddywidgets.local.ModelValidators
 import eu.pkgsoftware.babybuddywidgets.networking.BabyBuddyClient
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.BmiEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.ChangeEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.FeedingEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.HeadCircumferenceEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.HeightEntry
+import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.MedicationEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.NoteEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.PumpingEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.SleepEntry
@@ -24,6 +26,7 @@ import java.time.LocalDate
 import java.time.Period
 import java.time.ZoneId
 import java.util.Date
+import java.util.TimeZone
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -44,23 +47,30 @@ object BabySummaryHelper {
     data class TodaySummary(
         val lastFeeding: FeedingEntry?,
         val lastFeedingClientTime: Date?,
+        val recentFeedings: List<FeedingEntry> = emptyList(),
         val lastSleep: SleepEntry?,
         val lastSleepClientTime: Date?,
+        val awakeMinutes: Long? = null,
         val lastDiaper: ChangeEntry?,
         val lastDiaperClientTime: Date?,
-        val lastPumpingClientTime: Date?,
-        val lastCareClientTime: Date?,
-        val lastTummyClientTime: Date?,
+        val lastPumpingClientTime: Date? = null,
+        val lastCareClientTime: Date? = null,
+        val lastTummyClientTime: Date? = null,
         val todayFeedingCount: Int,
         val todayFeedingAmountMl: Double,
         val todaySleepMinutes: Int,
+        val todayNapMinutes: Int = 0,
+        val todayNightSleepMinutes: Int = 0,
         val todayDiaperTotal: Int,
         val todayDiaperWet: Int,
         val todayDiaperSolid: Int,
-        val todayPumpingCount: Int,
-        val todayPumpingAmountMl: Double,
-        val todayCareCount: Int,
-        val todayTummyMinutes: Int,
+        val todayDiaperEmpty: Int = 0,
+        val todayPumpingCount: Int = 0,
+        val todayPumpingAmountMl: Double = 0.0,
+        val todayCareCount: Int = 0,
+        val todayTummyCount: Int = 0,
+        val todayTummyMinutes: Int = 0,
+        val activeMedicationReminder: MedicationEntry? = null,
     )
 
     fun formatGreeting(res: Resources, now: Date = Date(), zoneId: ZoneId = ZoneId.systemDefault()): String {
@@ -249,11 +259,15 @@ object BabySummaryHelper {
         convertServerOffset: Boolean = true,
     ): TodaySummary {
         val todayLocal = Instant.ofEpochMilli(nowClientTime.time).atZone(zoneId).toLocalDate()
+        val todayIso = todayLocal.toString()
         val dayStartMs = todayLocal.atStartOfDay(zoneId).toInstant().toEpochMilli()
         val dayEndMs = todayLocal.plusDays(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
+        val tz = TimeZone.getTimeZone(zoneId)
 
         var lastFeeding: FeedingEntry? = null
         var lastFeedingTime: Date? = null
+        val feedingsSorted = mutableListOf<Pair<Long, FeedingEntry>>()
+
         var lastSleep: SleepEntry? = null
         var lastSleepTime: Date? = null
         var lastDiaper: ChangeEntry? = null
@@ -261,16 +275,22 @@ object BabySummaryHelper {
         var lastPumpingTime: Date? = null
         var lastCareTime: Date? = null
         var lastTummyTime: Date? = null
+        var latestIntervalMed: MedicationEntry? = null
+        var latestIntervalMedTime: Long = Long.MIN_VALUE
 
         var todayFeedingCount = 0
         var todayFeedingAmount = 0.0
         var todaySleepMs = 0L
+        var todayNapMs = 0L
+        var todayNightMs = 0L
         var todayDiaperTotal = 0
         var todayDiaperWet = 0
         var todayDiaperSolid = 0
+        var todayDiaperEmpty = 0
         var todayPumpingCount = 0
         var todayPumpingAmount = 0.0
         var todayCareCount = 0
+        var todayTummyCount = 0
         var todayTummyMs = 0L
 
         for (entry in entries) {
@@ -278,6 +298,7 @@ object BabySummaryHelper {
             val endClient = entryClientEnd(entry, convertServerOffset)
             when (entry) {
                 is FeedingEntry -> {
+                    feedingsSorted.add(endClient.time to entry)
                     if (lastFeedingTime == null || endClient.after(lastFeedingTime)) {
                         lastFeeding = entry
                         lastFeedingTime = endClient
@@ -292,10 +313,20 @@ object BabySummaryHelper {
                         lastSleep = entry
                         lastSleepTime = endClient
                     }
-                    val overlapStart = max(startClient.time, dayStartMs)
-                    val overlapEnd = min(endClient.time, dayEndMs)
-                    if (overlapEnd > overlapStart) {
-                        todaySleepMs += (overlapEnd - overlapStart)
+                    val slices = ModelValidators.splitSleepAcrossMidnights(
+                        startClient.time,
+                        endClient.time,
+                        tz
+                    )
+                    for (slice in slices) {
+                        if (slice.dayIso == todayIso) {
+                            todaySleepMs += slice.durationMillis
+                            if (entry.isNap) {
+                                todayNapMs += slice.durationMillis
+                            } else {
+                                todayNightMs += slice.durationMillis
+                            }
+                        }
                     }
                 }
                 is ChangeEntry -> {
@@ -307,6 +338,7 @@ object BabySummaryHelper {
                         todayDiaperTotal++
                         if (entry.wet) todayDiaperWet++
                         if (entry.solid) todayDiaperSolid++
+                        if (!entry.wet && !entry.solid) todayDiaperEmpty++
                     }
                 }
                 is PumpingEntry -> {
@@ -325,7 +357,22 @@ object BabySummaryHelper {
                     val overlapStart = max(startClient.time, dayStartMs)
                     val overlapEnd = min(endClient.time, dayEndMs)
                     if (overlapEnd > overlapStart) {
+                        todayTummyCount++
                         todayTummyMs += (overlapEnd - overlapStart)
+                    }
+                }
+                is MedicationEntry -> {
+                    if (lastCareTime == null || startClient.after(lastCareTime)) {
+                        lastCareTime = startClient
+                    }
+                    if (startClient.time in dayStartMs until dayEndMs) {
+                        todayCareCount++
+                    }
+                    if ((entry.nextDoseIntervalMinutes ?: 0) > 0 && startClient.time > latestIntervalMedTime) {
+                        if (nowClientTime.time - startClient.time <= 48L * 3_600_000L) {
+                            latestIntervalMed = entry
+                            latestIntervalMedTime = startClient.time
+                        }
                     }
                 }
                 is NoteEntry, is TemperatureEntry -> {
@@ -339,11 +386,17 @@ object BabySummaryHelper {
             }
         }
 
+        feedingsSorted.sortByDescending { it.first }
+        val recent3 = feedingsSorted.take(3).map { it.second }
+        val awakeMins = lastSleepTime?.let { computeElapsedMinutes(it, nowClientTime) }
+
         return TodaySummary(
             lastFeeding = lastFeeding,
             lastFeedingClientTime = lastFeedingTime,
+            recentFeedings = recent3,
             lastSleep = lastSleep,
             lastSleepClientTime = lastSleepTime,
+            awakeMinutes = awakeMins,
             lastDiaper = lastDiaper,
             lastDiaperClientTime = lastDiaperTime,
             lastPumpingClientTime = lastPumpingTime,
@@ -352,13 +405,18 @@ object BabySummaryHelper {
             todayFeedingCount = todayFeedingCount,
             todayFeedingAmountMl = todayFeedingAmount,
             todaySleepMinutes = (todaySleepMs / 60_000.0).roundToInt(),
+            todayNapMinutes = (todayNapMs / 60_000.0).roundToInt(),
+            todayNightSleepMinutes = (todayNightMs / 60_000.0).roundToInt(),
             todayDiaperTotal = todayDiaperTotal,
             todayDiaperWet = todayDiaperWet,
             todayDiaperSolid = todayDiaperSolid,
+            todayDiaperEmpty = todayDiaperEmpty,
             todayPumpingCount = todayPumpingCount,
             todayPumpingAmountMl = todayPumpingAmount,
             todayCareCount = todayCareCount,
+            todayTummyCount = todayTummyCount,
             todayTummyMinutes = (todayTummyMs / 60_000.0).roundToInt(),
+            activeMedicationReminder = latestIntervalMed,
         )
     }
 

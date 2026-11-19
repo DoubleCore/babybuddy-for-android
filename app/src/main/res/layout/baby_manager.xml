@@ -22,7 +22,7 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- ==================== 1. TODAY OVERVIEW CARD (今日概览 6-Cell Grid) ==================== -->
+            <!-- ==================== 1. TODAY OVERVIEW CARD (今日概览 6-Cell Grid + Med Reminder) ==================== -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/todaySummaryCard"
                 android:layout_width="match_parent"
@@ -455,15 +455,48 @@
                             </LinearLayout>
                         </FrameLayout>
                     </LinearLayout>
+
+                    <!-- Active Medication Next-Dose Countdown Pill -->
+                    <TextView
+                        android:id="@+id/nextMedicationBadge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:background="@drawable/bg_bf_timeline_pill"
+                        android:paddingStart="12dp"
+                        android:paddingTop="5dp"
+                        android:paddingEnd="12dp"
+                        android:paddingBottom="5dp"
+                        android:textColor="@color/medication_accent"
+                        android:textSize="11.5sp"
+                        android:textStyle="bold"
+                        android:visibility="gone"
+                        tools:text="维生素D3: 2h 15m 后下一次"
+                        tools:visibility="visible" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+
+            <!-- ==================== 1B. QUICK STANDALONE TIMERS STRIP ==================== -->
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:scrollbars="none">
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/quickTimersChipGroup"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:chipSpacingHorizontal="6dp"
+                    app:singleLine="true" />
+            </HorizontalScrollView>
 
             <!-- ==================== 2. QUICK RECORD 3x2 PASTEL TILES (快捷记录) ==================== -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="4dp"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="10dp"
                 android:layout_marginBottom="8dp"
                 android:text="@string/bf_quick_record_title"
                 android:textColor="@color/text_primary_warm"
@@ -888,7 +921,7 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- ==================== 3. GROWTH & HEALTH MEASUREMENTS STRIP ==================== -->
+            <!-- ==================== 3. GROWTH & HEALTH MEASUREMENTS 2x3 GRID ==================== -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -904,432 +937,532 @@
                 android:id="@+id/growthHealthButtons"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:baselineAligned="false"
-                android:orientation="horizontal">
+                android:orientation="vertical">
 
-                <!-- Temperature -->
-                <FrameLayout
-                    android:layout_width="0dp"
+                <!-- Growth Row 1: 用药 (Medication) | 体温 (Temperature) | 体重 (Weight) -->
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1">
+                    android:baselineAligned="false"
+                    android:orientation="horizontal">
 
-                    <LinearLayout
-                        android:id="@+id/temperatureDisabledButton"
-                        android:layout_width="match_parent"
+                    <!-- Medication -->
+                    <FrameLayout
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:background="@drawable/bg_bf_top_capsule"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:gravity="center"
-                        android:orientation="vertical"
-                        android:paddingTop="10dp"
-                        android:paddingBottom="9dp">
+                        android:layout_weight="1">
 
-                        <FrameLayout
-                            android:layout_width="32dp"
-                            android:layout_height="32dp"
-                            android:background="@drawable/bg_badge_rounded"
-                            android:backgroundTint="@color/temperature_enabled"
-                            android:padding="6dp">
-
-                            <ImageView
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent"
-                                app:srcCompat="@drawable/ic_temperature"
-                                app:tint="@color/temperature_accent" />
-                        </FrameLayout>
-
-                        <TextView
-                            android:layout_width="wrap_content"
+                        <LinearLayout
+                            android:id="@+id/medicationDisabledButton"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:ellipsize="end"
-                            android:singleLine="true"
-                            android:text="@string/tile_temperature"
-                            android:textColor="@color/text_primary_warm"
-                            android:textSize="11sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
+                            android:background="@drawable/bg_bf_top_capsule"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:paddingTop="10dp"
+                            android:paddingBottom="9dp">
 
-                    <LinearLayout
-                        android:id="@+id/temperatureEnabledButton"
-                        android:layout_width="match_parent"
+                            <FrameLayout
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
+                                android:background="@drawable/bg_badge_rounded"
+                                android:backgroundTint="@color/medication_enabled"
+                                android:padding="6dp">
+
+                                <ImageView
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    app:srcCompat="@drawable/ic_medication"
+                                    app:tint="@color/medication_accent" />
+                            </FrameLayout>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:ellipsize="end"
+                                android:singleLine="true"
+                                android:text="@string/tile_medication"
+                                android:textColor="@color/text_primary_warm"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/medicationEnabledButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_bf_quick_tile_active"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:paddingTop="10dp"
+                            android:paddingBottom="9dp"
+                            android:visibility="gone">
+
+                            <FrameLayout
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
+                                android:background="@drawable/bg_badge_rounded"
+                                android:backgroundTint="@color/medication_accent"
+                                android:padding="6dp">
+
+                                <ImageView
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    app:srcCompat="@drawable/ic_medication"
+                                    app:tint="@color/white" />
+                            </FrameLayout>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:ellipsize="end"
+                                android:singleLine="true"
+                                android:text="@string/tile_medication"
+                                android:textColor="@color/bf_purple_primary"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </FrameLayout>
+
+                    <!-- Temperature -->
+                    <FrameLayout
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:background="@drawable/bg_bf_quick_tile_active"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:gravity="center"
-                        android:orientation="vertical"
-                        android:paddingTop="10dp"
-                        android:paddingBottom="9dp"
-                        android:visibility="gone">
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1">
 
-                        <FrameLayout
-                            android:layout_width="32dp"
-                            android:layout_height="32dp"
-                            android:background="@drawable/bg_badge_rounded"
-                            android:backgroundTint="@color/temperature_accent"
-                            android:padding="6dp">
-
-                            <ImageView
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent"
-                                app:srcCompat="@drawable/ic_temperature"
-                                app:tint="@color/white" />
-                        </FrameLayout>
-
-                        <TextView
-                            android:layout_width="wrap_content"
+                        <LinearLayout
+                            android:id="@+id/temperatureDisabledButton"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:ellipsize="end"
-                            android:singleLine="true"
-                            android:text="@string/tile_temperature"
-                            android:textColor="@color/bf_purple_primary"
-                            android:textSize="11sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-                </FrameLayout>
+                            android:background="@drawable/bg_bf_top_capsule"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:paddingTop="10dp"
+                            android:paddingBottom="9dp">
 
-                <!-- Weight -->
-                <FrameLayout
-                    android:layout_width="0dp"
+                            <FrameLayout
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
+                                android:background="@drawable/bg_badge_rounded"
+                                android:backgroundTint="@color/temperature_enabled"
+                                android:padding="6dp">
+
+                                <ImageView
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    app:srcCompat="@drawable/ic_temperature"
+                                    app:tint="@color/temperature_accent" />
+                            </FrameLayout>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:ellipsize="end"
+                                android:singleLine="true"
+                                android:text="@string/tile_temperature"
+                                android:textColor="@color/text_primary_warm"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/temperatureEnabledButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_bf_quick_tile_active"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:paddingTop="10dp"
+                            android:paddingBottom="9dp"
+                            android:visibility="gone">
+
+                            <FrameLayout
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
+                                android:background="@drawable/bg_badge_rounded"
+                                android:backgroundTint="@color/temperature_accent"
+                                android:padding="6dp">
+
+                                <ImageView
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    app:srcCompat="@drawable/ic_temperature"
+                                    app:tint="@color/white" />
+                            </FrameLayout>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:ellipsize="end"
+                                android:singleLine="true"
+                                android:text="@string/tile_temperature"
+                                android:textColor="@color/bf_purple_primary"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </FrameLayout>
+
+                    <!-- Weight -->
+                    <FrameLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1">
+
+                        <LinearLayout
+                            android:id="@+id/weightDisabledButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_bf_top_capsule"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:paddingTop="10dp"
+                            android:paddingBottom="9dp">
+
+                            <FrameLayout
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
+                                android:background="@drawable/bg_badge_rounded"
+                                android:backgroundTint="@color/weight_enabled"
+                                android:padding="6dp">
+
+                                <ImageView
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    app:srcCompat="@drawable/ic_weight"
+                                    app:tint="@color/weight_accent" />
+                            </FrameLayout>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:ellipsize="end"
+                                android:singleLine="true"
+                                android:text="@string/tile_weight"
+                                android:textColor="@color/text_primary_warm"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/weightEnabledButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_bf_quick_tile_active"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:paddingTop="10dp"
+                            android:paddingBottom="9dp"
+                            android:visibility="gone">
+
+                            <FrameLayout
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
+                                android:background="@drawable/bg_badge_rounded"
+                                android:backgroundTint="@color/weight_accent"
+                                android:padding="6dp">
+
+                                <ImageView
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    app:srcCompat="@drawable/ic_weight"
+                                    app:tint="@color/white" />
+                            </FrameLayout>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:ellipsize="end"
+                                android:singleLine="true"
+                                android:text="@string/tile_weight"
+                                android:textColor="@color/bf_purple_primary"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </FrameLayout>
+                </LinearLayout>
+
+                <!-- Growth Row 2: 身高 (Height) | 头围 (Head Circumference) | BMI -->
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
-                    android:layout_weight="1">
+                    android:layout_marginTop="8dp"
+                    android:baselineAligned="false"
+                    android:orientation="horizontal">
 
-                    <LinearLayout
-                        android:id="@+id/weightDisabledButton"
-                        android:layout_width="match_parent"
+                    <!-- Height -->
+                    <FrameLayout
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:background="@drawable/bg_bf_top_capsule"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:gravity="center"
-                        android:orientation="vertical"
-                        android:paddingTop="10dp"
-                        android:paddingBottom="9dp">
+                        android:layout_weight="1">
 
-                        <FrameLayout
-                            android:layout_width="32dp"
-                            android:layout_height="32dp"
-                            android:background="@drawable/bg_badge_rounded"
-                            android:backgroundTint="@color/weight_enabled"
-                            android:padding="6dp">
-
-                            <ImageView
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent"
-                                app:srcCompat="@drawable/ic_weight"
-                                app:tint="@color/weight_accent" />
-                        </FrameLayout>
-
-                        <TextView
-                            android:layout_width="wrap_content"
+                        <LinearLayout
+                            android:id="@+id/heightDisabledButton"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:ellipsize="end"
-                            android:singleLine="true"
-                            android:text="@string/tile_weight"
-                            android:textColor="@color/text_primary_warm"
-                            android:textSize="11sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
+                            android:background="@drawable/bg_bf_top_capsule"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:paddingTop="10dp"
+                            android:paddingBottom="9dp">
 
-                    <LinearLayout
-                        android:id="@+id/weightEnabledButton"
-                        android:layout_width="match_parent"
+                            <FrameLayout
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
+                                android:background="@drawable/bg_badge_rounded"
+                                android:backgroundTint="@color/height_enabled"
+                                android:padding="6dp">
+
+                                <ImageView
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    app:srcCompat="@drawable/ic_height"
+                                    app:tint="@color/height_accent" />
+                            </FrameLayout>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:ellipsize="end"
+                                android:singleLine="true"
+                                android:text="@string/tile_height"
+                                android:textColor="@color/text_primary_warm"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/heightEnabledButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_bf_quick_tile_active"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:paddingTop="10dp"
+                            android:paddingBottom="9dp"
+                            android:visibility="gone">
+
+                            <FrameLayout
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
+                                android:background="@drawable/bg_badge_rounded"
+                                android:backgroundTint="@color/height_accent"
+                                android:padding="6dp">
+
+                                <ImageView
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    app:srcCompat="@drawable/ic_height"
+                                    app:tint="@color/white" />
+                            </FrameLayout>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:ellipsize="end"
+                                android:singleLine="true"
+                                android:text="@string/tile_height"
+                                android:textColor="@color/bf_purple_primary"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </FrameLayout>
+
+                    <!-- Head Circumference -->
+                    <FrameLayout
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:background="@drawable/bg_bf_quick_tile_active"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:gravity="center"
-                        android:orientation="vertical"
-                        android:paddingTop="10dp"
-                        android:paddingBottom="9dp"
-                        android:visibility="gone">
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1">
 
-                        <FrameLayout
-                            android:layout_width="32dp"
-                            android:layout_height="32dp"
-                            android:background="@drawable/bg_badge_rounded"
-                            android:backgroundTint="@color/weight_accent"
-                            android:padding="6dp">
-
-                            <ImageView
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent"
-                                app:srcCompat="@drawable/ic_weight"
-                                app:tint="@color/white" />
-                        </FrameLayout>
-
-                        <TextView
-                            android:layout_width="wrap_content"
+                        <LinearLayout
+                            android:id="@+id/headCircumferenceDisabledButton"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:ellipsize="end"
-                            android:singleLine="true"
-                            android:text="@string/tile_weight"
-                            android:textColor="@color/bf_purple_primary"
-                            android:textSize="11sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-                </FrameLayout>
+                            android:background="@drawable/bg_bf_top_capsule"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:paddingTop="10dp"
+                            android:paddingBottom="9dp">
 
-                <!-- Height -->
-                <FrameLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
-                    android:layout_weight="1">
+                            <FrameLayout
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
+                                android:background="@drawable/bg_badge_rounded"
+                                android:backgroundTint="@color/head_circumference_enabled"
+                                android:padding="6dp">
 
-                    <LinearLayout
-                        android:id="@+id/heightDisabledButton"
-                        android:layout_width="match_parent"
+                                <ImageView
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    app:srcCompat="@drawable/ic_head_circumference"
+                                    app:tint="@color/head_circumference_accent" />
+                            </FrameLayout>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:ellipsize="end"
+                                android:singleLine="true"
+                                android:text="@string/tile_head_circumference"
+                                android:textColor="@color/text_primary_warm"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/headCircumferenceEnabledButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_bf_quick_tile_active"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:paddingTop="10dp"
+                            android:paddingBottom="9dp"
+                            android:visibility="gone">
+
+                            <FrameLayout
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
+                                android:background="@drawable/bg_badge_rounded"
+                                android:backgroundTint="@color/head_circumference_accent"
+                                android:padding="6dp">
+
+                                <ImageView
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    app:srcCompat="@drawable/ic_head_circumference"
+                                    app:tint="@color/white" />
+                            </FrameLayout>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:ellipsize="end"
+                                android:singleLine="true"
+                                android:text="@string/tile_head_circumference"
+                                android:textColor="@color/bf_purple_primary"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </FrameLayout>
+
+                    <!-- BMI -->
+                    <FrameLayout
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:background="@drawable/bg_bf_top_capsule"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:gravity="center"
-                        android:orientation="vertical"
-                        android:paddingTop="10dp"
-                        android:paddingBottom="9dp">
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1">
 
-                        <FrameLayout
-                            android:layout_width="32dp"
-                            android:layout_height="32dp"
-                            android:background="@drawable/bg_badge_rounded"
-                            android:backgroundTint="@color/height_enabled"
-                            android:padding="6dp">
-
-                            <ImageView
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent"
-                                app:srcCompat="@drawable/ic_height"
-                                app:tint="@color/height_accent" />
-                        </FrameLayout>
-
-                        <TextView
-                            android:layout_width="wrap_content"
+                        <LinearLayout
+                            android:id="@+id/bmiDisabledButton"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:ellipsize="end"
-                            android:singleLine="true"
-                            android:text="@string/tile_height"
-                            android:textColor="@color/text_primary_warm"
-                            android:textSize="11sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
+                            android:background="@drawable/bg_bf_top_capsule"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:paddingTop="10dp"
+                            android:paddingBottom="9dp">
 
-                    <LinearLayout
-                        android:id="@+id/heightEnabledButton"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/bg_bf_quick_tile_active"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:gravity="center"
-                        android:orientation="vertical"
-                        android:paddingTop="10dp"
-                        android:paddingBottom="9dp"
-                        android:visibility="gone">
+                            <FrameLayout
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
+                                android:background="@drawable/bg_badge_rounded"
+                                android:backgroundTint="@color/bmi_enabled"
+                                android:padding="6dp">
 
-                        <FrameLayout
-                            android:layout_width="32dp"
-                            android:layout_height="32dp"
-                            android:background="@drawable/bg_badge_rounded"
-                            android:backgroundTint="@color/height_accent"
-                            android:padding="6dp">
+                                <ImageView
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    app:srcCompat="@drawable/ic_bmi"
+                                    app:tint="@color/bmi_accent" />
+                            </FrameLayout>
 
-                            <ImageView
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent"
-                                app:srcCompat="@drawable/ic_height"
-                                app:tint="@color/white" />
-                        </FrameLayout>
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:ellipsize="end"
+                                android:singleLine="true"
+                                android:text="@string/tile_bmi"
+                                android:textColor="@color/text_primary_warm"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
 
-                        <TextView
-                            android:layout_width="wrap_content"
+                        <LinearLayout
+                            android:id="@+id/bmiEnabledButton"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:ellipsize="end"
-                            android:singleLine="true"
-                            android:text="@string/tile_height"
-                            android:textColor="@color/bf_purple_primary"
-                            android:textSize="11sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-                </FrameLayout>
+                            android:background="@drawable/bg_bf_quick_tile_active"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:paddingTop="10dp"
+                            android:paddingBottom="9dp"
+                            android:visibility="gone">
 
-                <!-- Head Circumference -->
-                <FrameLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
-                    android:layout_weight="1">
+                            <FrameLayout
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
+                                android:background="@drawable/bg_badge_rounded"
+                                android:backgroundTint="@color/bmi_accent"
+                                android:padding="6dp">
 
-                    <LinearLayout
-                        android:id="@+id/headCircumferenceDisabledButton"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/bg_bf_top_capsule"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:gravity="center"
-                        android:orientation="vertical"
-                        android:paddingTop="10dp"
-                        android:paddingBottom="9dp">
+                                <ImageView
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    app:srcCompat="@drawable/ic_bmi"
+                                    app:tint="@color/white" />
+                            </FrameLayout>
 
-                        <FrameLayout
-                            android:layout_width="32dp"
-                            android:layout_height="32dp"
-                            android:background="@drawable/bg_badge_rounded"
-                            android:backgroundTint="@color/head_circumference_enabled"
-                            android:padding="6dp">
-
-                            <ImageView
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent"
-                                app:srcCompat="@drawable/ic_head_circumference"
-                                app:tint="@color/head_circumference_accent" />
-                        </FrameLayout>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:ellipsize="end"
-                            android:singleLine="true"
-                            android:text="@string/tile_head_circumference"
-                            android:textColor="@color/text_primary_warm"
-                            android:textSize="11sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:id="@+id/headCircumferenceEnabledButton"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/bg_bf_quick_tile_active"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:gravity="center"
-                        android:orientation="vertical"
-                        android:paddingTop="10dp"
-                        android:paddingBottom="9dp"
-                        android:visibility="gone">
-
-                        <FrameLayout
-                            android:layout_width="32dp"
-                            android:layout_height="32dp"
-                            android:background="@drawable/bg_badge_rounded"
-                            android:backgroundTint="@color/head_circumference_accent"
-                            android:padding="6dp">
-
-                            <ImageView
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent"
-                                app:srcCompat="@drawable/ic_head_circumference"
-                                app:tint="@color/white" />
-                        </FrameLayout>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:ellipsize="end"
-                            android:singleLine="true"
-                            android:text="@string/tile_head_circumference"
-                            android:textColor="@color/bf_purple_primary"
-                            android:textSize="11sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-                </FrameLayout>
-
-                <!-- BMI -->
-                <FrameLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
-                    android:layout_weight="1">
-
-                    <LinearLayout
-                        android:id="@+id/bmiDisabledButton"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/bg_bf_top_capsule"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:gravity="center"
-                        android:orientation="vertical"
-                        android:paddingTop="10dp"
-                        android:paddingBottom="9dp">
-
-                        <FrameLayout
-                            android:layout_width="32dp"
-                            android:layout_height="32dp"
-                            android:background="@drawable/bg_badge_rounded"
-                            android:backgroundTint="@color/bmi_enabled"
-                            android:padding="6dp">
-
-                            <ImageView
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent"
-                                app:srcCompat="@drawable/ic_bmi"
-                                app:tint="@color/bmi_accent" />
-                        </FrameLayout>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:ellipsize="end"
-                            android:singleLine="true"
-                            android:text="@string/tile_bmi"
-                            android:textColor="@color/text_primary_warm"
-                            android:textSize="11sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:id="@+id/bmiEnabledButton"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/bg_bf_quick_tile_active"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:gravity="center"
-                        android:orientation="vertical"
-                        android:paddingTop="10dp"
-                        android:paddingBottom="9dp"
-                        android:visibility="gone">
-
-                        <FrameLayout
-                            android:layout_width="32dp"
-                            android:layout_height="32dp"
-                            android:background="@drawable/bg_badge_rounded"
-                            android:backgroundTint="@color/bmi_accent"
-                            android:padding="6dp">
-
-                            <ImageView
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent"
-                                app:srcCompat="@drawable/ic_bmi"
-                                app:tint="@color/white" />
-                        </FrameLayout>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:ellipsize="end"
-                            android:singleLine="true"
-                            android:text="@string/tile_bmi"
-                            android:textColor="@color/bf_purple_primary"
-                            android:textSize="11sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-                </FrameLayout>
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:ellipsize="end"
+                                android:singleLine="true"
+                                android:text="@string/tile_bmi"
+                                android:textColor="@color/bf_purple_primary"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </FrameLayout>
+                </LinearLayout>
             </LinearLayout>
 
             <!-- Active Logging Editor Panels -->
@@ -1340,7 +1473,7 @@
                 android:layout_marginTop="4dp"
                 android:orientation="vertical" />
 
-            <!-- ==================== 4. RECENT RECORDS LIST & FILTERS ==================== -->
+            <!-- ==================== 4. RECENT RECORDS LIST, SEARCH, TAGS & FILTERS ==================== -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -1372,6 +1505,47 @@
                     android:layout_height="1dp"
                     android:layout_marginStart="10dp"
                     android:layout_weight="1" />
+            </LinearLayout>
+
+            <!-- Timeline Search & Colored Tag Filter Bar -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <EditText
+                    android:id="@+id/timelineSearchInput"
+                    android:layout_width="0dp"
+                    android:layout_height="38dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_bf_top_capsule"
+                    android:hint="@string/timeline_search_hint"
+                    android:importantForAutofill="no"
+                    android:inputType="text"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:singleLine="true"
+                    android:textSize="13sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/timelineTagFilterButton"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="38dp"
+                    android:layout_marginStart="6dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:minWidth="0dp"
+                    android:paddingStart="10dp"
+                    android:paddingEnd="10dp"
+                    android:text="@string/tag_filter_all"
+                    android:textAllCaps="false"
+                    android:textSize="12sp"
+                    app:cornerRadius="12dp"
+                    app:icon="@drawable/ic_tag_outline"
+                    app:iconSize="15dp" />
             </LinearLayout>
 
             <HorizontalScrollView
@@ -1436,6 +1610,14 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/bf_cat_edu"
+                        android:textSize="12sp" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipFilterMedication"
+                        style="@style/Widget.MaterialComponents.Chip.Choice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/tile_medication"
                         android:textSize="12sp" />
 
                     <com.google.android.material.chip.Chip

@@ -1,18 +1,68 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <ListPreference
-        android:entries="@array/setting_language_options"
-        android:entryValues="@array/setting_language_values"
-        android:key="setting_language"
-        android:title="@string/setting_language"
-        app:useSimpleSummaryProvider="true" />
+    <PreferenceCategory android:title="@string/action_settings">
+        <ListPreference
+            android:entries="@array/setting_language_options"
+            android:entryValues="@array/setting_language_values"
+            android:key="setting_language"
+            android:title="@string/setting_language"
+            app:useSimpleSummaryProvider="true" />
 
-    <ListPreference
-        android:entries="@array/setting_dark_light_mode_options"
-        android:entryValues="@array/setting_dark_light_mode_values"
-        android:key="setting_dark_light_mode"
-        android:title="@string/setting_dark_light_mode"
-        app:useSimpleSummaryProvider="true" />
+        <ListPreference
+            android:entries="@array/setting_dark_light_mode_options"
+            android:entryValues="@array/setting_dark_light_mode_values"
+            android:key="setting_dark_light_mode"
+            android:title="@string/setting_dark_light_mode"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/setting_category_behavior">
+        <Preference
+            android:key="standalone_nap_start_min"
+            android:title="@string/setting_nap_start_min" />
+
+        <Preference
+            android:key="standalone_nap_start_max"
+            android:title="@string/setting_nap_start_max" />
+
+        <SwitchPreferenceCompat
+            android:defaultValue="false"
+            android:key="standalone_dashboard_hide_empty"
+            android:summary="@string/setting_dashboard_hide_empty_summary"
+            android:title="@string/setting_dashboard_hide_empty" />
+
+        <SwitchPreferenceCompat
+            android:defaultValue="false"
+            android:key="standalone_auto_trim_overlaps"
+            android:summary="@string/setting_auto_trim_overlaps_summary"
+            android:title="@string/setting_auto_trim_overlaps" />
+
+        <SwitchPreferenceCompat
+            android:defaultValue="true"
+            android:key="standalone_medication_notifications"
+            android:summary="@string/setting_medication_notifications_summary"
+            android:title="@string/setting_medication_notifications" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/setting_category_data">
+        <Preference
+            android:key="action_open_backup_center"
+            android:summary="@string/backup_center_subtitle"
+            android:title="@string/backup_center_title" />
+
+        <Preference
+            android:key="action_manage_children"
+            android:title="@string/child_manager_title" />
+
+        <Preference
+            android:key="action_manage_tags"
+            android:title="@string/tag_manager_title" />
+
+        <Preference
+            android:key="action_clear_all_local_data"
+            android:summary="@string/setting_clear_all_data_summary"
+            android:title="@string/setting_clear_all_data" />
+    </PreferenceCategory>
 
 </PreferenceScreen>

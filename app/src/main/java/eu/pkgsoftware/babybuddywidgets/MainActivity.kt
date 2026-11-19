@@ -1,13 +1,18 @@
 package eu.pkgsoftware.babybuddywidgets
 
+import android.app.Activity
 import android.app.ProgressDialog
-import android.os.Build
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.InputEvent
 import android.view.KeyEvent
 import android.view.MotionEvent
-import android.view.Window
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContract
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
@@ -15,25 +20,27 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.FragmentContainerView
-import androidx.navigation.Navigation
+import androidx.navigation.findNavController
 import androidx.preference.PreferenceManager
 import com.squareup.phrase.Phrase
 import eu.pkgsoftware.babybuddywidgets.activitycomponents.TimerControl
 import eu.pkgsoftware.babybuddywidgets.compat.BabyBuddyV2TimerAdapter
 import eu.pkgsoftware.babybuddywidgets.databinding.ActivityMainBinding
+import eu.pkgsoftware.babybuddywidgets.local.LocalBabyBuddyRepository
+import eu.pkgsoftware.babybuddywidgets.local.NapAndAppSettings
 import eu.pkgsoftware.babybuddywidgets.networking.BabyBuddyClient
 import eu.pkgsoftware.babybuddywidgets.networking.BabyBuddyClient.Child
 import eu.pkgsoftware.babybuddywidgets.networking.BabyBuddyClient.GenericSubsetResponseHeader
-import eu.pkgsoftware.babybuddywidgets.networking.NetworkMonitor
 import eu.pkgsoftware.babybuddywidgets.tutorial.TutorialAccess
 import eu.pkgsoftware.babybuddywidgets.tutorial.TutorialManagement
 import eu.pkgsoftware.babybuddywidgets.utils.AsyncClientRequest
-import kotlinx.coroutines.*
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.json.JSONArray
-import java.util.*
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
-import androidx.navigation.findNavController
 
 interface StoreFunction<X> : BabyBuddyClient.RequestCallback<X> {
     fun store(timer: BabyBuddyClient.Timer, callback: BabyBuddyClient.RequestCallback<X>)
@@ -53,92 +60,116 @@ fun interface InputEventListener {
 class MainActivity : AppCompatActivity() {
     private val timerControls = mutableMapOf<Int, BabyBuddyV2TimerAdapter>()
 
+    private var pendingPhotoCallback: ((Uri?) -> Unit)? = null
+    private var pendingExportDocCallback: ((Uri?) -> Unit)? = null
+    private var pendingImportDocCallback: ((Uri?) -> Unit)? = null
+
+    private val photoPickerLauncher = registerForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        val cb = pendingPhotoCallback
+        pendingPhotoCallback = null
+        cb?.invoke(uri)
+    }
+
+    private val createDocumentLauncher = registerForActivityResult(
+        object : ActivityResultContract<Pair<String, String>, Uri?>() {
+            override fun createIntent(context: Context, input: Pair<String, String>): Intent {
+                return Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    type = input.first
+                    putExtra(Intent.EXTRA_TITLE, input.second)
+                }
+            }
+
+            override fun parseResult(resultCode: Int, intent: Intent?): Uri? {
+                return if (resultCode == Activity.RESULT_OK) intent?.data else null
+            }
+        }
+    ) { uri ->
+        val cb = pendingExportDocCallback
+        pendingExportDocCallback = null
+        cb?.invoke(uri)
+    }
+
+    private val openDocumentLauncher = registerForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        val cb = pendingImportDocCallback
+        pendingImportDocCallback = null
+        cb?.invoke(uri)
+    }
+
+    fun pickPhoto(callback: (Uri?) -> Unit) {
+        pendingPhotoCallback = callback
+        photoPickerLauncher.launch(
+            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+        )
+    }
+
+    fun createExportDocument(mimeType: String, suggestedName: String, callback: (Uri?) -> Unit) {
+        pendingExportDocCallback = callback
+        createDocumentLauncher.launch(mimeType to suggestedName)
+    }
+
+    fun openImportDocument(mimeTypes: Array<String>, callback: (Uri?) -> Unit) {
+        pendingImportDocCallback = callback
+        openDocumentLauncher.launch(mimeTypes)
+    }
+
     lateinit var binding: ActivityMainBinding
 
     val scope = MainScope()
     val inputEventListeners = mutableListOf<InputEventListener>()
 
-    private var networkMonitor: NetworkMonitor? = null
+    val repository: LocalBabyBuddyRepository
+        get() = LocalBabyBuddyRepository.getInstance(applicationContext)
+
+    val standaloneSettings: NapAndAppSettings
+        get() = repository.settings
 
     internal var internalStorage: ActivityStore? = null
     val storage: ActivityStore
         get() {
-            internalStorage.let {
-                if (it == null) {
-                    val newStorage = ActivityStore(this)
-                    internalStorage = newStorage
-                    return newStorage
-                } else {
-                    return it
-                }
-            }
+            val current = internalStorage
+            if (current != null) return current
+            return ActivityStore(this).also { internalStorage = it }
         }
 
     internal var internalCredStore: CredStore? = null
     val credStore: CredStore
         get() {
-            internalCredStore.let {
-                if (it == null) {
-                    val newCredStore = CredStore(applicationContext)
-                    internalCredStore = newCredStore
-                    return newCredStore
-                } else {
-                    return it
-                }
-            }
+            val current = internalCredStore
+            if (current != null) return current
+            return CredStore(applicationContext).also { internalCredStore = it }
         }
 
     internal var internalClient: BabyBuddyClient? = null
     val client: BabyBuddyClient
         get() {
-            val networkMonitor = this.networkMonitor ?: run {
-                val nm = NetworkMonitor(applicationContext)
-                this.networkMonitor = nm
-                nm.startMonitoring()
-                nm
-            }
-
-            internalClient.let {
-                if (it == null) {
-                    val newClient = BabyBuddyClient(
-                        mainLooper,
-                        credStore,
-                        networkMonitor
-                    )
-                    internalClient = newClient
-                    return newClient
-                } else {
-                    return it
-                }
-            }
+            val current = internalClient
+            if (current != null) return current
+            return BabyBuddyClient(
+                mainLooper,
+                credStore,
+                repository
+            ).also { internalClient = it }
         }
 
     internal var internalTutorialAccess: TutorialAccess? = null
     val tutorialAccess: TutorialAccess
         get() {
-            internalTutorialAccess.let {
-                if (it == null) {
-                    val newTA = TutorialAccess(this)
-                    internalTutorialAccess = newTA
-                    return newTA
-                } else {
-                    return it
-                }
-            }
+            val current = internalTutorialAccess
+            if (current != null) return current
+            return TutorialAccess(this).also { internalTutorialAccess = it }
         }
 
     internal var internalTutorialManagement: TutorialManagement? = null
     val tutorialManagement: TutorialManagement
         get() {
-            internalTutorialManagement.let {
-                if (it == null) {
-                    val newTM = TutorialManagement(credStore, tutorialAccess)
-                    internalTutorialManagement = newTM
-                    return newTM
-                } else {
-                    return it
-                }
-            }
+            val current = internalTutorialManagement
+            if (current != null) return current
+            return TutorialManagement(credStore, tutorialAccess).also { internalTutorialManagement = it }
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -146,27 +177,19 @@ class MainActivity : AppCompatActivity() {
 
         WindowCompat.enableEdgeToEdge(window)
 
-        binding = ActivityMainBinding.inflate(
-            layoutInflater
-        ).let {
+        binding = ActivityMainBinding.inflate(layoutInflater).let {
             ViewCompat.setOnApplyWindowInsetsListener(it.root) { v, insets ->
-                val systemBars = insets.getInsets(
-                    WindowInsetsCompat.Type.systemBars()
-                )
+                val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
                 v.setPadding(systemBars.left, 0, systemBars.right, 0)
-
                 binding.topSpacer.layoutParams.height = systemBars.top
-
                 WindowInsetsCompat.CONSUMED
             }
-
             setContentView(it.root)
             setSupportActionBar(it.toolbar)
             it
         }
         enableBackNavigationButton(false)
         tutorialAccess
-
     }
 
     override fun onStart() {
@@ -179,8 +202,9 @@ class MainActivity : AppCompatActivity() {
             val ncv = it.findViewById<FragmentContainerView>(R.id.nav_host_fragment_content_main)
             ncv.findNavController()
                 .addOnDestinationChangedListener { _, destination, _ ->
-                    enableBackNavigationButton(false)
-                    binding.appToolbar.visibility = if (destination.id == R.id.loggedInFragment2) {
+                    val isHome = destination.id == R.id.loggedInFragment2
+                    enableBackNavigationButton(!isHome)
+                    binding.appToolbar.visibility = if (isHome) {
                         android.view.View.GONE
                     } else {
                         android.view.View.VISIBLE
@@ -189,18 +213,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        networkMonitor?.startMonitoring()
-    }
-
-    override fun onPause() {
-        super.onPause()
-        networkMonitor?.stopMonitoring()
-    }
-
     override fun onDestroy() {
         super.onDestroy()
+        scope.cancel()
         internalClient?.cleanup()
     }
 
@@ -221,7 +236,7 @@ class MainActivity : AppCompatActivity() {
             val ncv = it.findViewById<FragmentContainerView>(R.id.nav_host_fragment_content_main)
             ncv.findNavController().navigateUp()
         }
-        return false;
+        return false
     }
 
     private fun invokeInputEventListeners(e: InputEvent) {
@@ -231,16 +246,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
-        ev?.let {
-            invokeInputEventListeners(it)
-        }
+        ev?.let { invokeInputEventListeners(it) }
         return super.dispatchTouchEvent(ev)
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        event.let {
-            invokeInputEventListeners(it)
-        }
+        invokeInputEventListeners(event)
         return super.dispatchKeyEvent(event)
     }
 
@@ -255,8 +266,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         suspend fun listConflicts(): List<BabyBuddyClient.TimeEntry> {
+            val childIdVal = timer.child_id ?: return emptyList()
             val jsonResponse = AsyncClientRequest.call<GenericSubsetResponseHeader<JSONArray>> {
-
                 client.listGeneric(
                     storeInterface.name(),
                     0,
@@ -264,37 +275,37 @@ class MainActivity : AppCompatActivity() {
                         .add("start_max", timer.computeCurrentServerEndTime(client))
                         .add("end_min", timer.start)
                         .add("limit", 50)
-                        .add("child", timer.child_id),
+                        .add("child", childIdVal),
                     it
                 )
             }
             val result = ArrayList<BabyBuddyClient.TimeEntry>()
-            for (i in 0..jsonResponse.payload.length() - 1) {
+            for (i in 0 until jsonResponse.payload.length()) {
                 try {
                     val entry = BabyBuddyClient.TimeEntry.fromJsonObject(
                         jsonResponse.payload.getJSONObject(i), storeInterface.name()
                     )
                     result.add(entry)
                 } catch (e: Exception) {
-                    Log.e("MainActivity", "Received unparsable json object")
+                    Log.e("MainActivity", "Received unparsable json object", e)
                 }
             }
             return result
         }
 
         suspend fun askForResolutionMethod(): ConflictResolutionOptions {
-            return suspendCoroutine<ConflictResolutionOptions> { continuation ->
+            return suspendCoroutine { continuation ->
                 AlertDialog.Builder(this@MainActivity)
                     .setTitle(R.string.conflicting_activity_title)
                     .setMessage(R.string.conflicting_activity_text)
                     .setCancelable(false)
-                    .setPositiveButton(R.string.conflicting_activity_modify_option) { a, b ->
+                    .setPositiveButton(R.string.conflicting_activity_modify_option) { _, _ ->
                         continuation.resume(ConflictResolutionOptions.RESOLVE)
                     }
-                    .setNeutralButton(R.string.conflicting_activity_cancel_option) { a, b ->
+                    .setNeutralButton(R.string.conflicting_activity_cancel_option) { _, _ ->
                         continuation.resume(ConflictResolutionOptions.CANCEL)
                     }
-                    .setNegativeButton(R.string.conflicting_activity_stop_timer_option) { a, b ->
+                    .setNegativeButton(R.string.conflicting_activity_stop_timer_option) { _, _ ->
                         continuation.resume(ConflictResolutionOptions.STOP_TIMER)
                     }
                     .show()
@@ -312,7 +323,6 @@ class MainActivity : AppCompatActivity() {
 
         suspend fun resolve(conflicts: List<BabyBuddyClient.TimeEntry>) {
             var anyException: Exception? = null
-            val endTime = timer.computeCurrentServerEndTime(client)
             for (c in conflicts) {
                 val values = BabyBuddyClient.QueryValues()
                 if (c.start < timer.start) {
@@ -328,7 +338,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             if (anyException != null) {
-                throw anyException;
+                throw anyException
             }
         }
 
@@ -336,8 +346,8 @@ class MainActivity : AppCompatActivity() {
         scope.launch {
             var readableActivityName = storeInterface.name()
             if (BabyBuddyClient.ACTIVITIES.index(readableActivityName) >= 0) {
-                val i = BabyBuddyClient.ACTIVITIES.index(readableActivityName);
-                readableActivityName = resources.getStringArray(R.array.timerTypeNames).get(i)
+                val i = BabyBuddyClient.ACTIVITIES.index(readableActivityName)
+                readableActivityName = resources.getStringArray(R.array.timerTypeNames)[i]
             }
 
             val progressDialog = ProgressDialog(this@MainActivity)
@@ -350,18 +360,14 @@ class MainActivity : AppCompatActivity() {
 
             progressDialog.show()
             try {
-                var conflicts = listOf<BabyBuddyClient.TimeEntry>()
-                try {
-                    val result = trySave()
-                    storeInterface.response(result)
-                } catch (e: Exception) {
-                    conflicts = listConflicts()
-                    if (conflicts.isEmpty()) {
-                        progressDialog.cancel()
-                        throw e
-                    }
+                val conflicts = if (!standaloneSettings.autoTrimOverlappingPeriods) {
+                    listConflicts()
+                } else {
+                    emptyList()
                 }
                 if (conflicts.isEmpty()) {
+                    val result = trySave()
+                    storeInterface.response(result)
                     progressDialog.cancel()
                     return@launch
                 }
@@ -369,27 +375,20 @@ class MainActivity : AppCompatActivity() {
                 progressDialog.hide()
                 val resolution = askForResolutionMethod()
                 progressDialog.show()
-                if (resolution == ConflictResolutionOptions.STOP_TIMER) {
-                    progressDialog.cancel()
-                    storeInterface.stopTimer(timer)
-                } else if (resolution == ConflictResolutionOptions.RESOLVE) {
-                    var retries = 3
-                    while (retries > 0) {
-                        resolve(conflicts)
-                        try {
-                            storeInterface.response(trySave())
-                            return@launch
-                        } catch (e: Exception) {
-                            conflicts = listConflicts()
-                        }
-                        retries--
-                        delay(1000)
+                when (resolution) {
+                    ConflictResolutionOptions.STOP_TIMER -> {
+                        progressDialog.cancel()
+                        storeInterface.stopTimer(timer)
                     }
-                    val msg = getString(R.string.conflicting_activity_failed_to_correct_conflicts)
-                    storeInterface.error(java.lang.Exception(msg))
-                } else {
-                    progressDialog.cancel()
-                    storeInterface.cancel()
+                    ConflictResolutionOptions.RESOLVE -> {
+                        resolve(conflicts)
+                        val saved = trySave()
+                        storeInterface.response(saved)
+                    }
+                    ConflictResolutionOptions.CANCEL -> {
+                        progressDialog.cancel()
+                        storeInterface.cancel()
+                    }
                 }
             } catch (e: Exception) {
                 storeInterface.error(e)
@@ -399,30 +398,23 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-
     fun getChildTimerControl(child: Child): BabyBuddyV2TimerAdapter {
         return getChildTimerControl(child.id)
     }
 
     fun getChildTimerControl(childId: Int): BabyBuddyV2TimerAdapter {
-        if (!timerControls.containsKey(childId)) {
-            timerControls[childId] = BabyBuddyV2TimerAdapter(
+        return timerControls.getOrPut(childId) {
+            BabyBuddyV2TimerAdapter(
                 childId,
                 TimerControl(this, childId),
                 resources,
                 credStore,
             )
         }
-        return timerControls[childId]!!
     }
 
-    fun logout() {
-        credStore.clearLoginData()
+    fun resetTimerAdapters() {
         timerControls.clear()
-        internalClient = null
-        // Storage gets cleaned in the resume function of the login fragment
-        // because otherwise the cleanup functions of the LoggedIn fragment
-        // will repopulate the storage with the old data that should be deleted
     }
 
     fun applyLightDarkMode() {

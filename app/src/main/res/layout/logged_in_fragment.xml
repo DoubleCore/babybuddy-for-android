@@ -111,17 +111,27 @@
             android:paddingBottom="14dp">
 
             <LinearLayout
+                android:id="@+id/babyProfileHeaderClickArea"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
-                <!-- 3D Baby Avatar -->
-                <ImageView
+                <!-- 3D Baby Avatar (swapped for the local photo when one is set) -->
+                <FrameLayout
+                    android:id="@+id/babyProfileAvatarFrame"
                     android:layout_width="54dp"
                     android:layout_height="54dp"
-                    android:importantForAccessibility="no"
-                    app:srcCompat="@drawable/ic_bf_baby_avatar" />
+                    android:background="@drawable/bg_badge_rounded">
+
+                    <ImageView
+                        android:id="@+id/babyProfileAvatarImage"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:importantForAccessibility="no"
+                        android:scaleType="fitCenter"
+                        app:srcCompat="@drawable/ic_bf_baby_avatar" />
+                </FrameLayout>
 
                 <!-- Greeting + Name + Age -->
                 <LinearLayout
@@ -160,6 +170,17 @@
                         android:textSize="12sp"
                         android:visibility="gone"
                         tools:text="出生 3 个月 12 天"
+                        tools:visibility="visible" />
+
+                    <TextView
+                        android:id="@+id/babyProfileCorrectedAgeBadge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="1dp"
+                        android:textColor="@color/bf_caramel_primary"
+                        android:textSize="11.5sp"
+                        android:visibility="gone"
+                        tools:text="矫正月龄: 2 个月 5 天"
                         tools:visibility="visible" />
                 </LinearLayout>
 
@@ -277,6 +298,82 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+
+    <!-- ==================== FIRST-RUN ONBOARDING (visible only when 0 children) ==================== -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/emptyChildrenOnboardingCard"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="24dp"
+        android:visibility="gone"
+        app:cardBackgroundColor="@color/card_surface"
+        app:cardCornerRadius="24dp"
+        app:cardElevation="0dp"
+        app:layout_constraintBottom_toTopOf="@+id/floatingBottomDock"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/babyProfileHeaderCard"
+        app:strokeColor="@color/card_stroke_active"
+        app:strokeWidth="1.5dp"
+        tools:visibility="visible">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <ImageView
+                android:layout_width="72dp"
+                android:layout_height="72dp"
+                android:importantForAccessibility="no"
+                app:srcCompat="@drawable/ic_bf_baby_avatar" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:gravity="center"
+                android:text="@string/onboarding_welcome_title"
+                android:textColor="@color/text_primary_warm"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:gravity="center"
+                android:text="@string/onboarding_welcome_subtitle"
+                android:textColor="@color/text_secondary_warm"
+                android:textSize="13.5sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/onboardingAddBabyButton"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="18dp"
+                android:text="@string/child_manager_add_baby"
+                android:textAllCaps="false"
+                android:textStyle="bold"
+                app:cornerRadius="14dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/onboardingRestoreBackupButton"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="46dp"
+                android:layout_marginTop="8dp"
+                android:text="@string/backup_restore_action_short"
+                android:textAllCaps="false"
+                app:cornerRadius="14dp"
+                app:icon="@drawable/ic_backup_outline"
+                app:iconGravity="textStart" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
 
     <!-- ==================== FLOATING CAPSULE BOTTOM DOCK ==================== -->
     <LinearLayout

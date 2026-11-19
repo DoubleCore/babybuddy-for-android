@@ -12,6 +12,7 @@ import eu.pkgsoftware.babybuddywidgets.R
 import eu.pkgsoftware.babybuddywidgets.history.BabySummaryHelper
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.ChangeEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.FeedingEntry
+import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.MedicationEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.NoteEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.PumpingEntry
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.SleepEntry
@@ -137,8 +138,8 @@ class MultiLaneTimelineView @JvmOverloads constructor(
         val res = context.resources
 
         for (e in entries) {
-            val s = BabySummaryHelper.entryClientStart(e).time
-            val end = BabySummaryHelper.entryClientEnd(e).time
+            val s = BabySummaryHelper.entryClientStart(e, convertServerOffset = false).time
+            val end = BabySummaryHelper.entryClientEnd(e, convertServerOffset = false).time
             val overlaps = (s in dayStart until dayEnd) || (end in dayStart until dayEnd)
             if (!overlaps) continue
 
@@ -265,6 +266,18 @@ class MultiLaneTimelineView @JvmOverloads constructor(
                             timeText = timeFmt.format(Date(s)),
                             titleText = res.getString(R.string.bf_cat_care),
                             subText = e.notes.take(12)
+                        )
+                    )
+                }
+                is MedicationEntry -> {
+                    built.add(
+                        LaneEvent(
+                            lane = 3,
+                            timeMs = s,
+                            endTimeMs = s,
+                            timeText = timeFmt.format(Date(s)),
+                            titleText = e.name.ifBlank { res.getString(R.string.tile_medication) },
+                            subText = "${BabySummaryHelper.formatCleanNumber(e.dosage)} ${e.dosageUnit.post_name}"
                         )
                     )
                 }

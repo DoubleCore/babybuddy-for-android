@@ -1,72 +1,23 @@
 package eu.pkgsoftware.babybuddywidgets.networking
 
-import android.app.ProgressDialog
-import android.content.DialogInterface
-import androidx.navigation.Navigation.findNavController
 import eu.pkgsoftware.babybuddywidgets.BaseFragment
-import eu.pkgsoftware.babybuddywidgets.CredStore
-import eu.pkgsoftware.babybuddywidgets.R
 import eu.pkgsoftware.babybuddywidgets.ConnectingDialogInterface
+import eu.pkgsoftware.babybuddywidgets.CredStore
 
+/**
+ * No-op disconnect dialog retained for API compatibility in pure local standalone mode.
+ */
 class CoordinatedDisconnectDialog(val fragment: BaseFragment, val credStore: CredStore) {
-    private val dialog = ProgressDialog(fragment.requireContext())
-    private var uniqueCounter = 1
-    private val progressTrackers = mutableMapOf<String, Long>()
-
-    init {
-        dialog.setMessage(fragment.resources.getString(R.string.disconnect_dialog_progress_message))
-        dialog.setProgressStyle(ProgressDialog.STYLE_SPINNER)
-        dialog.setCancelable(false)
-        dialog.setButton(
-            ProgressDialog.BUTTON_NEGATIVE,
-            fragment.resources.getString(R.string.disconnect_dialog_logout)
-        ) { dialogInterface: DialogInterface, i: Int ->
-            fragment.mainActivity.logout()
-            findNavController(fragment.requireView()).navigate(R.id.logoutOperation)
-        }
-    }
-
-    val timeout: Long
-        get() {
-            if (progressTrackers.isEmpty()) {
-                return 0L
-            }
-            return progressTrackers.values.max()
-        }
-
+    val timeout: Long = 0L
     var timeoutGracePeriod = 1000L
 
-    private inner class ConnectingDialogInterfaceImpl : ConnectingDialogInterface {
-        val key = "interface-${uniqueCounter}"
-
-        init {
-            uniqueCounter++
-        }
-
-        override fun interruptLoading(): Boolean {
-            return false
-        }
-
-        override fun showConnecting(currentTimeout: Long, error: Exception?) {
-            progressTrackers[key] = currentTimeout
-            updateDialog()
-        }
-
-        override fun hideConnecting() {
-            progressTrackers.remove(key)
-            updateDialog()
-        }
+    private class LocalNoopConnectingInterface : ConnectingDialogInterface {
+        override fun interruptLoading(): Boolean = false
+        override fun showConnecting(currentTimeout: Long, error: Exception?) {}
+        override fun hideConnecting() {}
     }
 
     fun getInterface(): ConnectingDialogInterface {
-        return ConnectingDialogInterfaceImpl()
-    }
-
-    private fun updateDialog() {
-        if (timeout > timeoutGracePeriod) {
-            dialog.show()
-        } else {
-            dialog.hide()
-        }
+        return LocalNoopConnectingInterface()
     }
 }

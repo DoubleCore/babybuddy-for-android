@@ -1,94 +1,71 @@
-# Inloggen
+# Offline aan de slag
 
-## Login
+## 100% Zelfstandig & Privé
 
-![](direct/help_login_page.png)
+![](ic_baby_face.xml)
 
-Er zijn twee opties om verbinding te maken met uw Babybuddy-server:
-Voer de URL, gebruikersnaam en wachtwoord van uw Babybuddy-server in. Druk vervolgens op
-inloggen om de Babybuddy-app met de Babybuddy-server te verbinden. Of u kiest de
-QR-codeoptie (scroll naar beneden voor details over die optie).
+Baby Buddy werkt 100% offline op uw telefoon zonder server, zonder account en zonder internet- of cameramachtigingen. Tik bij de eerste start op Baby toevoegen om een profiel aan te maken (naam, geboortedatum & optionele tijd, uitgerekende datum voor gecorrigeerde leeftijd, geslacht voor WHO-groeicurves en lokale foto) of herstel vanuit een back-up.
 
-## Inloggen met QR Code
+## Meerdere baby's wisselen & beheren
 
-![](direct/help_login_qrcode.png)
+![](help_overview_2.png)
 
-Als alternatief kunt u inloggen op uw Babybuddy-server met behulp van een inlog-QR-code. Log in
-op uw Babybuddy-server vanaf een ander apparaat. Navigeer vervolgens
-via het gebruikersmenu (rechtsboven) naar de pagina "Voeg een apparaat toe". Hier vindt u
-de inlog-QR-code. Scan de QR-code met de app op uw telefoon. Als
-de scan succesvol is, zou u de optie moeten krijgen om in te loggen op Babybuddy
-door op de knop "Nu inloggen" te drukken.
+Het tabblad Vastleggen toont bovenaan het Overzicht van vandaag, in het midden de actieknoppen en onderaan de tijdlijn. Bij een tweeling of meerdere kinderen veegt u horizontaal of tikt u op de profielbalk om te wisselen of profielen te bewerken.
 
-## Onveilige login
+# Live Timers & Snelle Timers
 
-![](screenshots/help_insecure_http_warning.png)
+## Live timers starten
 
-Als u een http-adres gebruikt in plaats van een https-adres, zal de applicatie
-u deze waarschuwing tonen. Gebruik deze functie alleen voor lokale BabyBuddy-servers in een
-netwerk dat u beheert!
+![](help_play_button_highlight.png)
 
-## Home Assistant Ingress
+Tik op Voeden, Slaap, Buikliggen of Kolven om een blijvende live timer te starten (blijft bewaard na herstarten), of kies Handmatig om eerdere activiteiten vast te leggen met snelknoppen (-15m, -30m, -1u).
 
-![](direct/help_login_homeassistant.png)
+## Starttijd aanpassen & Snelle timers
 
-Babybuddy voor Android ondersteunt gedeeltelijk het inloggen
-op een Babybuddy-server die gehost wordt op een Homeassistant Ingress-server. U
-zult de QR-code inlogoptie moeten gebruiken om in te loggen op zo'n server.
+![](help_timer_interface.png)
 
-# Overzicht
+Tik op de lopende timerklok om de starttijd aan te passen (-5m, -15m, exacte tijd of opnieuw starten). Met + Snelle timer kunt u meerdere benoemde timers tegelijk laten lopen en met één tik omzetten naar Slaap, Voeden, Buikliggen of Kolven.
 
-## Overzicht
+## Opslaan & Automatische dutjesherkenning
 
-![](screenshots/help_overview_2.png)
+![](help_save_button_highlight.png)
 
-Na het inloggen vindt u knoppen voor het registreren van activiteiten in het bovenste deel van het scherm
-en een geschiedenis van recent geregistreerde activiteiten in het onderste deel van het scherm.
-Als u activiteiten logt voor meerdere kinderen, kunt u horizontaal swipen om tussen kinderen te wisselen.
+Vul de gegevens in en tik op Opslaan. Slaapjes die binnen uw ingestelde dagvenster starten worden automatisch gemarkeerd als Dutje overdag en kunnen altijd handmatig worden aangepast.
 
-# Timers loggen
+# Alle 12 Zorg- & Gezondheidsitems
 
-## Timers gebruiken
+## Luiers, Mijlpalen & Fotonotities
 
-![](direct/help_play_button_highlight.png)
+![](help_diaper_logging.png)
 
-Om een timer te starten, drukt u op een van de timer-knoppen in 
-het bovenste gedeelte van de applicatie. Dit zal een timer starten.
+Registreer natte, vaste of schone/droge luiers met hoeveelheid en alle 8 ontlastingskleuren (Zwart, Bruin, Grijs, Groen, Oranje, Rood, Wit, Geel). Notities ondersteunen lokale fotobijlagen met volledig scherm en Buikliggen legt ontwikkelingsmijlpalen vast.
 
-## Timers gebruiken
+## Medicatie & Groeimetingen
 
-![](screenshots/help_timer_interface.png)
+![](ic_medication.xml)
 
-Het starten van een timer opent een interface gerelateerd aan de zojuist 
-gestarte timer. Vul alle informatie in die u wilt loggen. Zodra alle vereiste 
-velden zijn ingevuld, verschijnt er een opslaan-knop.
+Registreer medicatie & supplementen (mg, ml, tabletten, druppels) met snelkeuze voor recente middelen en optionele herinneringsintervallen (4u/6u/8u/12u/24u) inclusief aftelbadge en lokale meldingen. Leg onder Groei & Gezondheid temperatuur, gewicht, lengte, hoofdomtrek en 1-tik berekende BMI vast.
 
-## Using Timers
+# Tijdlijn, Labels & Bewerken
 
-![](direct/help_save_button_highlight.png)
+## Zoeken, Gekleurde labels & Direct bewerken
 
-Zodra de opslaan-knop verschijnt, kan de timer worden gestopt door op de 
-opslaan-knop te drukken. U kunt ook nogmaals op de timer-knop in de bovenste 
-rij klikken om een timer te annuleren in plaats van deze op te slaan.
+![](help_events.png)
 
-# Gebeurtenis loggen
+Koppel gekleurde labels aan elk item en filter de tijdlijn op categorie, label of zoekwoord. Tik op het bewerkicoon of houd een tijdlijnitem ingedrukt om alle velden direct lokaal op uw toestel te wijzigen.
 
-## Verschoningen en notities registreren
+# Statistieken & WHO-groeicurves
 
-![](screenshots/help_diaper_logging.png)
+## 18+ Grafieken & WHO-percentielen
 
-Naast timer-gebeurtenissen biedt de bovenste rij ook de mogelijkheid om 
-niet-timer-gebeurtenissen te loggen, zoals verschoningen en algemene notities.
-De bedieningselementen werken op dezelfde manier als voor het timer-loggen, 
-maar zonder een timer.
+![](ic_nav_stats.xml)
 
-# Activiteitgeschiedenis
+Open het tabblad Statistieken voor analyses over 7d, 14d, 30d, 90d of Alles: dagvolume, duur, voedings- en wakkertijdintervallen, 24u-slaap- en voedingspatronen, nachtslaap vs. dutjes, links/rechts borstbalans, ontlastingskleuren en officiële WHO P3–P97 groeicurves met Z-scores en gecorrigeerde leeftijd.
 
-## Activiteitgeschiedenis
+# Back-up, Export & Herstel
 
-![](screenshots/help_events.png)
+## ZIP-, JSON- & CSV-gegevensoverdracht
 
-De geschiedenis onderaan het scherm toont de meest recente activiteiten van
-het geselecteerde kind. U kunt invoeren bewerken door de invoer in de geschiedenis drie
-seconden lang in te drukken. Dit opent de bijbehorende pagina in de BabyBuddy-app.
-Om een invoer te verwijderen, drukt u op de rode "verwijder"-knop.
+![](ic_backup_outline.xml)
+
+Open Back-up, Export & Herstel via het menu of Instellingen om een volledige .zip-back-up (database, foto's en instellingen), .json-snapshot of .csv-spreadsheet te exporteren of delen (compatibel met Baby Buddy-server CSV-bestanden), met keuze uit Slim samenvoegen of Alles vervangen.

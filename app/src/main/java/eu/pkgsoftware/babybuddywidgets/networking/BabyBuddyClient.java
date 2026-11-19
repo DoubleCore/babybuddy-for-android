@@ -1,6 +1,5 @@
 package eu.pkgsoftware.babybuddywidgets.networking;
 
-import android.net.Network;
 import android.os.Handler;
 import android.os.Looper;
 
@@ -9,13 +8,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
@@ -28,15 +21,24 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Random;
 import java.util.TimeZone;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import androidx.annotation.NonNull;
-import eu.pkgsoftware.babybuddywidgets.Constants;
 import eu.pkgsoftware.babybuddywidgets.CredStore;
-import eu.pkgsoftware.babybuddywidgets.debugging.GlobalDebugObject;
+import eu.pkgsoftware.babybuddywidgets.local.LocalBabyBuddyRepository;
+import eu.pkgsoftware.babybuddywidgets.local.ModelValidators;
 import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.Client;
+import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.FeedingEntry;
+import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.PumpingEntry;
+import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.SleepEntry;
+import eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.TummyTimeEntry;
 
+/**
+ * Local standalone adapter preserving the BabyBuddyClient callback interface while
+ * executing 100% against {@link LocalBabyBuddyRepository} with zero network I/O.
+ */
 public class BabyBuddyClient extends StreamReader {
     public static final String DATE_FORMAT_STRING = "yyyy-MM-dd'T'HH:mm:ssX";
 
@@ -73,8 +75,9 @@ public class BabyBuddyClient extends StreamReader {
         public static final String BMI = "bmi";
         public static final String HEIGHT = "height";
         public static final String HEAD_CIRCUMFERENCE = "head-circumference";
+        public static final String MEDICATION = "medications";
 
-        public static final String[] ALL = new String[7];
+        public static final String[] ALL = new String[8];
 
         static {
             ALL[0] = CHANGE;
@@ -84,6 +87,7 @@ public class BabyBuddyClient extends StreamReader {
             ALL[4] = BMI;
             ALL[5] = HEIGHT;
             ALL[6] = HEAD_CIRCUMFERENCE;
+            ALL[7] = MEDICATION;
         }
 
         public static int index(String s) {
@@ -101,8 +105,6 @@ public class BabyBuddyClient extends StreamReader {
             return null;
         }
         final SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT_STRING, Locale.ENGLISH);
-
-        // Remove milliseconds
         String strDate = o.getString(field);
         strDate = strDate.replaceAll("\\.[0-9]+([+-Z])", "$1");
         strDate = strDate.replaceAll("Z$", "+00:00");
@@ -143,7 +145,7 @@ public class BabyBuddyClient extends StreamReader {
         }
 
         public String toQueryString() {
-            StringBuilder result = new StringBuilder("");
+            StringBuilder result = new StringBuilder();
             for (Map.Entry<String, String> e : queryValues.entrySet()) {
                 if (result.length() > 0) {
                     result.append("&");
@@ -151,19 +153,6 @@ public class BabyBuddyClient extends StreamReader {
                 result.append(e.getKey());
                 result.append("=");
                 result.append(urlencode(e.getValue()));
-            }
-            return result.toString();
-        }
-
-        public String toCookiesString() {
-            StringBuilder result = new StringBuilder("");
-            for (Map.Entry<String, String> e : queryValues.entrySet()) {
-                if (result.length() > 0) {
-                    result.append("; ");
-                }
-                result.append(e.getKey());
-                result.append("=");
-                result.append(e.getValue());
             }
             return result.toString();
         }
@@ -192,6 +181,16 @@ public class BabyBuddyClient extends StreamReader {
                 Objects.equals(birth_date, child.birth_date);
         }
 
+        public static Child fromModel(eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.Child m) {
+            Child c = new Child();
+            c.id = m.getId();
+            c.slug = m.getSlug();
+            c.first_name = m.getFirstName();
+            c.last_name = m.getLastName();
+            c.birth_date = ModelValidators.INSTANCE.formatIsoDate(m.getBirthData(), TimeZone.getDefault());
+            return c;
+        }
+
         public static Child fromJSON(String s) throws JSONException {
             return fromJSON(new JSONObject(s));
         }
@@ -201,7 +200,7 @@ public class BabyBuddyClient extends StreamReader {
             c.id = obj.getInt("id");
             c.slug = obj.getString("slug");
             c.first_name = obj.getString("first_name");
-            c.last_name = obj.getString("last_name");
+            c.last_name = obj.optString("last_name", "");
             c.birth_date = obj.getString("birth_date");
             return c;
         }
@@ -241,8 +240,19 @@ public class BabyBuddyClient extends StreamReader {
             if (end != null) {
                 return end;
             }
-            long serverMillis = new Date().getTime() + client.getServerDateOffsetMillis();
-            return new Date(serverMillis);
+            return new Date();
+        }
+
+        public static Timer fromModel(eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.Timer m) {
+            Timer t = new Timer();
+            t.id = m.getId();
+            t.child_id = m.getChildId() > 0 ? m.getChildId() : null;
+            t.name = m.getName();
+            t.start = m.getStart();
+            t.end = null;
+            t.active = true;
+            t.user_id = m.getUserId();
+            return t;
         }
 
         public static Timer fromJSON(JSONObject obj) throws JSONException, ParseException {
@@ -252,9 +262,8 @@ public class BabyBuddyClient extends StreamReader {
             t.name = obj.isNull("name") ? null : obj.getString("name");
             t.start = parseNullOrDate(obj, "start");
             t.end = parseNullOrDate(obj, "end");
-            // Starting at v2.0 of baby buddy, the active-field is gone. Timers are always active when present!
             t.active = obj.optBoolean("active", true);
-            t.user_id = obj.getInt("user");
+            t.user_id = obj.optInt("user", 1);
             return t;
         }
 
@@ -292,7 +301,13 @@ public class BabyBuddyClient extends StreamReader {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             Timer timer = (Timer) o;
-            return id == timer.id && active == timer.active && user_id == timer.user_id && Objects.equals(child_id, timer.child_id) && Objects.equals(name, timer.name) && Objects.equals(start, timer.start) && Objects.equals(end, timer.end);
+            return id == timer.id &&
+                active == timer.active &&
+                user_id == timer.user_id &&
+                Objects.equals(child_id, timer.child_id) &&
+                Objects.equals(name, timer.name) &&
+                Objects.equals(start, timer.start) &&
+                Objects.equals(end, timer.end);
         }
 
         public Timer clone() {
@@ -318,10 +333,10 @@ public class BabyBuddyClient extends StreamReader {
         public static TimeEntry fromJsonObject(JSONObject json, String type) throws JSONException, ParseException {
             String notes = null;
             if (json.has("milestone")) {
-                notes = json.getString("milestone");
+                notes = json.optString("milestone", "");
             }
-            if (json.has("notes")) {
-                notes = json.getString("notes");
+            if (json.has("notes") && (notes == null || notes.isEmpty())) {
+                notes = json.optString("notes", "");
             }
             return new TimeEntry(
                 type,
@@ -398,147 +413,32 @@ public class BabyBuddyClient extends StreamReader {
         void response(R response);
     }
 
-
-    private Handler syncMessage;
-    private CredStore credStore;
-    private Looper mainLoop;
-    private long serverDateOffset = -1000;
-    private NetworkMonitor networkMonitor;
-    private volatile boolean networkChanged = false;
-
+    private final Handler syncMessage;
+    private final CredStore credStore;
+    public final LocalBabyBuddyRepository repository;
     public final Client v2client;
+    private final ExecutorService ioExecutor = Executors.newSingleThreadExecutor();
 
-    // Network change listener that marks when network has changed
-    private final NetworkChangeListener networkChangeListener = new NetworkChangeListener() {
-        @Override
-        public void onNetworkChanged(Network newNetwork) {
-            networkChanged = true;
-        }
-    };
-
-    private void updateServerDateTime(HttpURLConnection con) {
-        String dateString = con.getHeaderField("Date");
-        if (dateString == null) {
-            GlobalDebugObject.log("updateServerDateTime(): Date header not found");
-            return; // Chicken out, no dateString found, let's hope everything works!
-        }
-        try {
-            Date serverTime = Constants.SERVER_DATE_FORMAT.parse(dateString);
-            Date now = new Date(System.currentTimeMillis());
-
-            serverDateOffset = serverTime.getTime() - now.getTime() - 100; // 100 ms offset
-            GlobalDebugObject.log("updateServerDateTime(): Adjusted serverDateOffset to " + serverDateOffset);
-        } catch (ParseException e) {
-            GlobalDebugObject.log("updateServerDateTime(): Date header parse error; " + e);
-        }
-    }
-
-    public URL pathToUrl(String path) throws MalformedURLException {
-        String prefix = credStore.getServerUrl().replaceAll("/*$", "");
-        while (path.startsWith("/")) {
-            path = path.substring(1);
-        }
-        return new URL(prefix + "/" + path);
-    }
-
-    private HttpURLConnection doQuery(String path) throws IOException {
-        HttpURLConnection con = (HttpURLConnection) pathToUrl(path).openConnection();
-        con.setConnectTimeout(20000);
-        con.setReadTimeout(30000);
-        String token = credStore.getAppToken();
-        con.setRequestProperty("Authorization", "Token " + token);
-
-        QueryValues qValues = new QueryValues();
-        for (Map.Entry<String, String> entry : credStore.getAuthCookies().entrySet()) {
-            qValues.add(entry.getKey(), entry.getValue());
-        }
-        con.setRequestProperty("Cookie", qValues.toCookiesString());
-
-        con.setDoInput(true);
-        return con;
-    }
-
-    @NonNull
-    private String now() {
-        SimpleDateFormat sdf = new SimpleDateFormat(
-            "yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.ENGLISH
-        );
-        sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-        final Date now = new Date(System.currentTimeMillis() + serverDateOffset);
-        return sdf.format(now);
-    }
-
-    public BabyBuddyClient(Looper mainLoop, CredStore credStore, NetworkMonitor networkMonitor) {
-        this.mainLoop = mainLoop;
+    public BabyBuddyClient(Looper mainLoop, CredStore credStore, LocalBabyBuddyRepository repository) {
         this.credStore = credStore;
         this.syncMessage = new Handler(mainLoop);
-        this.v2client = new Client(credStore, networkMonitor);
-
-        // Initialize network monitoring
-        this.networkMonitor = networkMonitor;
-        this.networkMonitor.addListener(networkChangeListener);
+        this.repository = repository;
+        this.v2client = new Client(repository);
     }
 
-    private final Random requestIdGenerator = new Random();
-    private synchronized int newRequestId() {
-        return Math.abs(requestIdGenerator.nextInt()) % 10000;
-    }
-
-    private void dispatchQuery(String method, String path, String payload, RequestCallback<String> callback) {
-        final int REQUEST_ID = newRequestId();
-        final String QUERY_STR = "Query " + REQUEST_ID;
-
-        Thread thread = new Thread() {
-            @Override
-            public void run() {
-                try {
-                    HttpURLConnection query = doQuery(path);
-                    GlobalDebugObject.log(QUERY_STR + ": " + method + " to " + path + "; payload = " + payload);
-
-                    query.setRequestMethod(method);
-                    if (payload != null) {
-                        query.setDoOutput(true);
-                        query.setRequestProperty("Content-Type", "application/json; utf-8");
-                        query.setRequestProperty("Accept", "application/json");
-                        OutputStream os = query.getOutputStream();
-                        os.write(payload.getBytes(StandardCharsets.UTF_8));
-                        os.flush();
-                    }
-
-                    query.connect();
-                    updateServerDateTime(query);
-
-                    int responseCode = query.getResponseCode();
-                    if ((responseCode < 200) || (responseCode >= 300)) {
-                        String message = query.getResponseMessage();
-                        InputStream errorStream = query.getErrorStream();
-                        String messageText;
-                        if (errorStream == null) {
-                            messageText = "[no message]";
-                        } else {
-                            messageText = loadHttpData(errorStream);
-                        }
-                        GlobalDebugObject.log(
-                            QUERY_STR + " response error: " + responseCode + "; messageText = " + messageText
-                        );
-                        throw new RequestCodeFailure(responseCode, message, messageText);
-                    }
-
-                    final String result = loadHttpData(query);
-                    GlobalDebugObject.log(QUERY_STR + " succeeded: response = " + result);
-                    syncMessage.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            callback.response(result);
-                        }
-                    });
-                } catch (Exception e) {
-                    GlobalDebugObject.log(QUERY_STR + ": Exception occurred; " + e);
-                    syncMessage.post(() -> callback.error(e));
-                }
+    private <R> void runAsync(CallableTask<R> task, RequestCallback<R> callback) {
+        ioExecutor.execute(() -> {
+            try {
+                R res = task.call();
+                syncMessage.post(() -> callback.response(res));
+            } catch (Exception e) {
+                syncMessage.post(() -> callback.error(e));
             }
-        };
-        thread.start();
+        });
+    }
+
+    private interface CallableTask<R> {
+        R call() throws Exception;
     }
 
     public void listChildren(RequestCallback<Child[]> callback) {
@@ -546,92 +446,35 @@ public class BabyBuddyClient extends StreamReader {
     }
 
     public void listChildren(@NotNull QueryValues queryValues, RequestCallback<Child[]> callback) {
-        queryValues.add("limit", 1000000);
-        dispatchQuery(
-            "GET",
-            "api/children/?" + queryValues.toQueryString(),
-            null,
-            new RequestCallback<String>() {
-                @Override
-                public void error(@NonNull Exception e) {
-                    callback.error(e);
+        runAsync(() -> {
+            Integer idFilter = null;
+            if (queryValues.queryValues.containsKey("id")) {
+                try {
+                    idFilter = Integer.parseInt(Objects.requireNonNull(queryValues.queryValues.get("id")));
+                } catch (NumberFormatException ignored) {
                 }
-
-                @Override
-                public void response(String response) {
-                    try {
-                        JSONObject obj = new JSONObject(response);
-                        JSONArray children = obj.getJSONArray("results");
-                        List<Child> result = new ArrayList<>(children.length());
-                        for (int i = 0; i < children.length(); i++) {
-                            JSONObject c = children.getJSONObject(i);
-                            result.add(Child.fromJSON(c));
-                        }
-                        callback.response(result.toArray(new Child[0]));
-                    } catch (JSONException e) {
-                        this.error(e);
-                    }
-                }
-            });
+            }
+            String slugFilter = queryValues.queryValues.get("slug");
+            List<eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.Child> models =
+                repository.listChildren(idFilter, slugFilter);
+            Child[] out = new Child[models.size()];
+            for (int i = 0; i < models.size(); i++) {
+                out[i] = Child.fromModel(models.get(i));
+            }
+            return out;
+        }, callback);
     }
 
     public void checkChildExists(int child_id, RequestCallback<Boolean> callback) {
-        listChildren(
-            new QueryValues().add("id", child_id),
-            new RequestCallback<Child[]>() {
-                @Override
-                public void error(@NonNull Exception error) {
-                    callback.error(error);
-                }
-
-                @Override
-                public void response(Child[] response) {
-                    for (Child c : response) {
-                        if (c.id == child_id) {
-                            callback.response(true);
-                        }
-                    }
-                    callback.response(false);
-                }
-            }
-        );
+        runAsync(() -> repository.getChildById(child_id) != null, callback);
     }
 
     public void createTimer(int child_id, String name, RequestCallback<Timer> callback) {
-        String data;
-        try {
-            data = (new JSONObject())
-                .put("child", child_id)
-                .put("name", name)
-                .put("start", now())
-                .toString();
-        } catch (JSONException e) {
-            throw new RuntimeException("JSON Structure not built correctly");
-        }
-
-        dispatchQuery(
-            "POST",
-            "api/timers/",
-            data,
-            new RequestCallback<String>() {
-                @Override
-                public void error(@NonNull Exception e) {
-                    callback.error(e);
-                }
-
-                @Override
-                public void response(String response) {
-                    Timer result;
-                    try {
-                        result = Timer.fromJSON(new JSONObject(response));
-                    } catch (JSONException | ParseException e) {
-                        error(e);
-                        return;
-                    }
-                    callback.response(result);
-                }
-            }
-        );
+        runAsync(() -> {
+            eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.Timer created =
+                repository.createTimer(child_id > 0 ? child_id : null, name, System.currentTimeMillis());
+            return Timer.fromModel(created);
+        }, callback);
     }
 
     public void listTimers(RequestCallback<Timer[]> callback) {
@@ -639,101 +482,41 @@ public class BabyBuddyClient extends StreamReader {
     }
 
     public void listTimers(Integer child_id, RequestCallback<Timer[]> callback) {
-        final QueryValues qv = new QueryValues();
-        if (child_id != null) {
-            qv.add("child", child_id);
-        }
-        qv.add("limit", 1000000);
-        dispatchQuery("GET", "api/timers/?" + qv.toQueryString(), null, new RequestCallback<String>() {
-            @Override
-            public void error(@NonNull Exception e) {
-                callback.error(e);
+        runAsync(() -> {
+            List<eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.Timer> models =
+                repository.listTimers(child_id);
+            List<Timer> result = new ArrayList<>(models.size());
+            for (eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.Timer m : models) {
+                result.add(Timer.fromModel(m));
             }
-
-            @Override
-            public void response(String response) {
-                try {
-                    JSONObject obj = new JSONObject(response);
-                    JSONArray timers = obj.getJSONArray("results");
-                    List<Timer> result = new ArrayList<>(timers.length());
-                    for (int i = 0; i < timers.length(); i++) {
-                        JSONObject item = timers.getJSONObject(i);
-                        result.add(Timer.fromJSON(item));
-                    }
-                    result.sort(Comparator.comparingInt(t -> t.id));
-                    callback.response(result.toArray(new Timer[0]));
-                } catch (JSONException | ParseException e) {
-                    this.error(e);
-                }
-            }
-        });
+            result.sort(Comparator.comparingInt(t -> t.id));
+            return result.toArray(new Timer[0]);
+        }, callback);
     }
 
     public void deleteTimer(int timer_id, RequestCallback<Boolean> callback) {
-        simpleCall("DELETE", String.format(Locale.US, "api/timers/%d/", timer_id), null, callback);
+        runAsync(() -> repository.deleteTimer(timer_id), callback);
     }
 
     private static String urlencode(String s) {
+        if (s == null) return "";
         try {
             return URLEncoder.encode(s, StandardCharsets.UTF_8.toString());
         } catch (UnsupportedEncodingException e) {
-            return null;
+            return "";
         }
     }
 
     public void restartTimer(int timer_id, RequestCallback<Timer> callback) {
-        dispatchQuery(
-            "PATCH",
-            "api/timers/" + timer_id + "/restart/",
-            null,
-            new RequestCallback<>() {
-                @Override
-                public void error(@NonNull Exception e) {
-                    callback.error(e);
-                }
-
-                @Override
-                public void response(String response) {
-                    try {
-                        JSONObject obj = new JSONObject(response);
-                        callback.response(Timer.fromJSON(obj));
-                    } catch (JSONException | ParseException e) {
-                        this.error(e);
-                    }
-                }
-            });
+        runAsync(() -> {
+            eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.Timer restarted =
+                repository.restartTimer(timer_id, System.currentTimeMillis());
+            return Timer.fromModel(restarted);
+        }, callback);
     }
 
     public long getServerDateOffsetMillis() {
-        return serverDateOffset;
-    }
-
-    @NonNull
-    private static String addQueryParameters(QueryValues queryValues, @NonNull String path) {
-        if (queryValues == null) {
-            queryValues = new QueryValues();
-        }
-        path = path + "?" + queryValues.toQueryString();
-        return path;
-    }
-
-    private void simpleCall(String method, String path, QueryValues query, RequestCallback<Boolean> callback) {
-        path = addQueryParameters(query, path);
-        dispatchQuery(
-            method,
-            path,
-            null,
-            new RequestCallback<>() {
-                @Override
-                public void error(@NonNull Exception e) {
-                    callback.error(e);
-                }
-
-                @Override
-                public void response(String response) {
-                    callback.response(true);
-                }
-            });
+        return 0L;
     }
 
     public void listGeneric(
@@ -742,33 +525,40 @@ public class BabyBuddyClient extends StreamReader {
         QueryValues queryValues,
         RequestCallback<GenericSubsetResponseHeader<JSONArray>> callback
     ) {
-        String path = "api/" + activity + "/";
-        if (queryValues == null) {
-            queryValues = new QueryValues();
-        }
-        queryValues.add("offset", offset);
-        path = addQueryParameters(queryValues, path);
-        dispatchQuery("GET", path, null, new RequestCallback<String>() {
-            @Override
-            public void error(@NonNull Exception error) {
-                callback.error(error);
+        runAsync(() -> {
+            QueryValues qv = queryValues != null ? queryValues : new QueryValues();
+            Integer childId = null;
+            if (qv.queryValues.containsKey("child")) {
+                try {
+                    childId = Integer.parseInt(Objects.requireNonNull(qv.queryValues.get("child")));
+                } catch (NumberFormatException ignored) {
+                }
+            }
+            long startMax = Long.MAX_VALUE;
+            long endMin = Long.MIN_VALUE;
+            if (qv.queryValues.containsKey("start_max")) {
+                Date d = parseIsoSafe(qv.queryValues.get("start_max"));
+                if (d != null) startMax = d.getTime();
+            }
+            if (qv.queryValues.containsKey("end_min")) {
+                Date d = parseIsoSafe(qv.queryValues.get("end_min"));
+                if (d != null) endMin = d.getTime();
             }
 
-            @Override
-            public void response(String response) {
-                JSONArray result = null;
-                int totalCount = 0;
-                try {
-                    JSONObject listResponse = new JSONObject(response);
-                    totalCount = listResponse.getInt("count");
-                    result = listResponse.getJSONArray("results");
-                } catch (JSONException e) {
-                    error(e);
-                    return;
-                }
-                callback.response(new GenericSubsetResponseHeader<>(offset, totalCount, result));
+            List<eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.TimeEntry> conflicts =
+                childId != null ? repository.findIntersectingTimedEntries(activity, childId, endMin, startMax, 0)
+                    : new ArrayList<>();
+            JSONArray arr = new JSONArray();
+            for (eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.TimeEntry item : conflicts) {
+                JSONObject o = new JSONObject();
+                o.put("id", item.getId());
+                o.put("start", dateToString(item.getStart()));
+                o.put("end", dateToString(item.getEnd()));
+                o.put("notes", item.getNotes());
+                arr.put(o);
             }
-        });
+            return new GenericSubsetResponseHeader<>(offset, arr.length(), arr);
+        }, callback);
     }
 
     public void updateTimelineEntry(
@@ -776,35 +566,59 @@ public class BabyBuddyClient extends StreamReader {
         @NotNull QueryValues values,
         @NotNull RequestCallback<TimeEntry> callback
     ) {
-        String path = "api/" + entry.type + "/" + entry.typeId + "/";
-        dispatchQuery(
-            "PATCH",
-            path,
-            values.toJsonObject().toString(),
-            new RequestCallback<String>() {
-                @Override
-                public void error(@NonNull Exception error) {
-                    callback.error(error);
-                }
-
-                @Override
-                public void response(String response) {
-                    try {
-                        JSONObject o = new JSONObject(response);
-                        callback.response(TimeEntry.fromJsonObject(o, entry.type));
-                    } catch (JSONException | ParseException e) {
-                        callback.error(e);
-                    }
-                }
+        runAsync(() -> {
+            eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.TimeEntry existing =
+                repository.getEntryByTypeAndId(entry.type, entry.typeId);
+            if (existing == null) {
+                return entry;
             }
-        );
+            Date newStart = values.queryValues.containsKey("start")
+                ? parseIsoSafe(values.queryValues.get("start"))
+                : existing.getStart();
+            Date newEnd = values.queryValues.containsKey("end")
+                ? parseIsoSafe(values.queryValues.get("end"))
+                : existing.getEnd();
+            if (newStart == null) newStart = existing.getStart();
+            if (newEnd == null) newEnd = existing.getEnd();
+
+            eu.pkgsoftware.babybuddywidgets.networking.babybuddy.models.TimeEntry updatedModel = existing;
+            if (existing instanceof FeedingEntry) {
+                FeedingEntry f = (FeedingEntry) existing;
+                updatedModel = repository.updateEntry(
+                    new FeedingEntry(f.getId(), f.getChildId(), newStart, newEnd, f.getNotes(), f.getFeedingType(), f.getFeedingMethod(), f.getAmount(), f.getTags())
+                );
+            } else if (existing instanceof SleepEntry) {
+                SleepEntry s = (SleepEntry) existing;
+                updatedModel = repository.updateEntry(
+                    new SleepEntry(s.getId(), s.getChildId(), newStart, newEnd, s.getNotes(), s.getNap(), s.getTags())
+                );
+            } else if (existing instanceof TummyTimeEntry) {
+                TummyTimeEntry t = (TummyTimeEntry) existing;
+                updatedModel = repository.updateEntry(
+                    new TummyTimeEntry(t.getId(), t.getChildId(), newStart, newEnd, t.getMilestone(), t.getExtraNotes(), t.getTags())
+                );
+            } else if (existing instanceof PumpingEntry) {
+                PumpingEntry p = (PumpingEntry) existing;
+                updatedModel = repository.updateEntry(
+                    new PumpingEntry(p.getId(), p.getChildId(), newStart, newEnd, p.getNotes(), p.getAmount(), null, p.getTags())
+                );
+            }
+            return new TimeEntry(entry.type, updatedModel.getId(), updatedModel.getStart(), updatedModel.getEnd(), updatedModel.getNotes());
+        }, callback);
     }
 
-    /**
-     * Clean up resources when the client is no longer needed.
-     * This should be called when the activity/application is being destroyed.
-     */
+    private static Date parseIsoSafe(String raw) {
+        if (raw == null || raw.isEmpty()) return null;
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT_STRING, Locale.ENGLISH);
+            String cleaned = raw.replaceAll("\\.[0-9]+([+-Z])", "$1").replaceAll("Z$", "+00:00");
+            return sdf.parse(cleaned);
+        } catch (ParseException e) {
+            return null;
+        }
+    }
+
     public void cleanup() {
-        networkMonitor.removeListener(networkChangeListener);
+        ioExecutor.shutdown();
     }
 }

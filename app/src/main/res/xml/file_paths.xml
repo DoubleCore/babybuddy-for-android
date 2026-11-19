@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <files-path
+        name="local_media"
+        path="media/" />
+    <cache-path
+        name="backup_exports"
+        path="exports/" />
+</paths>
