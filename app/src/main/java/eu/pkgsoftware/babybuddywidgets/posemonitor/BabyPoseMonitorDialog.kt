@@ -69,6 +69,7 @@ class BabyPoseMonitorDialog : DialogFragment(), PoseMonitorHub.Listener {
         private const val KEY_ZOOM = "zoom_ratio"
         private const val KEY_THRESHOLD = "change_threshold"
         private const val KEY_WINDOW_SEC = "window_sec"
+        private const val KEY_ANGLE_THRESH_DEG = "angle_thresh_deg"
         private const val KEY_IP_CAM_URL = "ip_cam_url"
         private const val KEY_WEBHOOK_URL = "watch_webhook_url"
         private const val KEY_SYNC_SYS_CLOCK = "sync_sys_clock"
@@ -161,6 +162,7 @@ class BabyPoseMonitorDialog : DialogFragment(), PoseMonitorHub.Listener {
         PoseMonitorHub.currentZoomRatio = prefs.getFloat(KEY_ZOOM, 2.0f).coerceIn(1.0f, 8.0f)
         PoseMonitorHub.wakeTracker.changeThreshold = prefs.getInt(KEY_THRESHOLD, 5).coerceIn(2, 12)
         PoseMonitorHub.wakeTracker.windowMs = prefs.getInt(KEY_WINDOW_SEC, 30).coerceIn(10, 120) * 1000L
+        PoseMonitorHub.wakeTracker.angleThresholdDeg = prefs.getFloat(KEY_ANGLE_THRESH_DEG, 25f).coerceIn(12f, 60f)
         PoseMonitorHub.ipCameraStreamUrl = prefs.getString(KEY_IP_CAM_URL, "http://192.168.1.88:81/stream") ?: ""
         PoseMonitorHub.watchWebhookUrl = prefs.getString(KEY_WEBHOOK_URL, "") ?: ""
         PoseMonitorHub.syncSystemAlarmApp = prefs.getBoolean(KEY_SYNC_SYS_CLOCK, false)
@@ -458,13 +460,13 @@ class BabyPoseMonitorDialog : DialogFragment(), PoseMonitorHub.Listener {
             setTextColor(ContextCompat.getColor(ctx, R.color.bf_purple_primary))
         }
         motionScoreTv = TextView(ctx).apply {
-            text = "实时体动指数：0%"
-            textSize = 12f
+            text = "关节角度：肘弯 --/-- · 抬臂 --/-- · 膝弯 --/-- · 侧翻 --"
+            textSize = 11.8f
             setTextColor(ContextCompat.getColor(ctx, R.color.text_secondary_warm))
-            setPadding(0, 2.dp(), 0, 4.dp())
+            setPadding(0, 3.dp(), 0, 4.dp())
         }
         historyTv = TextView(ctx).apply {
-            text = "最近姿态轨迹：暂无变化记录"
+            text = "最近姿态角度轨迹：暂无大幅关节角度变化"
             textSize = 11.5f
             setTextColor(ContextCompat.getColor(ctx, R.color.text_muted_warm))
         }
@@ -472,6 +474,41 @@ class BabyPoseMonitorDialog : DialogFragment(), PoseMonitorHub.Listener {
         poseCol.addView(changeCountTv)
         poseCol.addView(motionScoreTv)
         poseCol.addView(historyTv)
+
+        // Joint Angle Delta Threshold selector (ignores pixel jitter; triggers only on >= Δθ° joint bend/roll)
+        val angleThreshRow = LinearLayout(ctx).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, 8.dp(), 0, 2.dp())
+        }
+        angleThreshRow.addView(TextView(ctx).apply {
+            text = "关节角度跳变判定："
+            textSize = 12.5f
+            setTextColor(ContextCompat.getColor(ctx, R.color.text_primary_warm))
+        })
+        val angleGroup = ChipGroup(ctx).apply {
+            isSingleSelection = true
+            isSelectionRequired = true
+        }
+        val curAngleDeg = PoseMonitorHub.wakeTracker.angleThresholdDeg.roundToInt()
+        listOf(15 to "≥15°灵敏", 25 to "≥25°标准", 35 to "≥35°防抖", 45 to "≥45°大幅").forEach { (deg, lbl) ->
+            angleGroup.addView(Chip(ctx).apply {
+                text = lbl
+                textSize = 11f
+                isCheckable = true
+                isChecked = (curAngleDeg == deg)
+                setOnClickListener {
+                    PoseMonitorHub.wakeTracker.angleThresholdDeg = deg.toFloat()
+                    prefs.edit().putFloat(KEY_ANGLE_THRESH_DEG, deg.toFloat()).apply()
+                    refreshTelemetryUi(null, PoseMonitorHub.wakeTracker.currentSnapshot())
+                }
+            })
+        }
+        angleThreshRow.addView(HorizontalScrollView(ctx).apply {
+            isHorizontalScrollBarEnabled = false
+            addView(angleGroup)
+        })
+        poseCol.addView(angleThreshRow)
 
         // Threshold adjuster row
         val threshRow = LinearLayout(ctx).apply {
@@ -1011,15 +1048,17 @@ class BabyPoseMonitorDialog : DialogFragment(), PoseMonitorHub.Listener {
 
     private fun refreshTelemetryUi(result: PoseFrameResult?, snap: WakeDecisionSnapshot) {
         val srcSuffix = result?.sourceTag?.let { " [$it]" } ?: ""
+        val deltaInt = snap.lastAngleDeltaDeg.roundToInt()
+        val threshInt = snap.angleThresholdDeg.roundToInt()
         currentPoseTv.text = "当前识别姿态：${snap.currentPose.zhLabel}$srcSuffix"
-        changeCountTv.text = "窗口内姿态变化：${snap.changeCount} / ${snap.changeThreshold} 次（近 ${snap.windowSec} 秒）"
-        motionScoreTv.text = "实时体动指数：${(snap.motionScore * 100).roundToInt()}%"
+        changeCountTv.text = "窗口内大幅角度变化：${snap.changeCount} / ${snap.changeThreshold} 次（近 ${snap.windowSec}s · 距锚点 Δ${deltaInt}° / 阈值≥${threshInt}°）"
+        motionScoreTv.text = "实时关节角度：${snap.angleProfile.summaryText()}"
         thresholdValueTv.text = "${snap.changeThreshold} 次"
 
         historyTv.text = if (snap.recentPoseHistory.isEmpty()) {
-            "最近姿态轨迹：暂无明显姿态切换"
+            "最近姿态角度轨迹：关节角度稳定（忽略像素微晃）"
         } else {
-            "最近姿态轨迹：${snap.recentPoseHistory.joinToString(" · ")}"
+            "最近姿态角度轨迹：${snap.recentPoseHistory.joinToString(" · ")}"
         }
 
         if (snap.isAlarmRinging) {

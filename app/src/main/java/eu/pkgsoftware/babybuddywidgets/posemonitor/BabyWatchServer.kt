@@ -206,9 +206,11 @@ object BabyWatchServer {
     fun buildStatusJson(): String {
         val snap = PoseMonitorHub.wakeTracker.currentSnapshot()
         val safeBaby = PoseMonitorHub.babyName.replace("\"", "\\\"")
+        val safeAngles = snap.angleProfile.summaryText().replace("\"", "\\\"")
         val historyJson = snap.recentPoseHistory.joinToString(",") {
             "\"${it.replace("\"", "\\\"")}\""
         }
+        fun numOrNull(v: Float?): String = v?.let { "%.1f".format(java.util.Locale.US, it) } ?: "null"
         return """
             {
               "babyName": "$safeBaby",
@@ -216,10 +218,17 @@ object BabyWatchServer {
               "targetDetected": ${snap.targetDetected},
               "poseCode": "${snap.currentPose.code}",
               "poseLabel": "${snap.currentPose.zhLabel}",
+              "anglesSummary": "$safeAngles",
+              "lastAngleDeltaDeg": ${"%.1f".format(java.util.Locale.US, snap.lastAngleDeltaDeg)},
+              "angleThresholdDeg": ${"%.1f".format(java.util.Locale.US, snap.angleThresholdDeg)},
+              "leftElbowDeg": ${numOrNull(snap.angleProfile.leftElbowDeg)},
+              "rightElbowDeg": ${numOrNull(snap.angleProfile.rightElbowDeg)},
+              "leftKneeDeg": ${numOrNull(snap.angleProfile.leftKneeDeg)},
+              "rightKneeDeg": ${numOrNull(snap.angleProfile.rightKneeDeg)},
+              "bodyRollDeg": ${numOrNull(snap.angleProfile.bodyRollDeg)},
               "changeCount": ${snap.changeCount},
               "threshold": ${snap.changeThreshold},
               "windowSec": ${snap.windowSec},
-              "motionScore": ${"%.2f".format(java.util.Locale.US, snap.motionScore)},
               "zoomRatio": ${"%.1f".format(java.util.Locale.US, PoseMonitorHub.currentZoomRatio)},
               "alarmRinging": ${snap.isAlarmRinging},
               "snoozedRemainingSec": ${snap.snoozedRemainingSec},
@@ -466,10 +475,11 @@ object BabyWatchServer {
     function render(d) {
       const dial = document.getElementById('dial');
       document.getElementById('babyHeader').textContent = '⌚ ' + (d.babyName || '宝宝') + (d.monitoring ? ' · 在线' : ' · 待机');
-      document.getElementById('poseText').textContent = '当前姿态：' + d.poseLabel;
+      document.getElementById('poseText').textContent = '当前姿态：' + d.poseLabel + ' (Δ' + Math.round(d.lastAngleDeltaDeg || 0) + '°)';
       document.getElementById('changeCounter').textContent = d.changeCount + ' / ' + d.threshold + ' 次';
       const snoozeTxt = d.snoozedRemainingSec > 0 ? (' · 贪睡 ' + d.snoozedRemainingSec + 's') : '';
-      document.getElementById('subInfo').textContent = '窗口 ' + d.windowSec + 's · 放大 ' + Number(d.zoomRatio).toFixed(1) + 'x' + snoozeTxt;
+      const angleTxt = d.anglesSummary ? ('\n' + d.anglesSummary) : '';
+      document.getElementById('subInfo').textContent = '角度阈值 ≥' + Math.round(d.angleThresholdDeg || 25) + '° · 放大 ' + Number(d.zoomRatio).toFixed(1) + 'x' + snoozeTxt;
 
       dial.classList.remove('calm', 'active', 'alarm');
       if (d.alarmRinging) {

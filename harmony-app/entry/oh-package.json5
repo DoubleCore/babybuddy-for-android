@@ -1,0 +1,9 @@
+{
+  "name": "entry",
+  "version": "3.0.0",
+  "description": "Baby Buddy HarmonyOS Phone & Tablet Entry HAP (ArkWeb + Native Bridge)",
+  "main": "",
+  "author": "",
+  "license": "MIT",
+  "dependencies": {}
+}

@@ -238,6 +238,11 @@
       html.classList.remove('dark');
       if (icon) icon.setAttribute('data-lucide', 'moon');
     }
+    if (window.HarmonyBridge && typeof window.HarmonyBridge.syncThemeMode === 'function') {
+      try {
+        window.HarmonyBridge.syncThemeMode(Boolean(state.settings.darkMode));
+      } catch (_) {}
+    }
     if (window.lucide) lucide.createIcons();
   }
 
@@ -1619,11 +1624,20 @@
     },
 
     exportJson() {
-      const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+      const filename = `babybuddy-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      const content = JSON.stringify(state, null, 2);
+      if (window.HarmonyBridge && typeof window.HarmonyBridge.saveTextFile === 'function') {
+        try {
+          window.HarmonyBridge.saveTextFile(filename, content, 'application/json');
+          showToast('正在打开系统保存面板…');
+          return;
+        } catch (_) {}
+      }
+      const blob = new Blob([content], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `babybuddy-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = filename;
       a.click();
       URL.revokeObjectURL(url);
       showToast('已导出 JSON 备份');
@@ -1633,11 +1647,19 @@
       const header = ['id', 'childId', 'type', 'start', 'end', 'amount', 'feedingType', 'feedingMethod', 'wet', 'solid', 'stoolColor', 'medName', 'dosage', 'value', 'notes'];
       const rows = state.entries.map(e => header.map(k => `"${String(e[k] ?? '').replace(/"/g, '""')}"`).join(','));
       const csv = '\uFEFF' + [header.join(','), ...rows].join('\n');
+      const filename = `babybuddy-records-${new Date().toISOString().slice(0, 10)}.csv`;
+      if (window.HarmonyBridge && typeof window.HarmonyBridge.saveTextFile === 'function') {
+        try {
+          window.HarmonyBridge.saveTextFile(filename, csv, 'text/csv');
+          showToast('正在打开系统保存面板…');
+          return;
+        } catch (_) {}
+      }
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `babybuddy-records-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.download = filename;
       a.click();
       URL.revokeObjectURL(url);
       showToast('已导出 CSV 表格');
@@ -1689,6 +1711,33 @@
       closeSheet();
       this.refreshAll();
       showToast('已清空全部本地数据');
+    },
+
+    handleNativeBack() {
+      const overlay = document.getElementById('sheetOverlay');
+      if (overlay && !overlay.classList.contains('hidden')) {
+        if (document.getElementById('poseLabCanvas') && window.PoseWatchLab && typeof window.PoseWatchLab.closeConsole === 'function') {
+          window.PoseWatchLab.closeConsole();
+        } else {
+          closeSheet();
+        }
+        return 'handled';
+      }
+      if (activePage !== 'today') {
+        this.switchPage('today');
+        return 'handled';
+      }
+      return 'pass';
+    },
+
+    applyNativeSafeArea(topVp, bottomVp) {
+      const root = document.documentElement;
+      if (typeof topVp === 'number' && !Number.isNaN(topVp)) {
+        root.style.setProperty('--harmony-safe-top', `${Math.max(0, Math.round(topVp))}px`);
+      }
+      if (typeof bottomVp === 'number' && !Number.isNaN(bottomVp)) {
+        root.style.setProperty('--harmony-safe-bottom', `${Math.max(0, Math.round(bottomVp))}px`);
+      }
     }
   };
 

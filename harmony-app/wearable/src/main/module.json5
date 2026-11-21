@@ -1,0 +1,44 @@
+{
+  "module": {
+    "name": "wearable",
+    "type": "entry",
+    "description": "$string:wearable_module_desc",
+    "mainElement": "WearableAbility",
+    "deviceTypes": [
+      "wearable"
+    ],
+    "deliveryWithInstall": true,
+    "installationFree": false,
+    "pages": "$profile:main_pages",
+    "abilities": [
+      {
+        "name": "WearableAbility",
+        "srcEntry": "./ets/wearableability/WearableAbility.ets",
+        "description": "$string:wearable_ability_desc",
+        "icon": "$media:layered_image",
+        "label": "$string:wearable_ability_label",
+        "startWindowIcon": "$media:startIcon",
+        "startWindowBackground": "$color:start_window_background",
+        "exported": true,
+        "skills": [
+          {
+            "entities": [
+              "entity.system.home"
+            ],
+            "actions": [
+              "ohos.want.action.home"
+            ]
+          }
+        ]
+      }
+    ],
+    "requestPermissions": [
+      {
+        "name": "ohos.permission.INTERNET"
+      },
+      {
+        "name": "ohos.permission.VIBRATE"
+      }
+    ]
+  }
+}

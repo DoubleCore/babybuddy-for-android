@@ -1,0 +1,16 @@
+{
+  "string": [
+    {
+      "name": "wearable_module_desc",
+      "value": "Baby Buddy smartwatch companion for pose alerts and crib snapshots"
+    },
+    {
+      "name": "wearable_ability_desc",
+      "value": "Baby Watch Monitor"
+    },
+    {
+      "name": "wearable_ability_label",
+      "value": "Baby Watch"
+    }
+  ]
+}

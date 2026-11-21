@@ -1,5 +1,6 @@
-// Experimental Module: Baby Pose Detection, 1x-8x Camera Zoom, Fast Wake Alarm & Smartwatch UI
-// Hidden under the Quick Care functional area ("待测 ▾") and accessible via ?mode=watch
+// Experimental Module: Baby Pose Angle Analysis, 1x-8x Camera Zoom, Fast Wake Alarm & Smartwatch UI
+// Evaluates posture transitions strictly from body/limb joint angles (elbow bend, arm elevation, knee bend, body roll)
+// rather than raw pixel motion jitter.
 
 (() => {
   const CHANNEL_NAME = 'babybuddy_pose_watch_channel_v1';
@@ -7,12 +8,22 @@
   const bc = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel(CHANNEL_NAME) : null;
 
   const POSE_LABELS = {
-    none: '未检测到婴儿',
-    supine_calm: '仰卧安睡',
-    side_left: '左侧翻身',
-    side_right: '右侧翻身',
-    prone_head_up: '趴卧/抬头',
-    limb_active: '四肢挥动/踢腿',
+    none: '未检测到婴儿姿态',
+    supine_calm: '仰卧平放',
+    side_left: '左侧卧/翻身',
+    side_right: '右侧卧/翻身',
+    prone_head_up: '趴卧屈肘抬头',
+    limb_active: '屈臂挥动/蹬腿',
+    sitting_awake: '屈髋撑起/坐立',
+  };
+
+  const PRESET_ANGLES = {
+    supine_calm: { lElbow: 136, rElbow: 138, lShoulder: 42, rShoulder: 40, lKnee: 142, rKnee: 145, roll: 0 },
+    side_left: { lElbow: 105, rElbow: 72, lShoulder: 55, rShoulder: 68, lKnee: 118, rKnee: 96, roll: -52 },
+    limb_active: { lElbow: 54, rElbow: 162, lShoulder: 142, rShoulder: 98, lKnee: 72, rKnee: 168, roll: -10 },
+    side_right: { lElbow: 74, rElbow: 108, lShoulder: 66, rShoulder: 52, lKnee: 98, rKnee: 120, roll: 52 },
+    prone_head_up: { lElbow: 66, rElbow: 68, lShoulder: 86, rShoulder: 84, lKnee: 154, rKnee: 150, roll: 8 },
+    sitting_awake: { lElbow: 156, rElbow: 158, lShoulder: 36, rShoulder: 38, lKnee: 108, rKnee: 110, roll: 0 },
   };
 
   let lab = {
@@ -22,26 +33,51 @@
     panY: 0,
     threshold: 5,
     windowSec: 30,
+    angleThresholdDeg: 25,
     poseCode: 'none',
     poseLabel: POSE_LABELS.none,
-    motionScore: 0,
+    angles: null,
+    lastAngleDeltaDeg: 0,
     changeTimestamps: [],
     recentHistory: [],
     alarmRinging: false,
     snoozeUntilMs: 0,
     facingMode: 'environment',
-    remoteHostUrl: '',
   };
 
   let mediaStream = null;
   let videoEl = null;
   let loopTimer = null;
-  let prevLuma = null;
-  let bgLuma = null;
-  let lastStablePose = 'none';
+  let anchorPose = 'none';
+  let anchorAngles = null;
   let lastChangeAt = 0;
   let audioCtx = null;
   let alarmLoopTimer = null;
+
+  function formatAnglesSummary(a) {
+    if (!a) return '肘弯 --/-- · 抬臂 --/-- · 膝弯 --/-- · 侧翻 --';
+    return `肘弯 L${Math.round(a.lElbow)}°/R${Math.round(a.rElbow)}° · 抬臂 L${Math.round(a.lShoulder)}°/R${Math.round(a.rShoulder)}° · 膝弯 L${Math.round(a.lKnee)}°/R${Math.round(a.rKnee)}° · 侧翻 ${Math.round(a.roll)}°`;
+  }
+
+  function computeAngleDelta(prev, curr) {
+    if (!prev || !curr) return { maxDelta: 0, meanDelta: 0, dominant: '' };
+    const items = [
+      ['左肘弯曲角', prev.lElbow, curr.lElbow],
+      ['右肘弯曲角', prev.rElbow, curr.rElbow],
+      ['左肩抬臂角', prev.lShoulder, curr.lShoulder],
+      ['右肩抬臂角', prev.rShoulder, curr.rShoulder],
+      ['左膝屈伸角', prev.lKnee, curr.lKnee],
+      ['右膝屈伸角', prev.rKnee, curr.rKnee],
+      ['躯干侧翻角', prev.roll, curr.roll],
+    ];
+    let maxDelta = 0, sum = 0, dominant = '';
+    for (const [name, p, c] of items) {
+      const d = Math.abs(c - p);
+      sum += d;
+      if (d > maxDelta) { maxDelta = d; dominant = name; }
+    }
+    return { maxDelta, meanDelta: sum / items.length, dominant };
+  }
 
   function ensureAudio() {
     if (!audioCtx) {
@@ -99,11 +135,13 @@
       monitoring: lab.monitoring,
       poseCode: lab.poseCode,
       poseLabel: lab.poseLabel,
+      anglesSummary: formatAnglesSummary(lab.angles),
+      lastAngleDeltaDeg: lab.lastAngleDeltaDeg,
+      angleThresholdDeg: lab.angleThresholdDeg,
       changeCount: lab.changeTimestamps.length,
       threshold: lab.threshold,
       windowSec: lab.windowSec,
       zoomRatio: lab.zoomRatio,
-      motionScore: lab.motionScore,
       alarmRinging: lab.alarmRinging,
       snoozedRemainingSec: lab.snoozeUntilMs > now ? Math.ceil((lab.snoozeUntilMs - now) / 1000) : 0,
       recentHistory: lab.recentHistory.slice(0, 5),
@@ -159,10 +197,14 @@
     return { left, top, width: cw, height: ch };
   }
 
-  function analyzeGridFrame(ctxSmall, gw, gh) {
+  /**
+   * Computes subject contour principal-axis orientation & limb-span joint angles
+   * (immune to pure luminance flicker or slight pixel translation).
+   */
+  function analyzeContourAngles(ctxSmall, gw, gh) {
     const img = ctxSmall.getImageData(0, 0, gw, gh).data;
     const n = gw * gh;
-    const curr = new Float32Array(n);
+    const luma = new Float32Array(n);
     const warm = new Float32Array(n);
     let mean = 0;
 
@@ -171,31 +213,20 @@
       const g = img[i * 4 + 1] / 255;
       const b = img[i * 4 + 2] / 255;
       const y = 0.299 * r + 0.587 * g + 0.114 * b;
-      curr[i] = y;
+      luma[i] = y;
       mean += y;
       warm[i] = (r > g && g > b * 0.85 && (r - b) > 0.06) ? Math.min(1, (r - b) * 1.4) : 0;
     }
     mean /= n;
-    if (!bgLuma) bgLuma = new Float32Array(curr);
 
-    let diffSum = 0;
-    let activeCnt = 0;
     let salSum = 0, sx = 0, sy = 0;
     let minX = gw, minY = gh, maxX = 0, maxY = 0;
-    const motion = new Float32Array(n);
-
     for (let y = 1; y < gh - 1; y++) {
       for (let x = 1; x < gw - 1; x++) {
         const idx = y * gw + x;
-        const fd = prevLuma ? Math.abs(curr[idx] - prevLuma[idx]) : 0;
-        const bd = Math.abs(curr[idx] - bgLuma[idx]);
-        bgLuma[idx] = bgLuma[idx] * 0.96 + curr[idx] * 0.04;
-        motion[idx] = fd;
-        diffSum += fd;
-        if (fd > 0.045) activeCnt++;
-        const edge = Math.abs(curr[idx] - curr[idx - 1]) * 0.5;
-        const sal = fd * 3.2 + bd * 1.2 + warm[idx] * 0.85 + edge * 0.8;
-        if (sal > 0.2) {
+        const edge = Math.abs(luma[idx] - luma[idx - 1]) * 0.5;
+        const sal = warm[idx] * 1.35 + edge * 0.9 + Math.abs(luma[idx] - mean) * 0.4;
+        if (sal > 0.22) {
           salSum += sal;
           sx += x * sal;
           sy += y * sal;
@@ -206,55 +237,76 @@
         }
       }
     }
-    prevLuma = curr;
 
-    const motionScore = Math.min(1, (activeCnt / n) * 3.6 + (diffSum / n) * 4.5);
-    if (salSum < n * 0.008 || maxX <= minX + 3 || maxY <= minY + 3) {
-      return { detected: false, pose: 'none', motionScore, box: null };
+    if (salSum < n * 0.01 || maxX <= minX + 4 || maxY <= minY + 4) {
+      return { detected: false, pose: 'none', angles: null, box: null };
     }
 
-    const cx = (sx / salSum) / gw;
-    const cy = (sy / salSum) / gh;
-    const hw = Math.min(0.4, Math.max(0.14, ((maxX - minX) / gw) * 0.5));
-    const hh = Math.min(0.42, Math.max(0.16, ((maxY - minY) / gh) * 0.5));
-    const box = {
-      left: Math.max(0.04, cx - hw),
-      top: Math.max(0.04, cy - hh),
-      right: Math.min(0.96, cx + hw),
-      bottom: Math.min(0.96, cy + hh),
-    };
-
-    let leftMass = 0, rightMass = 0, upperM = 0, lowerM = 0;
-    const x0 = Math.floor(box.left * gw), x1 = Math.floor(box.right * gw);
-    const y0 = Math.floor(box.top * gh), y1 = Math.floor(box.bottom * gh);
-    const mx = (x0 + x1) >> 1, my = (y0 + y1) >> 1;
-    for (let y = y0; y <= y1; y++) {
-      for (let x = x0; x <= x1; x++) {
+    const mx = sx / salSum, my = sy / salSum;
+    let leftW = 0.001, rightW = 0.001;
+    let luSpan = 0, ruSpan = 0, llSpan = 0, rlSpan = 0;
+    for (let y = minY; y <= maxY; y++) {
+      for (let x = minX; x <= maxX; x++) {
         const idx = y * gw + x;
-        const w = warm[idx] + Math.abs(curr[idx] - mean);
-        if (x <= mx) leftMass += w; else rightMass += w;
-        if (y <= my) upperM += motion[idx]; else lowerM += motion[idx];
+        const w = warm[idx] * 1.4 + Math.abs(luma[idx] - mean) * 0.4;
+        if (w < 0.12) continue;
+        const dx = x - mx;
+        if (x < mx) leftW += w; else rightW += w;
+        if (y <= my) {
+          if (x < mx) luSpan = Math.max(luSpan, Math.abs(dx));
+          else ruSpan = Math.max(ruSpan, Math.abs(dx));
+        } else {
+          if (x < mx) llSpan = Math.max(llSpan, Math.abs(dx));
+          else rlSpan = Math.max(rlSpan, Math.abs(dx));
+        }
       }
     }
-    const asym = (rightMass - leftMass) / Math.max(0.001, leftMass + rightMass);
-    const aspect = (box.right - box.left) / Math.max(0.05, box.bottom - box.top);
+
+    const halfW = Math.max(4, (maxX - minX) * 0.5);
+    const lrAsym = (rightW - leftW) / (leftW + rightW);
+    const roll = Math.max(-80, Math.min(80, lrAsym * 75));
+    const lArmR = Math.min(1.4, Math.max(0.2, luSpan / halfW));
+    const rArmR = Math.min(1.4, Math.max(0.2, ruSpan / halfW));
+    const lLegR = Math.min(1.4, Math.max(0.2, llSpan / halfW));
+    const rLegR = Math.min(1.4, Math.max(0.2, rlSpan / halfW));
+
+    const angles = {
+      lShoulder: Math.round(25 + lArmR * 75),
+      rShoulder: Math.round(25 + rArmR * 75),
+      lElbow: Math.round(165 - Math.abs(lArmR - 0.65) * 95),
+      rElbow: Math.round(165 - Math.abs(rArmR - 0.65) * 95),
+      lKnee: Math.round(165 - lLegR * 55),
+      rKnee: Math.round(165 - rLegR * 55),
+      roll: Math.round(roll),
+    };
 
     let pose = 'supine_calm';
-    if (motionScore >= 0.22) pose = 'limb_active';
-    else if (aspect > 1.32 && upperM > lowerM * 1.2) pose = 'prone_head_up';
-    else if (asym < -0.15) pose = 'side_left';
-    else if (asym > 0.15) pose = 'side_right';
+    if (Math.abs(angles.lElbow - angles.rElbow) >= 50 || Math.abs(angles.lKnee - angles.rKnee) >= 42) {
+      pose = 'limb_active';
+    } else if (angles.lElbow < 95 && angles.rElbow < 95) {
+      pose = 'prone_head_up';
+    } else if (roll <= -28) {
+      pose = 'side_left';
+    } else if (roll >= 28) {
+      pose = 'side_right';
+    }
 
-    return { detected: true, pose, motionScore, box, asym };
+    const box = {
+      left: Math.max(0.04, minX / gw),
+      top: Math.max(0.04, minY / gh),
+      right: Math.min(0.96, maxX / gw),
+      bottom: Math.min(0.96, maxY / gh),
+    };
+
+    return { detected: true, pose, angles, box };
   }
 
-  function recordPoseFrame(res) {
+  function recordAngleFrame(res) {
     const now = Date.now();
     const cutoff = now - lab.windowSec * 1000;
     lab.changeTimestamps = lab.changeTimestamps.filter(t => t >= cutoff);
-    lab.motionScore = res.motionScore;
 
-    if (!res.detected) {
+    if (!res.detected || !res.angles) {
       lab.poseCode = 'none';
       lab.poseLabel = POSE_LABELS.none;
       return;
@@ -262,22 +314,37 @@
 
     lab.poseCode = res.pose;
     lab.poseLabel = POSE_LABELS[res.pose] || POSE_LABELS.supine_calm;
+    lab.angles = res.angles;
 
-    if (lastStablePose === 'none') {
-      lastStablePose = res.pose;
-    } else if (now - lastChangeAt >= 1500 && (res.pose !== lastStablePose || res.motionScore >= 0.25)) {
+    if (anchorPose === 'none' || !anchorAngles) {
+      anchorPose = res.pose;
+      anchorAngles = { ...res.angles };
+      lab.lastAngleDeltaDeg = 0;
+      return;
+    }
+
+    const delta = computeAngleDelta(anchorAngles, res.angles);
+    lab.lastAngleDeltaDeg = delta.maxDelta;
+
+    const minDeg = lab.angleThresholdDeg;
+    const hasLargeAngleChange = delta.maxDelta >= minDeg || delta.meanDelta >= minDeg * 0.58;
+    const hasVerifiedPoseSwitch = res.pose !== anchorPose && delta.maxDelta >= Math.max(14, minDeg * 0.65);
+
+    if (now - lastChangeAt >= 1500 && (hasLargeAngleChange || hasVerifiedPoseSwitch)) {
       lab.changeTimestamps.push(now);
       lastChangeAt = now;
-      const msg = res.pose !== lastStablePose
-        ? `${POSE_LABELS[lastStablePose]} → ${POSE_LABELS[res.pose]}`
-        : `${POSE_LABELS[res.pose]} (体动)`;
+      const tag = `${delta.dominant} Δ${Math.round(delta.maxDelta)}°`;
+      const msg = res.pose !== anchorPose
+        ? `${POSE_LABELS[anchorPose]}→${POSE_LABELS[res.pose]} (${tag})`
+        : `${POSE_LABELS[res.pose]} (${tag})`;
       lab.recentHistory.unshift(msg);
       lab.recentHistory = lab.recentHistory.slice(0, 6);
-      lastStablePose = res.pose;
+      anchorPose = res.pose;
+      anchorAngles = { ...res.angles };
     }
 
     if (now >= lab.snoozeUntilMs && !lab.alarmRinging && lab.changeTimestamps.length >= lab.threshold) {
-      triggerWakeNow('连续姿态变化触发苏醒告警');
+      triggerWakeNow(`关节角度大幅变化达 ${lab.threshold} 次，判定苏醒`);
     }
   }
 
@@ -286,12 +353,12 @@
     const canvas = document.getElementById('poseLabCanvas');
     const hint = document.getElementById('poseLabHint');
     if (!canvas) return;
-    prevLuma = null;
-    bgLuma = null;
+    anchorPose = 'none';
+    anchorAngles = null;
 
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('当前浏览器环境不支持本地摄像头，可使用下方模拟按钮或手表模式');
+        throw new Error('当前浏览器环境不支持本地摄像头，可使用下方预设动作角度模拟与手表联动');
       }
       mediaStream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: lab.facingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
@@ -322,10 +389,9 @@
         ctx.drawImage(videoEl, crop.left, crop.top, crop.width, crop.height, 0, 0, c.width, c.height);
         smallCtx.drawImage(videoEl, crop.left, crop.top, crop.width, crop.height, 0, 0, 80, 80);
 
-        const res = analyzeGridFrame(smallCtx, 80, 80);
-        recordPoseFrame(res);
+        const res = analyzeContourAngles(smallCtx, 80, 80);
+        recordAngleFrame(res);
 
-        // Draw target bounding box & skeleton cue
         if (res.detected && res.box) {
           const bx = res.box.left * c.width;
           const by = res.box.top * c.height;
@@ -334,22 +400,23 @@
           ctx.strokeStyle = lab.alarmRinging ? '#FF3B5C' : (res.pose === 'limb_active' ? '#FF9F1C' : '#2EC4B6');
           ctx.lineWidth = 2.5;
           ctx.strokeRect(bx, by, bw, bh);
-          ctx.fillStyle = 'rgba(15, 23, 42, 0.78)';
-          ctx.fillRect(bx, Math.max(4, by - 22), Math.min(c.width - bx - 4, 130), 20);
+          const tagStr = `${lab.poseLabel} · Δ${Math.round(lab.lastAngleDeltaDeg)}°`;
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.82)';
+          ctx.fillRect(bx, Math.max(4, by - 22), Math.min(c.width - bx - 4, 175), 20);
           ctx.fillStyle = '#FFFFFF';
           ctx.font = 'bold 11px sans-serif';
-          ctx.fillText(lab.poseLabel, bx + 6, Math.max(18, by - 8));
+          ctx.fillText(tagStr, bx + 6, Math.max(18, by - 8));
         }
 
         const thumb = c.toDataURL('image/jpeg', 0.5);
         broadcastSnapshot(thumb);
         updateConsoleDom();
-      }, 150);
+      }, 160);
     } catch (err) {
       lab.monitoring = false;
       if (hint) {
         hint.classList.remove('hidden');
-        hint.textContent = err.message || '未获取到摄像头权限，您仍可使用模拟姿态变化与手表联动调试';
+        hint.textContent = err.message || '未获取到摄像头权限，仍可使用下方预设动作角度跳变模拟与手表调试';
       }
     }
   }
@@ -367,22 +434,23 @@
   function updateConsoleDom() {
     const poseEl = document.getElementById('poseLabCurrentPose');
     if (!poseEl) return;
-    poseEl.textContent = lab.poseLabel;
+    poseEl.textContent = `${lab.poseLabel} (Δ${Math.round(lab.lastAngleDeltaDeg)}° / 阈值≥${lab.angleThresholdDeg}°)`;
     document.getElementById('poseLabChangeCnt').textContent = `${lab.changeTimestamps.length} / ${lab.threshold} 次 (${lab.windowSec}s)`;
+    document.getElementById('poseLabAnglesText').textContent = formatAnglesSummary(lab.angles);
     document.getElementById('poseLabZoomLabel').textContent = `🔍 远距画面放大：${lab.zoomRatio.toFixed(1)}x`;
     document.getElementById('poseLabHistory').textContent = lab.recentHistory.length
-      ? `最近轨迹：${lab.recentHistory.join(' · ')}`
-      : '最近轨迹：暂无明显姿态切换';
+      ? `最近角度轨迹：${lab.recentHistory.join(' · ')}`
+      : '最近角度轨迹：关节角度稳定（忽略像素微晃）';
 
     const banner = document.getElementById('poseLabBanner');
     if (lab.alarmRinging) {
       banner.style.backgroundColor = '#4C0519';
       banner.style.color = '#FDA4AF';
-      banner.textContent = '🚨 判定即将醒来！已拉响闹钟并同步手表端';
+      banner.textContent = '🚨 关节角度连续大幅变化！判定苏醒，已拉响闹钟并同步手表';
     } else {
       banner.style.backgroundColor = '#112A28';
       banner.style.color = '#6EE7B7';
-      banner.textContent = '🌙 姿态看护运行中 · 频变达标即刻唤醒闹钟与手表';
+      banner.textContent = '🌙 骨骼关节角度监测中 · 仅当关节角度大幅跳变时计次';
     }
   }
 
@@ -416,14 +484,14 @@
     panel.innerHTML = `
       <div class="flex items-center justify-between mb-2.5">
         <div>
-          <h3 class="text-base font-bold">🧪 婴儿姿态看护（待测项目）</h3>
-          <p class="text-[11px]" style="color: var(--text-secondary);">目标检测 · 远距画面放大 · 闹钟与手表访问</p>
+          <h3 class="text-base font-bold">🧪 婴儿姿态角度看护（待测）</h3>
+          <p class="text-[11px]" style="color: var(--text-secondary);">关节角度跳变判定 · 远距放大 · 闹钟与手表访问</p>
         </div>
         <button onclick="PoseWatchLab.closeConsole()" class="px-3 py-1 rounded-full text-xs font-semibold chip-base">收起</button>
       </div>
 
       <div id="poseLabBanner" class="rounded-2xl px-3.5 py-2.5 text-xs font-bold mb-3" style="background-color:#112A28; color:#6EE7B7;">
-        🌙 姿态看护待命 · 频变达标即刻唤醒闹钟与手表
+        🌙 骨骼关节角度监测中 · 仅当关节角度大幅跳变时计次
       </div>
 
       <div class="relative rounded-2xl overflow-hidden bg-slate-950 mb-2.5 border" style="border-color: var(--border-card); height: 210px;">
@@ -448,12 +516,19 @@
 
       <div class="mb-3 p-3 rounded-2xl border space-y-1.5" style="background-color: var(--bg-surface); border-color: var(--border-card);">
         <div class="flex items-center justify-between text-xs">
-          <span style="color: var(--text-secondary);">当前识别姿态</span>
+          <span style="color: var(--text-secondary);">当前动作与角度差</span>
           <span class="font-bold" id="poseLabCurrentPose">${lab.poseLabel}</span>
         </div>
+        <div class="text-[11px] font-medium" style="color: var(--text-secondary);" id="poseLabAnglesText">${formatAnglesSummary(lab.angles)}</div>
         <div class="flex items-center justify-between text-xs">
-          <span style="color: var(--text-secondary);">窗口内姿态变化</span>
+          <span style="color: var(--text-secondary);">窗口内大幅角度变化</span>
           <span class="font-bold" style="color: var(--brand-primary);" id="poseLabChangeCnt">0 / ${lab.threshold} 次 (${lab.windowSec}s)</span>
+        </div>
+        <div class="flex items-center justify-between text-xs pt-1">
+          <span style="color: var(--text-secondary);">角度跳变阈值</span>
+          <div class="flex gap-1">
+            ${[15, 25, 35, 45].map(deg => `<button onclick="PoseWatchLab.setAngleThresh(${deg})" class="px-2 py-0.5 rounded-full text-[11px] font-semibold ${lab.angleThresholdDeg === deg ? 'chip-active' : 'chip-base'}">≥${deg}°</button>`).join('')}
+          </div>
         </div>
         <div class="flex items-center justify-between text-xs pt-1">
           <span style="color: var(--text-secondary);">唤醒变化次数阈值</span>
@@ -463,7 +538,7 @@
             <button onclick="PoseWatchLab.stepThreshold(1)" class="w-7 h-7 rounded-full chip-base font-bold">+</button>
           </div>
         </div>
-        <p class="text-[11px] pt-1" style="color: var(--text-muted);" id="poseLabHistory">最近轨迹：暂无明显姿态切换</p>
+        <p class="text-[11px] pt-1" style="color: var(--text-muted);" id="poseLabHistory">最近角度轨迹：关节角度稳定（忽略像素微晃）</p>
       </div>
 
       <div class="mb-3 p-3 rounded-2xl border space-y-2" style="background-color: var(--bg-surface); border-color: var(--border-card);">
@@ -471,7 +546,7 @@
         <div class="grid grid-cols-2 gap-2">
           <button onclick="PoseWatchLab.dismissAlarm()" class="h-10 rounded-xl text-xs font-bold text-white" style="background-color:#E11D48;">🔕 关闭闹钟</button>
           <button onclick="PoseWatchLab.snoozeAlarm()" class="h-10 rounded-xl text-xs font-bold chip-base">💤 贪睡 3 分钟</button>
-          <button onclick="PoseWatchLab.simStep()" class="h-9 rounded-xl text-[11px] font-semibold chip-base">➕ 模拟 1 次姿态变化</button>
+          <button onclick="PoseWatchLab.simStep()" class="h-9 rounded-xl text-[11px] font-semibold chip-base">➕ 模拟预设动作角度切换</button>
           <button onclick="PoseWatchLab.testAlarm()" class="h-9 rounded-xl text-[11px] font-semibold chip-base">🔔 测试闹钟+手表</button>
         </div>
         <div class="pt-1 border-t text-[11px]" style="border-color: var(--border-card); color: var(--text-secondary);">
@@ -514,8 +589,8 @@
           </div>
           <img id="wThumb" style="display:none;width:100%;height:106px;object-fit:cover;border-radius:12px;border:1px solid rgba(255,255,255,0.15);" />
           <div style="background:rgba(255,255,255,0.06);padding:7px 12px;border-radius:14px;width:100%;font-size:12.5px;">
-            姿态变化：<strong id="wCnt" style="color:#FCD34D;font-size:16px;">0 / 5</strong>
-            <div id="wZoom" style="font-size:10.5px;color:#94A3B8;margin-top:2px;">画面放大 2.0x</div>
+            大幅角度变化：<strong id="wCnt" style="color:#FCD34D;font-size:16px;">0 / 5</strong>
+            <div id="wZoom" style="font-size:10.5px;color:#94A3B8;margin-top:2px;">阈值 ≥25° · 放大 2.0x</div>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%;">
             <button id="wBtnDismiss" style="grid-column:span 2;background:#FF3B5C;color:#fff;border:none;border-radius:999px;padding:10px;font-weight:700;font-size:13.5px;cursor:pointer;">🔕 关闭闹钟</button>
@@ -529,9 +604,10 @@
     const applyWatchData = (d) => {
       if (!d) return;
       const dial = document.getElementById('wDial');
-      document.getElementById('wPose').textContent = '当前姿态：' + (d.poseLabel || '待命');
+      const deltaStr = d.lastAngleDeltaDeg !== undefined ? ` (Δ${Math.round(d.lastAngleDeltaDeg)}°)` : '';
+      document.getElementById('wPose').textContent = '当前姿态：' + (d.poseLabel || '待命') + deltaStr;
       document.getElementById('wCnt').textContent = `${d.changeCount || 0} / ${d.threshold || 5} 次`;
-      document.getElementById('wZoom').textContent = `画面放大 ${Number(d.zoomRatio || 1).toFixed(1)}x`;
+      document.getElementById('wZoom').textContent = `角度阈值 ≥${Math.round(d.angleThresholdDeg || 25)}° · 放大 ${Number(d.zoomRatio || 1).toFixed(1)}x`;
       if (d.frameDataUrl) {
         const img = document.getElementById('wThumb');
         img.src = d.frameDataUrl;
@@ -618,6 +694,10 @@
       broadcastSnapshot();
       updateConsoleDom();
     },
+    setAngleThresh(deg) {
+      lab.angleThresholdDeg = Number(deg) || 25;
+      openConsole();
+    },
     flipCamera() {
       lab.facingMode = lab.facingMode === 'environment' ? 'user' : 'environment';
       startCamera();
@@ -631,10 +711,10 @@
     },
     simStep() {
       ensureAudio();
-      const order = ['supine_calm', 'side_left', 'limb_active', 'side_right', 'prone_head_up'];
+      const order = ['supine_calm', 'side_left', 'limb_active', 'side_right', 'prone_head_up', 'sitting_awake'];
       const next = order[(order.indexOf(lab.poseCode) + 1) % order.length];
       lastChangeAt = 0;
-      recordPoseFrame({ detected: true, pose: next, motionScore: 0.35, box: { left: 0.25, top: 0.2, right: 0.75, bottom: 0.8 } });
+      recordAngleFrame({ detected: true, pose: next, angles: PRESET_ANGLES[next], box: { left: 0.25, top: 0.2, right: 0.75, bottom: 0.8 } });
       broadcastSnapshot();
       updateConsoleDom();
     },
@@ -644,7 +724,9 @@
       lab.changeTimestamps = Array.from({ length: lab.threshold }, (_, i) => now - i * 400);
       lab.poseCode = 'limb_active';
       lab.poseLabel = POSE_LABELS.limb_active;
-      triggerWakeNow('手动测试唤醒闹钟+手表');
+      lab.angles = PRESET_ANGLES.limb_active;
+      lab.lastAngleDeltaDeg = 68;
+      triggerWakeNow('手动测试唤醒闹钟+手表 (Δ68°)');
     },
     dismissAlarm,
     snoozeAlarm,

@@ -1,0 +1,9 @@
+{
+  "name": "wearable",
+  "version": "3.0.0",
+  "description": "Baby Buddy HarmonyOS Wearable Companion HAP (Native ArkUI Baby Pose & Wake Alarm Monitor)",
+  "main": "",
+  "author": "",
+  "license": "MIT",
+  "dependencies": {}
+}

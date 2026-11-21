@@ -39,3 +39,13 @@ pkg_breast.png
 pkg_breast_left.png
 pkg_breast_right.png
 pkg_pumping.png
+
+# HarmonyOS / DevEco Studio build artifacts
+harmony-app/.hvigor/
+harmony-app/.idea/
+harmony-app/oh_modules/
+harmony-app/**/oh_modules/
+harmony-app/build/
+harmony-app/**/build/
+harmony-app/.preview/
+harmony-app/**/src/main/ets/.preview/

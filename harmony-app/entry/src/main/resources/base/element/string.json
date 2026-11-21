@@ -1,0 +1,20 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "Baby Buddy local offline baby care tracker for HarmonyOS"
+    },
+    {
+      "name": "EntryAbility_desc",
+      "value": "Baby Buddy main entry"
+    },
+    {
+      "name": "EntryAbility_label",
+      "value": "Baby Buddy"
+    },
+    {
+      "name": "camera_reason",
+      "value": "Used for baby sleep pose monitoring and crib zoom preview"
+    }
+  ]
+}

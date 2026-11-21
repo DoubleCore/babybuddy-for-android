@@ -13,10 +13,12 @@ import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
 import kotlin.math.max
+import kotlin.math.roundToInt
 
 /**
  * Interactive overlay rendered above the zoomed camera preview:
- * - Draws detected baby target bounding box, skeletal pose lines/keypoints, and wake alert state
+ * - Draws detected baby target bounding box, 13-joint skeleton (including elbows & knees),
+ *   and real-time joint angle callouts (e.g., elbow bend 78°, knee 142°)
  * - Draws a picture-in-picture zoom ROI minimap when zoom > 1.0x
  * - Supports 2-finger pinch-to-zoom (1.0x - 8.0x), 1-finger pan when zoomed in, and double-tap zoom toggle
  */
@@ -43,12 +45,12 @@ class PoseOverlayAndZoomView @JvmOverloads constructor(
 
     private val boxFillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
-        color = Color.argb(32, 46, 196, 182)
+        color = Color.argb(28, 46, 196, 182)
     }
 
     private val bonePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
-        strokeWidth = 2.2f * density
+        strokeWidth = 2.4f * density
         color = Color.parseColor("#FFD166")
     }
 
@@ -57,14 +59,25 @@ class PoseOverlayAndZoomView @JvmOverloads constructor(
         color = Color.parseColor("#FFFFFF")
     }
 
+    private val angleTagBgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL
+        color = Color.argb(185, 15, 23, 42)
+    }
+
+    private val angleTagTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.parseColor("#7DD3FC")
+        textSize = 10f * density
+        isFakeBoldText = true
+    }
+
     private val labelBgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
-        color = Color.argb(190, 15, 23, 42)
+        color = Color.argb(195, 15, 23, 42)
     }
 
     private val labelTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.WHITE
-        textSize = 12f * density
+        textSize = 11.5f * density
         isFakeBoldText = true
     }
 
@@ -124,7 +137,6 @@ class PoseOverlayAndZoomView @JvmOverloads constructor(
         override fun onDoubleTap(e: MotionEvent): Boolean {
             if (currentZoom < 2.2f) {
                 currentZoom = 3.2f
-                // Center zoom toward tap position
                 val nx = ((e.x / max(1, width)) - 0.5f) * 2f
                 val ny = ((e.y / max(1, height)) - 0.5f) * 2f
                 currentPanX = nx.coerceIn(-1f, 1f)
@@ -172,7 +184,6 @@ class PoseOverlayAndZoomView @JvmOverloads constructor(
                     val dy = event.y - lastTouchY
                     lastTouchX = event.x
                     lastTouchY = event.y
-                    // Dragging finger right moves view left across the zoomed image
                     val sens = 2.2f / max(1f, currentZoom * 0.55f)
                     currentPanX = (currentPanX - (dx / max(1, width)) * sens).coerceIn(-1f, 1f)
                     currentPanY = (currentPanY - (dy / max(1, height)) * sens).coerceIn(-1f, 1f)
@@ -197,7 +208,6 @@ class PoseOverlayAndZoomView @JvmOverloads constructor(
         val snap = snapshot
         val isAlarm = snap?.isAlarmRinging == true
 
-        // Subtle center guide lines
         canvas.drawLine(w * 0.5f, h * 0.44f, w * 0.5f, h * 0.56f, guideCrossPaint)
         canvas.drawLine(w * 0.44f, h * 0.5f, w * 0.56f, h * 0.5f, guideCrossPaint)
 
@@ -212,7 +222,7 @@ class PoseOverlayAndZoomView @JvmOverloads constructor(
             }
             boxPaint.color = strokeColor
             boxFillPaint.color = Color.argb(
-                28,
+                26,
                 Color.red(strokeColor),
                 Color.green(strokeColor),
                 Color.blue(strokeColor)
@@ -221,16 +231,43 @@ class PoseOverlayAndZoomView @JvmOverloads constructor(
             canvas.drawRoundRect(rect, r, r, boxFillPaint)
             canvas.drawRoundRect(rect, r, r, boxPaint)
 
-            // Draw skeletal pose lines & joints
+            // Draw full 13-point articulated skeleton & joint angle badges
+            val angles = res.angleProfile
             res.keypoints?.let { kp ->
                 drawBone(canvas, kp.leftShoulder, kp.rightShoulder, w, h)
-                drawBone(canvas, kp.leftShoulder, kp.leftWrist, w, h)
-                drawBone(canvas, kp.rightShoulder, kp.rightWrist, w, h)
+                // Articulated arms (Shoulder -> Elbow -> Wrist)
+                if (kp.leftElbow != null && kp.leftElbow.confidence >= 0.3f) {
+                    drawBone(canvas, kp.leftShoulder, kp.leftElbow, w, h)
+                    drawBone(canvas, kp.leftElbow, kp.leftWrist, w, h)
+                } else {
+                    drawBone(canvas, kp.leftShoulder, kp.leftWrist, w, h)
+                }
+                if (kp.rightElbow != null && kp.rightElbow.confidence >= 0.3f) {
+                    drawBone(canvas, kp.rightShoulder, kp.rightElbow, w, h)
+                    drawBone(canvas, kp.rightElbow, kp.rightWrist, w, h)
+                } else {
+                    drawBone(canvas, kp.rightShoulder, kp.rightWrist, w, h)
+                }
+
+                // Torso
                 drawBone(canvas, kp.leftShoulder, kp.leftHip, w, h)
                 drawBone(canvas, kp.rightShoulder, kp.rightHip, w, h)
                 drawBone(canvas, kp.leftHip, kp.rightHip, w, h)
-                drawBone(canvas, kp.leftHip, kp.leftAnkle, w, h)
-                drawBone(canvas, kp.rightHip, kp.rightAnkle, w, h)
+
+                // Articulated legs (Hip -> Knee -> Ankle)
+                if (kp.leftKnee != null && kp.leftKnee.confidence >= 0.3f) {
+                    drawBone(canvas, kp.leftHip, kp.leftKnee, w, h)
+                    drawBone(canvas, kp.leftKnee, kp.leftAnkle, w, h)
+                } else {
+                    drawBone(canvas, kp.leftHip, kp.leftAnkle, w, h)
+                }
+                if (kp.rightKnee != null && kp.rightKnee.confidence >= 0.3f) {
+                    drawBone(canvas, kp.rightHip, kp.rightKnee, w, h)
+                    drawBone(canvas, kp.rightKnee, kp.rightAnkle, w, h)
+                } else {
+                    drawBone(canvas, kp.rightHip, kp.rightAnkle, w, h)
+                }
+
                 if (kp.nose != null && kp.leftShoulder != null && kp.rightShoulder != null) {
                     val midShoulder = NormalizedPoint(
                         (kp.leftShoulder.x + kp.rightShoulder.x) * 0.5f,
@@ -238,15 +275,23 @@ class PoseOverlayAndZoomView @JvmOverloads constructor(
                     )
                     drawBone(canvas, kp.nose, midShoulder, w, h)
                 }
+
                 for (pt in kp.allPoints()) {
                     if (pt.confidence >= 0.3f) {
-                        canvas.drawCircle(pt.x * w, pt.y * h, 4f * density, jointPaint)
+                        canvas.drawCircle(pt.x * w, pt.y * h, 3.8f * density, jointPaint)
                     }
                 }
+
+                // Annotate exact joint bend angles directly at elbows & knees
+                drawJointAngleCallout(canvas, kp.leftElbow, angles.leftElbowDeg, w, h)
+                drawJointAngleCallout(canvas, kp.rightElbow, angles.rightElbowDeg, w, h)
+                drawJointAngleCallout(canvas, kp.leftKnee, angles.leftKneeDeg, w, h)
+                drawJointAngleCallout(canvas, kp.rightKnee, angles.rightKneeDeg, w, h)
             }
 
-            // Draw pose tag above target box
-            val tagText = "${res.poseLabel.zhLabel} (${(res.confidence * 100).toInt()}%)"
+            // Draw pose + max angle delta tag above target box
+            val deltaDeg = (snap?.lastAngleDeltaDeg ?: res.maxAngleDeltaDeg).roundToInt()
+            val tagText = "${res.poseLabel.zhLabel} · Δ${deltaDeg}°"
             val textW = labelTextPaint.measureText(tagText)
             val padH = 8f * density
             val tagH = 22f * density
@@ -273,6 +318,23 @@ class PoseOverlayAndZoomView @JvmOverloads constructor(
             val roiBottom = roiTop + (crop.height / 1000f) * mapH
             canvas.drawRect(roiLeft, roiTop, roiRight, roiBottom, miniMapRoiPaint)
         }
+    }
+
+    private fun drawJointAngleCallout(
+        canvas: Canvas,
+        joint: NormalizedPoint?,
+        angleDeg: Float?,
+        w: Float,
+        h: Float
+    ) {
+        if (joint == null || joint.confidence < 0.35f || angleDeg == null) return
+        val txt = "${angleDeg.roundToInt()}°"
+        val tw = angleTagTextPaint.measureText(txt)
+        val px = (joint.x * w + 6f * density).coerceIn(4f * density, (w - tw - 10f * density).coerceAtLeast(4f * density))
+        val py = (joint.y * h - 4f * density).coerceIn(16f * density, (h - 6f * density).coerceAtLeast(16f * density))
+        val bgRect = RectF(px - 3f * density, py - 12f * density, px + tw + 3f * density, py + 3f * density)
+        canvas.drawRoundRect(bgRect, 4f * density, 4f * density, angleTagBgPaint)
+        canvas.drawText(txt, px, py, angleTagTextPaint)
     }
 
     private fun drawBone(

@@ -16,9 +16,9 @@ import java.io.Closeable
 import java.util.concurrent.TimeUnit
 
 /**
- * Runs simple Object Detection + Pose Analysis on a zoomed/cropped ROI Bitmap.
- * Combines bundled ML Kit ObjectDetector + PoseDetector with [LightweightVisionPoseAnalyzer]
- * so distant or partially blanketed babies are still reliably tracked.
+ * Runs Object Detection + 13-joint Pose Angle Analysis on a zoomed/cropped ROI Bitmap.
+ * Extracts elbows, shoulders, wrists, hips, knees, ankles, and nose to compute exact joint bend angles
+ * rather than relying on pixel motion jitter.
  */
 class MlKitBabyPoseDetector : Closeable {
     companion object {
@@ -28,7 +28,8 @@ class MlKitBabyPoseDetector : Closeable {
 
     private val visionAnalyzer = LightweightVisionPoseAnalyzer(GRID_SIZE, GRID_SIZE)
     private val gridPixels = IntArray(GRID_SIZE * GRID_SIZE)
-    private var prevMlKeypoints: PoseKeypoints? = null
+    private var prevSmoothedKeypoints: PoseKeypoints? = null
+    private var prevAngleProfile: PoseAngleProfile? = null
     private var mlKitAvailable: Boolean = true
 
     private val poseDetector: PoseDetector? by lazy {
@@ -38,7 +39,7 @@ class MlKitBabyPoseDetector : Closeable {
                 .build()
             PoseDetection.getClient(opts)
         } catch (t: Throwable) {
-            Log.w(TAG, "ML Kit PoseDetector unavailable, falling back to vision engine", t)
+            Log.w(TAG, "ML Kit PoseDetector unavailable, falling back to contour angle engine", t)
             mlKitAvailable = false
             null
         }
@@ -52,14 +53,15 @@ class MlKitBabyPoseDetector : Closeable {
                 .build()
             ObjectDetection.getClient(opts)
         } catch (t: Throwable) {
-            Log.w(TAG, "ML Kit ObjectDetector unavailable, falling back to vision engine", t)
+            Log.w(TAG, "ML Kit ObjectDetector unavailable, falling back to contour angle engine", t)
             null
         }
     }
 
     fun reset() {
         visionAnalyzer.reset()
-        prevMlKeypoints = null
+        prevSmoothedKeypoints = null
+        prevAngleProfile = null
     }
 
     /**
@@ -72,10 +74,10 @@ class MlKitBabyPoseDetector : Closeable {
         if (scaledGrid !== roiBitmap) {
             scaledGrid.recycle()
         }
-        val visionResult = visionAnalyzer.analyzeGrid(gridPixels, GRID_SIZE, GRID_SIZE)
+        val fallbackContourResult = visionAnalyzer.analyzeGrid(gridPixels, GRID_SIZE, GRID_SIZE)
 
         if (!mlKitAvailable) {
-            return visionResult
+            return fallbackContourResult
         }
 
         val w = roiBitmap.width.toFloat().coerceAtLeast(1f)
@@ -111,37 +113,44 @@ class MlKitBabyPoseDetector : Closeable {
                 }
 
             if (pose != null && pose.allPoseLandmarks.isNotEmpty()) {
-                val kp = PoseKeypoints(
+                val rawKp = PoseKeypoints(
                     nose = pose.getPoseLandmark(PoseLandmark.NOSE)?.toNorm(w, h),
                     leftShoulder = pose.getPoseLandmark(PoseLandmark.LEFT_SHOULDER)?.toNorm(w, h),
                     rightShoulder = pose.getPoseLandmark(PoseLandmark.RIGHT_SHOULDER)?.toNorm(w, h),
+                    leftElbow = pose.getPoseLandmark(PoseLandmark.LEFT_ELBOW)?.toNorm(w, h),
+                    rightElbow = pose.getPoseLandmark(PoseLandmark.RIGHT_ELBOW)?.toNorm(w, h),
                     leftWrist = pose.getPoseLandmark(PoseLandmark.LEFT_WRIST)?.toNorm(w, h),
                     rightWrist = pose.getPoseLandmark(PoseLandmark.RIGHT_WRIST)?.toNorm(w, h),
                     leftHip = pose.getPoseLandmark(PoseLandmark.LEFT_HIP)?.toNorm(w, h),
                     rightHip = pose.getPoseLandmark(PoseLandmark.RIGHT_HIP)?.toNorm(w, h),
+                    leftKnee = pose.getPoseLandmark(PoseLandmark.LEFT_KNEE)?.toNorm(w, h),
+                    rightKnee = pose.getPoseLandmark(PoseLandmark.RIGHT_KNEE)?.toNorm(w, h),
                     leftAnkle = pose.getPoseLandmark(PoseLandmark.LEFT_ANKLE)?.toNorm(w, h),
                     rightAnkle = pose.getPoseLandmark(PoseLandmark.RIGHT_ANKLE)?.toNorm(w, h)
                 )
-                val classified = MlKitPoseClassifier.classifyFromKeypoints(
-                    keypoints = kp,
+                val (classified, nextSmoothed) = MlKitPoseClassifier.classifyFromKeypoints(
+                    rawKeypoints = rawKp,
                     objectBox = bestObjBox,
-                    prevKeypoints = prevMlKeypoints,
-                    fallbackResult = visionResult
+                    prevSmoothedKeypoints = prevSmoothedKeypoints,
+                    prevAngleProfile = prevAngleProfile,
+                    fallbackResult = fallbackContourResult
                 )
-                prevMlKeypoints = kp
+                prevSmoothedKeypoints = nextSmoothed
+                if (classified.angleProfile.validJointCount() >= 2) {
+                    prevAngleProfile = classified.angleProfile
+                }
                 classified
-            } else if (bestObjBox != null) {
-                visionResult.copy(
-                    targetDetected = true,
+            } else if (bestObjBox != null && fallbackContourResult.targetDetected) {
+                fallbackContourResult.copy(
                     targetBox = bestObjBox,
-                    sourceTag = "mlkit-obj+vision"
+                    sourceTag = "mlkit-obj+contour"
                 )
             } else {
-                visionResult
+                fallbackContourResult
             }
         } catch (t: Throwable) {
-            Log.d(TAG, "ML Kit frame fallback to lightweight vision: ${t.message}")
-            visionResult
+            Log.d(TAG, "ML Kit frame fallback to contour angle engine: ${t.message}")
+            fallbackContourResult
         }
     }
 

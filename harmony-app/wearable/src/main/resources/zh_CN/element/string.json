@@ -1,0 +1,16 @@
+{
+  "string": [
+    {
+      "name": "wearable_module_desc",
+      "value": "Baby Buddy 鸿蒙手表端婴儿姿态看护与苏醒闹钟伴侣"
+    },
+    {
+      "name": "wearable_ability_desc",
+      "value": "婴儿看护手表端"
+    },
+    {
+      "name": "wearable_ability_label",
+      "value": "宝宝看护"
+    }
+  ]
+}

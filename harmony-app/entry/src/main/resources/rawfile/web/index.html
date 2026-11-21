@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Baby Buddy 本地版</title>
+  <link rel="icon" type="image/svg+xml" href="logo.svg?v=3" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="styles.css?v=2" />
+</head>
+<body>
+  <div class="mobile-shell">
+    <!-- Top Header -->
+    <header class="sticky top-0 z-30 backdrop-blur-xl px-4 pt-3 pb-2.5 border-b" style="background-color: color-mix(in srgb, var(--bg-surface) 88%, transparent); border-color: var(--border-card);">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <img src="logo.svg?v=3" alt="Baby Buddy Logo" class="w-9 h-9 rounded-2xl shrink-0 shadow-sm" />
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5">
+              <h1 class="text-base font-bold tracking-tight truncate">Baby Buddy</h1>
+              <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap" style="background-color: var(--cat-weight-bg); color: var(--cat-weight-fg);">
+                纯本地离线
+              </span>
+            </div>
+            <p class="text-[11px] truncate" style="color: var(--text-secondary);" id="headerPageSubtitle">今日照护概览</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button onclick="App.toggleDarkMode()" title="切换夜间护眼模式" class="w-9 h-9 rounded-full flex items-center justify-center border transition-colors" style="background-color: var(--bg-card); border-color: var(--border-card); color: var(--text-secondary);">
+            <i data-lucide="moon" class="w-4 h-4" id="themeToggleIcon"></i>
+          </button>
+          <button onclick="App.openBackupSheet()" title="本地备份与恢复" class="w-9 h-9 rounded-full flex items-center justify-center border transition-colors" style="background-color: var(--bg-card); border-color: var(--border-card); color: var(--text-secondary);">
+            <i data-lucide="archive" class="w-4 h-4"></i>
+          </button>
+          <button onclick="App.openSettingsSheet()" title="照护设置" class="w-9 h-9 rounded-full flex items-center justify-center border transition-colors" style="background-color: var(--bg-card); border-color: var(--border-card); color: var(--text-secondary);">
+            <i data-lucide="settings" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="px-3.5 pt-3 space-y-3.5">
+      <!-- Shared Baby Switcher Header (Compact) -->
+      <section class="nursery-card p-3" id="babyProfileCard">
+        <div class="flex items-center justify-between gap-2.5">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-11 h-11 rounded-2xl flex items-center justify-center text-xl shrink-0 border" style="background-color: var(--cat-feeding-bg); border-color: var(--border-card);" id="activeBabyAvatar">
+              👶🏻
+            </div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-1.5">
+                <h2 class="text-sm font-bold truncate" id="activeBabyName">糯米</h2>
+                <span class="text-[10.5px] px-1.5 py-0.5 rounded-md font-semibold" style="background-color: var(--bg-chip); color: var(--text-secondary);" id="activeBabySexBadge">女宝</span>
+                <span class="text-[10.5px] font-bold px-2 py-0.5 rounded-full" style="background-color: var(--bg-chip); color: var(--brand-primary);" id="activeBabyAgeBadge">3个月12天</span>
+              </div>
+              <p class="text-[11px] mt-0.5 truncate" style="color: var(--text-secondary);" id="activeBabyCorrectedAge">
+                矫正月龄: 2 个月 5 天
+              </p>
+            </div>
+          </div>
+          <button onclick="App.openBabyProfileModal(true)" class="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style="color: var(--text-secondary);" title="编辑宝宝档案">
+            <i data-lucide="pencil" class="w-4 h-4"></i>
+          </button>
+        </div>
+        <div class="flex items-center gap-1.5 mt-2.5 pt-2 border-t overflow-x-auto no-scrollbar" style="border-color: var(--border-card);" id="babySwitcherRow"></div>
+      </section>
+
+      <!-- PAGE 1: TODAY (今日照护主页 - 轻量聚焦) -->
+      <div id="pageToday" class="space-y-3.5">
+        <!-- Today Summary Card -->
+        <section class="nursery-card-elevated p-3.5" id="todaySummaryCard">
+          <div class="flex items-center justify-between mb-2.5">
+            <span class="text-sm font-bold">今日概览</span>
+            <button onclick="App.refreshSummary(true)" class="text-[11px] flex items-center gap-1" style="color: var(--text-muted);">
+              <i data-lucide="refresh-cw" class="w-3 h-3"></i> 刷新
+            </button>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2">
+            <div class="rounded-2xl p-2.5 border" style="background-color: var(--bg-card); border-color: var(--border-card);">
+              <div class="text-[11px]" style="color: var(--text-secondary);">距上次喂养</div>
+              <div class="text-xs font-bold mt-0.5" style="color: var(--cat-feeding-fg);" id="sumLastFeedAgo">—</div>
+              <div class="text-[10.5px] mt-0.5 truncate" style="color: var(--text-muted);" id="sumLastFeedDetail">暂无记录</div>
+            </div>
+            <div class="rounded-2xl p-2.5 border" style="background-color: var(--bg-card); border-color: var(--border-card);">
+              <div class="text-[11px]" style="color: var(--text-secondary);">距上次睡眠</div>
+              <div class="text-xs font-bold mt-0.5" style="color: var(--cat-sleep-fg);" id="sumLastSleepAgo">—</div>
+              <div class="text-[10.5px] mt-0.5 truncate" style="color: var(--text-muted);" id="sumLastSleepDetail">暂无记录</div>
+            </div>
+            <div class="rounded-2xl p-2.5 border" style="background-color: var(--bg-card); border-color: var(--border-card);">
+              <div class="text-[11px]" style="color: var(--text-secondary);">距上次尿布</div>
+              <div class="text-xs font-bold mt-0.5" style="color: var(--cat-diaper-fg);" id="sumLastDiaperAgo">—</div>
+              <div class="text-[10.5px] mt-0.5 truncate" style="color: var(--text-muted);" id="sumLastDiaperDetail">暂无记录</div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2 mt-2.5 pt-2.5 border-t" style="border-color: var(--border-card);">
+            <div>
+              <div class="text-[10.5px]" style="color: var(--text-muted);">今日喂养</div>
+              <div class="text-xs font-bold mt-0.5" id="sumTodayFeed">0 次</div>
+            </div>
+            <div>
+              <div class="text-[10.5px]" style="color: var(--text-muted);">今日睡眠</div>
+              <div class="text-xs font-bold mt-0.5" id="sumTodaySleep">0 分钟</div>
+            </div>
+            <div>
+              <div class="text-[10.5px]" style="color: var(--text-muted);">今日尿布</div>
+              <div class="text-xs font-bold mt-0.5" id="sumTodayDiaper">0 次</div>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between gap-2 mt-2.5 pt-2 border-t text-[11px]" style="border-color: var(--border-card);" id="sumExtraRow">
+            <span style="color: var(--text-secondary);" id="sumPumpingTummy">今日吸奶 0 ml · 趴卧 0 分钟</span>
+            <span class="px-2.5 py-0.5 rounded-full font-semibold shrink-0 hidden" style="background-color: var(--cat-meds-bg); color: var(--cat-meds-fg);" id="sumNextMedsBadge"></span>
+          </div>
+        </section>
+
+        <!-- Active & Quick Timers Strip -->
+        <section class="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5" id="quickTimersStrip"></section>
+
+        <!-- High-Frequency Daily Care Grid (3x2) -->
+        <section>
+          <div class="flex items-center justify-between px-0.5 mb-2">
+            <h3 class="text-xs font-bold tracking-wide" style="color: var(--text-secondary);">日常照护快捷记录</h3>
+            <div class="flex items-center gap-2.5">
+              <button onclick="PoseWatchLab.toggleHiddenEntry()" class="text-[10.5px] opacity-50 hover:opacity-95 transition-opacity" style="color: var(--text-muted);" title="展开待测实验项目">待测 ▾</button>
+              <button onclick="App.openQuickMenuSheet()" class="text-[11px] font-semibold" style="color: var(--brand-primary);">全部 12 类 ›</button>
+            </div>
+          </div>
+          <div id="poseLabWebHiddenCard" onclick="PoseWatchLab.openConsole()" class="hidden mb-2.5 p-2.5 rounded-2xl border cursor-pointer flex items-center justify-between transition-colors" style="background-color: var(--bg-card); border-color: var(--border-card);">
+            <div class="min-w-0">
+              <div class="text-xs font-bold truncate">🧪 [待测] 婴儿姿态检测 · 闹钟与手表联动</div>
+              <div class="text-[10.5px] truncate" style="color: var(--text-muted);">摄像头远距放大 · 频变苏醒判定 · 极速闹钟与手表端访问</div>
+            </div>
+            <i data-lucide="chevron-right" class="w-4 h-4 shrink-0" style="color: var(--text-muted);"></i>
+          </div>
+          <div class="grid grid-cols-3 gap-2" id="dailyCareGrid"></div>
+        </section>
+
+        <!-- Recent 3 Entries Preview -->
+        <section>
+          <div class="flex items-center justify-between px-0.5 mb-2">
+            <h3 class="text-xs font-bold tracking-wide" style="color: var(--text-secondary);">最近动态</h3>
+            <button onclick="App.switchPage('timeline')" class="text-[11px] font-semibold flex items-center gap-0.5" style="color: var(--brand-primary);">
+              查看全部时间线 <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+          <div id="recentPreviewContainer" class="space-y-2"></div>
+        </section>
+      </div>
+
+      <!-- PAGE 2: TIMELINE (时间线专属页 - 搜索/标签/完整历史) -->
+      <div id="pageTimeline" class="space-y-3 hidden">
+        <div class="flex items-center gap-2">
+          <div class="flex-1 flex items-center gap-2 px-3 h-10 rounded-full border" style="background-color: var(--bg-card); border-color: var(--border-card);">
+            <i data-lucide="search" class="w-4 h-4 shrink-0" style="color: var(--text-muted);"></i>
+            <input id="timelineSearchInput" type="text" placeholder="搜索备注、里程碑、药品名称、标签…" oninput="App.renderTimeline()" class="w-full bg-transparent text-xs outline-none" style="color: var(--text-primary);" />
+          </div>
+          <button onclick="App.openTagManagerSheet()" class="h-10 px-3 rounded-full border text-xs font-semibold flex items-center gap-1.5 shrink-0" style="background-color: var(--bg-card); border-color: var(--border-card); color: var(--text-secondary);">
+            <i data-lucide="tag" class="w-3.5 h-3.5"></i>
+            <span id="timelineTagFilterLabel">全部标签</span>
+          </button>
+        </div>
+
+        <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1" id="timelineFilterChips"></div>
+        <div id="timelineContainer" class="space-y-2"></div>
+      </div>
+
+      <!-- PAGE 3: GROWTH & HEALTH (成长与健康专属页 - 体格快照 + 用药 + WHO曲线) -->
+      <div id="pageGrowth" class="space-y-3.5 hidden">
+        <!-- Health Quick Entry Grid (3x2) -->
+        <section>
+          <div class="flex items-center justify-between px-0.5 mb-2">
+            <h3 class="text-xs font-bold tracking-wide" style="color: var(--text-secondary);">记录健康与体格测量</h3>
+            <span class="text-[11px]" style="color: var(--text-muted);">支持自动计算 BMI</span>
+          </div>
+          <div class="grid grid-cols-3 gap-2" id="growthHealthGrid"></div>
+        </section>
+
+        <!-- Latest Measurements Snapshot -->
+        <section class="nursery-card-elevated p-3.5">
+          <h3 class="text-xs font-bold mb-2.5" style="color: var(--text-secondary);">最新体格与用药快照</h3>
+          <div class="grid grid-cols-2 gap-2" id="growthSnapshotGrid"></div>
+        </section>
+
+        <!-- WHO Growth Standards Card -->
+        <section class="nursery-card p-4">
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <h3 class="text-sm font-bold">WHO 世卫生长发育曲线</h3>
+            <span class="text-[10.5px] font-bold px-2 py-0.5 rounded-full hidden" style="background-color: var(--cat-weight-bg); color: var(--cat-weight-fg);" id="whoPercentileBadge"></span>
+          </div>
+          <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar mb-2.5" id="whoMetricChips"></div>
+          <p class="text-xs mb-2" style="color: var(--text-secondary);" id="whoLatestSummary"></p>
+          <div id="whoChartContainer" class="w-full"></div>
+        </section>
+      </div>
+
+      <!-- PAGE 4: STATS (统计报表页 - 喂养/睡眠/尿布节律分析) -->
+      <div id="pageStats" class="space-y-3.5 hidden">
+        <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar" id="statsRangeChips"></div>
+
+        <section class="nursery-card-elevated p-4">
+          <div class="grid grid-cols-2 gap-2.5" id="statsKpiGrid"></div>
+          <div class="mt-3 pt-3 border-t text-xs flex items-center justify-between" style="border-color: var(--border-card);" id="statsBreastRatioBar"></div>
+        </section>
+
+        <section class="nursery-card p-4">
+          <div class="flex items-center justify-between mb-1">
+            <h3 class="text-sm font-bold">每日喂养奶量趋势 (ml)</h3>
+            <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full" style="background-color: var(--cat-feeding-bg); color: var(--cat-feeding-fg);" id="statsFeedBadge">日均</span>
+          </div>
+          <p class="text-xs mb-3" style="color: var(--text-secondary);" id="statsFeedSubtitle"></p>
+          <div id="statsFeedChart" class="w-full"></div>
+        </section>
+
+        <section class="nursery-card p-4">
+          <div class="flex items-center justify-between mb-1">
+            <h3 class="text-sm font-bold">24 小时睡眠作息分布</h3>
+            <div class="flex items-center gap-2 text-[10.5px]" style="color: var(--text-secondary);">
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm inline-block" style="background-color: #3D5A99;"></span>夜睡</span>
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm inline-block" style="background-color: #7FA3ED;"></span>小睡</span>
+            </div>
+          </div>
+          <p class="text-xs mb-3" style="color: var(--text-secondary);" id="statsSleepSubtitle"></p>
+          <div id="statsSleepPatternChart" class="w-full space-y-1.5"></div>
+        </section>
+
+        <section class="nursery-card p-4">
+          <h3 class="text-sm font-bold mb-1">尿布统计与便便颜色分布</h3>
+          <p class="text-xs mb-3" style="color: var(--text-secondary);" id="statsDiaperSubtitle"></p>
+          <div id="statsDiaperBreakdown" class="space-y-2"></div>
+        </section>
+      </div>
+    </main>
+
+    <!-- Bottom Navigation (4 Pages + Center Floating Quick Add) -->
+    <nav class="fixed bottom-0 inset-x-0 z-40 border-t" style="background-color: var(--bg-card); border-color: var(--border-card); padding-bottom: env(safe-area-inset-bottom, 0px);">
+      <div class="max-w-[480px] mx-auto grid grid-cols-5 h-16 items-center">
+        <button onclick="App.switchPage('today')" id="navBtnToday" class="flex flex-col items-center justify-center gap-0.5 font-semibold text-[11px] transition-colors">
+          <i data-lucide="home" class="w-5 h-5"></i>
+          <span>今日</span>
+        </button>
+        <button onclick="App.switchPage('timeline')" id="navBtnTimeline" class="flex flex-col items-center justify-center gap-0.5 font-semibold text-[11px] transition-colors">
+          <i data-lucide="clock" class="w-5 h-5"></i>
+          <span>时间线</span>
+        </button>
+        <div class="flex justify-center">
+          <button onclick="App.openQuickMenuSheet()" aria-label="快速记一笔" class="w-12 h-12 -mt-5 rounded-full flex items-center justify-center text-white shadow-lg active:scale-95 transition-transform" style="background-color: var(--brand-primary); box-shadow: 0 6px 16px -2px rgba(224, 122, 95, 0.48);">
+            <i data-lucide="plus" class="w-6 h-6"></i>
+          </button>
+        </div>
+        <button onclick="App.switchPage('growth')" id="navBtnGrowth" class="flex flex-col items-center justify-center gap-0.5 font-semibold text-[11px] transition-colors">
+          <i data-lucide="heart-pulse" class="w-5 h-5"></i>
+          <span>成长</span>
+        </button>
+        <button onclick="App.switchPage('stats')" id="navBtnStats" class="flex flex-col items-center justify-center gap-0.5 font-semibold text-[11px] transition-colors">
+          <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+          <span>统计</span>
+        </button>
+      </div>
+    </nav>
+  </div>
+
+  <!-- Global Bottom Sheet Overlay -->
+  <div id="sheetOverlay" class="fixed inset-0 z-50 hidden items-end justify-center sheet-backdrop" onclick="if(event.target === this) App.closeSheet()">
+    <div id="sheetPanel" class="sheet-panel w-full max-w-[480px] max-h-[88dvh] overflow-y-auto p-5 pb-8" onclick="event.stopPropagation()"></div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toastBanner" class="fixed top-16 left-1/2 -translate-x-1/2 z-[60] px-4 py-2 rounded-full text-xs font-semibold shadow-lg pointer-events-none opacity-0 transition-opacity duration-200" style="background-color: var(--text-primary); color: var(--bg-surface);"></div>
+
+  <script src="who-data.js?v=2"></script>
+  <script src="app.js?v=2"></script>
+  <script src="pose-watch-lab.js?v=1"></script>
+</body>
+</html>
