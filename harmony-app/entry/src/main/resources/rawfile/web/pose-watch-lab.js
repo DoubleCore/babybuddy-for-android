@@ -26,9 +26,19 @@
     sitting_awake: { lElbow: 156, rElbow: 158, lShoulder: 36, rShoulder: 38, lKnee: 108, rKnee: 110, roll: 0 },
   };
 
+  const SHORT_POSE_LABELS = {
+    none: '检测中',
+    supine_calm: '仰卧',
+    side_left: '左侧卧',
+    side_right: '右侧卧',
+    prone_head_up: '趴卧',
+    limb_active: '体动',
+    sitting_awake: '坐起',
+  };
+
   let lab = {
     monitoring: false,
-    zoomRatio: 2.0,
+    zoomRatio: 1.0,
     panX: 0,
     panY: 0,
     threshold: 5,
@@ -397,15 +407,9 @@
           const by = res.box.top * c.height;
           const bw = (res.box.right - res.box.left) * c.width;
           const bh = (res.box.bottom - res.box.top) * c.height;
-          ctx.strokeStyle = lab.alarmRinging ? '#FF3B5C' : (res.pose === 'limb_active' ? '#FF9F1C' : '#2EC4B6');
-          ctx.lineWidth = 2.5;
+          ctx.strokeStyle = lab.alarmRinging ? '#FB7185' : (res.pose === 'limb_active' ? '#FBBF24' : '#34D399');
+          ctx.lineWidth = 2;
           ctx.strokeRect(bx, by, bw, bh);
-          const tagStr = `${lab.poseLabel} · Δ${Math.round(lab.lastAngleDeltaDeg)}°`;
-          ctx.fillStyle = 'rgba(15, 23, 42, 0.82)';
-          ctx.fillRect(bx, Math.max(4, by - 22), Math.min(c.width - bx - 4, 175), 20);
-          ctx.fillStyle = '#FFFFFF';
-          ctx.font = 'bold 11px sans-serif';
-          ctx.fillText(tagStr, bx + 6, Math.max(18, by - 8));
         }
 
         const thumb = c.toDataURL('image/jpeg', 0.5);
@@ -432,130 +436,156 @@
   }
 
   function updateConsoleDom() {
-    const poseEl = document.getElementById('poseLabCurrentPose');
-    if (!poseEl) return;
-    poseEl.textContent = `${lab.poseLabel} (Δ${Math.round(lab.lastAngleDeltaDeg)}° / 阈值≥${lab.angleThresholdDeg}°)`;
-    document.getElementById('poseLabChangeCnt').textContent = `${lab.changeTimestamps.length} / ${lab.threshold} 次 (${lab.windowSec}s)`;
-    document.getElementById('poseLabAnglesText').textContent = formatAnglesSummary(lab.angles);
-    document.getElementById('poseLabZoomLabel').textContent = `🔍 远距画面放大：${lab.zoomRatio.toFixed(1)}x`;
-    document.getElementById('poseLabHistory').textContent = lab.recentHistory.length
-      ? `最近角度轨迹：${lab.recentHistory.join(' · ')}`
-      : '最近角度轨迹：关节角度稳定（忽略像素微晃）';
+    const poseBadge = document.getElementById('poseLabPoseBadge');
+    if (!poseBadge) return;
+    const shortPose = SHORT_POSE_LABELS[lab.poseCode] || '检测中';
+    poseBadge.textContent = lab.poseCode === 'none'
+      ? shortPose
+      : `${shortPose} · ${lab.changeTimestamps.length}/${lab.threshold}`;
 
-    const banner = document.getElementById('poseLabBanner');
-    if (lab.alarmRinging) {
-      banner.style.backgroundColor = '#4C0519';
-      banner.style.color = '#FDA4AF';
-      banner.textContent = '🚨 关节角度连续大幅变化！判定苏醒，已拉响闹钟并同步手表';
-    } else {
-      banner.style.backgroundColor = '#112A28';
-      banner.style.color = '#6EE7B7';
-      banner.textContent = '🌙 骨骼关节角度监测中 · 仅当关节角度大幅跳变时计次';
+    const zoomBadge = document.getElementById('poseLabZoomBadge');
+    if (zoomBadge) {
+      zoomBadge.textContent = `${lab.zoomRatio.toFixed(1)}x`;
+      zoomBadge.classList.toggle('hidden', lab.zoomRatio <= 1.05);
+    }
+
+    const alarmBar = document.getElementById('poseLabAlarmBar');
+    if (alarmBar) alarmBar.classList.toggle('hidden', !lab.alarmRinging);
+
+    const dot = document.getElementById('poseLabStatusDot');
+    const statusTv = document.getElementById('poseLabStatusText');
+    if (dot && statusTv) {
+      const snoozeLeft = lab.snoozeUntilMs > Date.now() ? Math.ceil((lab.snoozeUntilMs - Date.now()) / 1000) : 0;
+      if (lab.alarmRinging) {
+        dot.style.backgroundColor = '#F43F5E';
+        statusTv.textContent = '醒来';
+      } else if (snoozeLeft > 0) {
+        dot.style.backgroundColor = '#60A5FA';
+        statusTv.textContent = `静音 ${snoozeLeft}s`;
+      } else if (lab.changeTimestamps.length >= Math.ceil(lab.threshold / 2)) {
+        dot.style.backgroundColor = '#FBBF24';
+        statusTv.textContent = `体动 ${lab.changeTimestamps.length}/${lab.threshold}`;
+      } else {
+        dot.style.backgroundColor = '#34D399';
+        statusTv.textContent = '安睡';
+      }
     }
   }
 
-  function bindCanvasDrag(canvas) {
+  function bindCanvasGestures(canvas) {
     let dragging = false, lx = 0, ly = 0;
-    const start = (x, y) => { dragging = true; lx = x; ly = y; };
-    const move = (x, y) => {
+    let pinchStartDist = 0, pinchStartZoom = 1.0;
+    let lastTapAt = 0;
+    canvas.style.touchAction = 'none';
+
+    const dist2 = (t0, t1) => Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
+    const startPan = (x, y) => { dragging = true; lx = x; ly = y; };
+    const movePan = (x, y) => {
       if (!dragging || lab.zoomRatio <= 1.05) return;
       const dx = x - lx, dy = y - ly;
       lx = x; ly = y;
-      lab.panX = Math.max(-1, Math.min(1, lab.panX - (dx / canvas.clientWidth) * 1.8));
-      lab.panY = Math.max(-1, Math.min(1, lab.panY - (dy / canvas.clientHeight) * 1.8));
+      lab.panX = Math.max(-1, Math.min(1, lab.panX - (dx / Math.max(1, canvas.clientWidth)) * 1.8));
+      lab.panY = Math.max(-1, Math.min(1, lab.panY - (dy / Math.max(1, canvas.clientHeight)) * 1.8));
     };
-    canvas.addEventListener('mousedown', e => start(e.clientX, e.clientY));
-    window.addEventListener('mousemove', e => move(e.clientX, e.clientY));
+
+    canvas.addEventListener('mousedown', e => startPan(e.clientX, e.clientY));
+    window.addEventListener('mousemove', e => movePan(e.clientX, e.clientY));
     window.addEventListener('mouseup', () => { dragging = false; });
+    canvas.addEventListener('wheel', e => {
+      e.preventDefault();
+      const factor = e.deltaY < 0 ? 1.12 : 0.89;
+      PoseWatchLab.setZoom(lab.zoomRatio * factor);
+    }, { passive: false });
+
     canvas.addEventListener('touchstart', e => {
-      if (e.touches.length === 1) start(e.touches[0].clientX, e.touches[0].clientY);
+      if (e.touches.length === 2) {
+        dragging = false;
+        pinchStartDist = dist2(e.touches[0], e.touches[1]);
+        pinchStartZoom = lab.zoomRatio;
+      } else if (e.touches.length === 1) {
+        const now = Date.now();
+        if (now - lastTapAt < 280) {
+          PoseWatchLab.setZoom(lab.zoomRatio < 1.8 ? 2.5 : 1.0);
+          lastTapAt = 0;
+          return;
+        }
+        lastTapAt = now;
+        startPan(e.touches[0].clientX, e.touches[0].clientY);
+      }
     }, { passive: true });
+
     canvas.addEventListener('touchmove', e => {
-      if (e.touches.length === 1) move(e.touches[0].clientX, e.touches[0].clientY);
-    }, { passive: true });
-    canvas.addEventListener('touchend', () => { dragging = false; });
+      if (e.touches.length === 2 && pinchStartDist > 8) {
+        e.preventDefault();
+        const curDist = dist2(e.touches[0], e.touches[1]);
+        PoseWatchLab.setZoom(pinchStartZoom * (curDist / pinchStartDist));
+      } else if (e.touches.length === 1) {
+        if (lab.zoomRatio > 1.05) e.preventDefault();
+        movePan(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', e => {
+      if (e.touches.length < 2) pinchStartDist = 0;
+      if (e.touches.length === 0) dragging = false;
+    });
   }
 
   function openConsole() {
     ensureAudio();
-    const watchUrl = `${window.location.origin}${window.location.pathname}?mode=watch`;
     const overlay = document.getElementById('sheetOverlay');
     const panel = document.getElementById('sheetPanel');
     panel.innerHTML = `
-      <div class="flex items-center justify-between mb-2.5">
-        <div>
-          <h3 class="text-base font-bold">🧪 婴儿姿态角度看护（待测）</h3>
-          <p class="text-[11px]" style="color: var(--text-secondary);">关节角度跳变判定 · 远距放大 · 闹钟与手表访问</p>
+      <div class="flex items-center justify-between mb-3">
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full chip-base text-xs font-bold">
+          <span id="poseLabStatusDot" class="w-2 h-2 rounded-full" style="background-color:#34D399;"></span>
+          <span id="poseLabStatusText">安睡</span>
         </div>
-        <button onclick="PoseWatchLab.closeConsole()" class="px-3 py-1 rounded-full text-xs font-semibold chip-base">收起</button>
+        <button onclick="PoseWatchLab.closeConsole()" class="w-8 h-8 rounded-full text-sm font-bold chip-base flex items-center justify-center">✕</button>
       </div>
 
-      <div id="poseLabBanner" class="rounded-2xl px-3.5 py-2.5 text-xs font-bold mb-3" style="background-color:#112A28; color:#6EE7B7;">
-        🌙 骨骼关节角度监测中 · 仅当关节角度大幅跳变时计次
-      </div>
-
-      <div class="relative rounded-2xl overflow-hidden bg-slate-950 mb-2.5 border" style="border-color: var(--border-card); height: 210px;">
-        <canvas id="poseLabCanvas" width="480" height="300" class="w-full h-full object-contain cursor-grab"></canvas>
+      <div class="relative rounded-3xl overflow-hidden bg-slate-950 mb-3 border" style="border-color: var(--border-card); height: 320px;">
+        <canvas id="poseLabCanvas" width="480" height="360" class="w-full h-full object-contain cursor-grab"></canvas>
         <div id="poseLabHint" class="absolute inset-0 flex items-center justify-center text-xs text-slate-400 px-6 text-center pointer-events-none">
-          正在请求摄像头画面...
+          正在开启相机...
         </div>
+        <div id="poseLabPoseBadge" class="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[11px] font-bold text-white pointer-events-none" style="background: rgba(13,17,23,0.68);">
+          检测中
+        </div>
+        <button id="poseLabZoomBadge" onclick="PoseWatchLab.setZoom(1)" class="hidden absolute top-3 right-3 px-2.5 py-1 rounded-full text-[11px] font-bold text-white" style="background: rgba(13,17,23,0.68);">
+          1.0x
+        </button>
       </div>
 
-      <div class="mb-3 p-3 rounded-2xl border" style="background-color: var(--bg-surface); border-color: var(--border-card);">
-        <div class="flex items-center justify-between mb-1.5">
-          <span class="text-xs font-bold" id="poseLabZoomLabel">🔍 远距画面放大：${lab.zoomRatio.toFixed(1)}x</span>
-          <span class="text-[10.5px]" style="color: var(--text-muted);">拖动画面可移动放大区域</span>
-        </div>
-        <input id="poseLabZoomInput" type="range" min="1" max="8" step="0.1" value="${lab.zoomRatio}"
-          oninput="PoseWatchLab.setZoom(this.value)" class="w-full accent-orange-500 mb-2" />
-        <div class="flex gap-1.5 overflow-x-auto no-scrollbar">
-          ${[1, 2, 3.5, 5, 8].map(z => `<button onclick="PoseWatchLab.setZoom(${z})" class="px-2.5 py-1 rounded-full text-[11px] font-semibold chip-base">${z}x</button>`).join('')}
-          <button onclick="PoseWatchLab.flipCamera()" class="px-2.5 py-1 rounded-full text-[11px] font-semibold chip-base">切换前后镜头</button>
-        </div>
+      <div id="poseLabAlarmBar" class="hidden grid grid-cols-3 gap-2 mb-3">
+        <button onclick="PoseWatchLab.dismissAlarm()" class="col-span-2 h-11 rounded-2xl text-sm font-bold text-white" style="background-color:#F43F5E;">关闭闹钟</button>
+        <button onclick="PoseWatchLab.snoozeAlarm()" class="h-11 rounded-2xl text-xs font-bold chip-base">贪睡 3m</button>
       </div>
 
-      <div class="mb-3 p-3 rounded-2xl border space-y-1.5" style="background-color: var(--bg-surface); border-color: var(--border-card);">
+      <div class="grid grid-cols-3 gap-2 mb-2">
+        <button onclick="PoseWatchLab.flipCamera()" class="h-10 rounded-2xl text-xs font-bold chip-base">切换镜头</button>
+        <a href="?mode=watch" target="_blank" class="h-10 rounded-2xl text-xs font-bold chip-base inline-flex items-center justify-center">手表</a>
+        <button onclick="document.getElementById('poseLabSettingsBox').classList.toggle('hidden')" class="h-10 rounded-2xl text-xs font-bold chip-base">设置</button>
+      </div>
+
+      <div id="poseLabSettingsBox" class="hidden mt-2 p-3 rounded-2xl border space-y-2.5" style="background-color: var(--bg-surface); border-color: var(--border-card);">
         <div class="flex items-center justify-between text-xs">
-          <span style="color: var(--text-secondary);">当前动作与角度差</span>
-          <span class="font-bold" id="poseLabCurrentPose">${lab.poseLabel}</span>
-        </div>
-        <div class="text-[11px] font-medium" style="color: var(--text-secondary);" id="poseLabAnglesText">${formatAnglesSummary(lab.angles)}</div>
-        <div class="flex items-center justify-between text-xs">
-          <span style="color: var(--text-secondary);">窗口内大幅角度变化</span>
-          <span class="font-bold" style="color: var(--brand-primary);" id="poseLabChangeCnt">0 / ${lab.threshold} 次 (${lab.windowSec}s)</span>
-        </div>
-        <div class="flex items-center justify-between text-xs pt-1">
-          <span style="color: var(--text-secondary);">角度跳变阈值</span>
+          <span style="color: var(--text-secondary);">角度灵敏度</span>
           <div class="flex gap-1">
-            ${[15, 25, 35, 45].map(deg => `<button onclick="PoseWatchLab.setAngleThresh(${deg})" class="px-2 py-0.5 rounded-full text-[11px] font-semibold ${lab.angleThresholdDeg === deg ? 'chip-active' : 'chip-base'}">≥${deg}°</button>`).join('')}
+            ${[15, 25, 35, 45].map(deg => `<button data-angle-deg="${deg}" onclick="PoseWatchLab.setAngleThresh(${deg})" class="px-2 py-0.5 rounded-full text-[11px] font-semibold ${lab.angleThresholdDeg === deg ? 'chip-active' : 'chip-base'}">≥${deg}°</button>`).join('')}
           </div>
         </div>
-        <div class="flex items-center justify-between text-xs pt-1">
-          <span style="color: var(--text-secondary);">唤醒变化次数阈值</span>
+        <div class="flex items-center justify-between text-xs">
+          <span style="color: var(--text-secondary);">唤醒次数</span>
           <div class="flex items-center gap-2">
             <button onclick="PoseWatchLab.stepThreshold(-1)" class="w-7 h-7 rounded-full chip-base font-bold">-</button>
-            <span class="font-bold" id="poseLabThreshVal">${lab.threshold} 次</span>
+            <span class="font-bold" id="poseLabThreshVal">${lab.threshold}</span>
             <button onclick="PoseWatchLab.stepThreshold(1)" class="w-7 h-7 rounded-full chip-base font-bold">+</button>
           </div>
         </div>
-        <p class="text-[11px] pt-1" style="color: var(--text-muted);" id="poseLabHistory">最近角度轨迹：关节角度稳定（忽略像素微晃）</p>
-      </div>
-
-      <div class="mb-3 p-3 rounded-2xl border space-y-2" style="background-color: var(--bg-surface); border-color: var(--border-card);">
-        <div class="text-xs font-bold">① 唤醒闹钟控制 &amp; ② 手表端访问</div>
-        <div class="grid grid-cols-2 gap-2">
-          <button onclick="PoseWatchLab.dismissAlarm()" class="h-10 rounded-xl text-xs font-bold text-white" style="background-color:#E11D48;">🔕 关闭闹钟</button>
-          <button onclick="PoseWatchLab.snoozeAlarm()" class="h-10 rounded-xl text-xs font-bold chip-base">💤 贪睡 3 分钟</button>
-          <button onclick="PoseWatchLab.simStep()" class="h-9 rounded-xl text-[11px] font-semibold chip-base">➕ 模拟预设动作角度切换</button>
-          <button onclick="PoseWatchLab.testAlarm()" class="h-9 rounded-xl text-[11px] font-semibold chip-base">🔔 测试闹钟+手表</button>
-        </div>
-        <div class="pt-1 border-t text-[11px]" style="border-color: var(--border-card); color: var(--text-secondary);">
-          ⌚ 手表模式入口：<code class="px-1.5 py-0.5 rounded bg-black/10 select-all">${watchUrl}</code>
-          <div class="mt-2">
-            <a href="?mode=watch" target="_blank" class="inline-flex items-center justify-center w-full h-9 rounded-xl text-xs font-bold text-white" style="background-color: var(--brand-primary);">
-              ⌚ 打开手表端表盘视图 (Watch Mode)
-            </a>
-          </div>
+        <div class="grid grid-cols-2 gap-2 pt-1">
+          <button onclick="PoseWatchLab.simStep()" class="h-9 rounded-xl text-xs font-semibold chip-base">模拟一次</button>
+          <button onclick="PoseWatchLab.testAlarm()" class="h-9 rounded-xl text-xs font-semibold chip-base">测试闹钟</button>
         </div>
       </div>
     `;
@@ -564,7 +594,7 @@
     requestAnimationFrame(() => overlay.classList.add('sheet-open'));
 
     const canvas = document.getElementById('poseLabCanvas');
-    if (canvas) bindCanvasDrag(canvas);
+    if (canvas) bindCanvasGestures(canvas);
     startCamera();
     updateConsoleDom();
   }
@@ -696,7 +726,13 @@
     },
     setAngleThresh(deg) {
       lab.angleThresholdDeg = Number(deg) || 25;
-      openConsole();
+      document.querySelectorAll('[data-angle-deg]').forEach(btn => {
+        const active = Number(btn.getAttribute('data-angle-deg')) === lab.angleThresholdDeg;
+        btn.classList.toggle('chip-active', active);
+        btn.classList.toggle('chip-base', !active);
+      });
+      broadcastSnapshot();
+      updateConsoleDom();
     },
     flipCamera() {
       lab.facingMode = lab.facingMode === 'environment' ? 'user' : 'environment';
@@ -705,7 +741,7 @@
     stepThreshold(delta) {
       lab.threshold = Math.min(12, Math.max(2, lab.threshold + delta));
       const el = document.getElementById('poseLabThreshVal');
-      if (el) el.textContent = `${lab.threshold} 次`;
+      if (el) el.textContent = `${lab.threshold}`;
       broadcastSnapshot();
       updateConsoleDom();
     },

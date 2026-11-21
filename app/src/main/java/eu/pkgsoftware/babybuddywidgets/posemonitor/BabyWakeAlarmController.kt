@@ -1,7 +1,6 @@
 package eu.pkgsoftware.babybuddywidgets.posemonitor
 
 import android.Manifest
-import android.app.AlarmManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -24,7 +23,6 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import eu.pkgsoftware.babybuddywidgets.MainActivity
 import eu.pkgsoftware.babybuddywidgets.R
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
@@ -168,7 +166,6 @@ object BabyWakeAlarmController {
         ensureChannel(appCtx)
         startRingingAndVibration(appCtx)
         postAlarmAndWearableNotification(appCtx, babyName, snapshot)
-        scheduleAlarmClockIndicator(appCtx, babyName)
 
         if (syncSystemClock) {
             launchSystemClockAlarmIfAvailable(appCtx, babyName)
@@ -302,17 +299,6 @@ object BabyWakeAlarmController {
             if (!granted) return
         }
 
-        val openIntent = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
-            putExtra(BabyWakeAlarmReceiver.EXTRA_OPEN_POSE_MONITOR, true)
-        }
-        val openPi = PendingIntent.getActivity(
-            context,
-            NOTIFICATION_ID,
-            openIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
         val dismissIntent = Intent(context, BabyWakeAlarmReceiver::class.java).apply {
             action = BabyWakeAlarmReceiver.ACTION_DISMISS_ALARM
         }
@@ -333,8 +319,8 @@ object BabyWakeAlarmController {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val title = "🚨 ${babyName}即将醒来（姿态连续变化 ${snapshot.changeCount} 次）"
-        val body = "当前姿态：${snapshot.currentPose.zhLabel} · 请及时查看或通过手表关闭闹钟"
+        val title = "${babyName}可能醒了"
+        val body = "${snapshot.currentPose.zhLabel} · 点击关闭闹钟"
 
         val dismissAction = NotificationCompat.Action.Builder(
             R.drawable.ic_check_save,
@@ -353,19 +339,19 @@ object BabyWakeAlarmController {
             .addAction(dismissAction)
             .addAction(snoozeAction)
 
+        // Single tap on the notification directly dismisses the alarm & notification without opening any page
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_schedule_clock)
             .setContentTitle(title)
             .setContentText(body)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setOngoing(true)
-            .setAutoCancel(false)
-            .setContentIntent(openPi)
-            .setFullScreenIntent(openPi, true)
-            .addAction(dismissAction)
+            .setOngoing(false)
+            .setAutoCancel(true)
+            .setOnlyAlertOnce(true)
+            .setContentIntent(dismissPi)
+            .setDeleteIntent(dismissPi)
             .addAction(snoozeAction)
             .extend(wearableExtender)
             .build()
@@ -374,35 +360,6 @@ object BabyWakeAlarmController {
             NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
         } catch (t: SecurityException) {
             Log.w(TAG, "Notification permission denied", t)
-        }
-    }
-
-    private fun scheduleAlarmClockIndicator(context: Context, babyName: String) {
-        val am = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
-        val showIntent = Intent(context, MainActivity::class.java).apply {
-            putExtra(BabyWakeAlarmReceiver.EXTRA_OPEN_POSE_MONITOR, true)
-        }
-        val showPi = PendingIntent.getActivity(
-            context,
-            NOTIFICATION_ID + 10,
-            showIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        val triggerIntent = Intent(context, BabyWakeAlarmReceiver::class.java).apply {
-            action = BabyWakeAlarmReceiver.ACTION_ALARM_CLOCK_FIRED
-            putExtra("baby_name", babyName)
-        }
-        val triggerPi = PendingIntent.getBroadcast(
-            context,
-            NOTIFICATION_ID + 11,
-            triggerIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        try {
-            val info = AlarmManager.AlarmClockInfo(System.currentTimeMillis() + 500L, showPi)
-            am.setAlarmClock(info, triggerPi)
-        } catch (t: SecurityException) {
-            Log.d(TAG, "Exact AlarmClock indicator skipped: ${t.message}")
         }
     }
 
