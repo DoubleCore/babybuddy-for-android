@@ -221,12 +221,21 @@ struct WatchHomePage {
             .borderRadius(999)
             .maxLines(1)
 
-          // Current pose headline
-          Text(this.connected ? this.status.poseLabel : '宝宝看护手表端')
-            .fontSize(18)
+          // Current pose headline + joint angle delta
+          Text(this.connected ? `${this.status.poseLabel} · Δ${Math.round(this.status.lastAngleDeltaDeg)}°` : '宝宝看护手表端')
+            .fontSize(17)
             .fontWeight(FontWeight.Bold)
             .fontColor(this.status.alarmRinging ? '#FF6B84' : '#FFFFFF')
             .textAlign(TextAlign.Center)
+
+          if (this.connected && this.status.anglesSummary.length > 0) {
+            Text(this.status.anglesSummary)
+              .fontSize(10)
+              .fontColor('#7CE7DB')
+              .textAlign(TextAlign.Center)
+              .width('86%')
+              .maxLines(2)
+          }
 
           // Wake-up alarm emergency actions (front & center when ringing)
           if (this.status.alarmRinging) {

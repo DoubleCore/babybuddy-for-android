@@ -7,6 +7,9 @@ export interface WatchStatusPayload {
   targetDetected?: boolean;
   poseCode?: string;
   poseLabel?: string;
+  anglesSummary?: string;
+  lastAngleDeltaDeg?: number;
+  angleThresholdDeg?: number;
   changeCount?: number;
   threshold?: number;
   windowSec?: number;
@@ -25,6 +28,9 @@ export class WatchMonitorStatus {
   public targetDetected: boolean = false;
   public poseCode: string = 'none';
   public poseLabel: string = '等待连接手机端';
+  public anglesSummary: string = '';
+  public lastAngleDeltaDeg: number = 0;
+  public angleThresholdDeg: number = 25;
   public changeCount: number = 0;
   public threshold: number = 5;
   public windowSec: number = 30;
@@ -43,6 +49,9 @@ export class WatchMonitorStatus {
     status.targetDetected = Boolean(raw.targetDetected);
     status.poseCode = raw.poseCode ?? 'none';
     status.poseLabel = raw.poseLabel ?? '未检测到婴儿';
+    status.anglesSummary = raw.anglesSummary ?? '';
+    status.lastAngleDeltaDeg = typeof raw.lastAngleDeltaDeg === 'number' ? raw.lastAngleDeltaDeg : 0;
+    status.angleThresholdDeg = typeof raw.angleThresholdDeg === 'number' && raw.angleThresholdDeg > 0 ? raw.angleThresholdDeg : 25;
     status.changeCount = typeof raw.changeCount === 'number' ? raw.changeCount : 0;
     status.threshold = typeof raw.threshold === 'number' && raw.threshold > 0 ? raw.threshold : 5;
     status.windowSec = typeof raw.windowSec === 'number' && raw.windowSec > 0 ? raw.windowSec : 30;
