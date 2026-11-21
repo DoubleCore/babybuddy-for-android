@@ -190,6 +190,30 @@ class MainActivity : AppCompatActivity() {
         }
         enableBackNavigationButton(false)
         tutorialAccess
+        handlePoseMonitorIntent(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handlePoseMonitorIntent(intent)
+    }
+
+    private fun handlePoseMonitorIntent(intent: Intent?) {
+        if (intent?.getBooleanExtra(
+                eu.pkgsoftware.babybuddywidgets.posemonitor.BabyWakeAlarmReceiver.EXTRA_OPEN_POSE_MONITOR,
+                false
+            ) == true
+        ) {
+            intent.removeExtra(eu.pkgsoftware.babybuddywidgets.posemonitor.BabyWakeAlarmReceiver.EXTRA_OPEN_POSE_MONITOR)
+            binding.root.post {
+                val firstChild = repository.listChildren().firstOrNull()
+                eu.pkgsoftware.babybuddywidgets.posemonitor.BabyPoseMonitorDialog.show(
+                    supportFragmentManager,
+                    firstChild?.fullName ?: "宝宝"
+                )
+            }
+        }
     }
 
     override fun onStart() {

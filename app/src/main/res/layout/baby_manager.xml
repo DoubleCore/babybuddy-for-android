@@ -491,17 +491,108 @@
                     app:singleLine="true" />
             </HorizontalScrollView>
 
-            <!-- ==================== 2. QUICK RECORD 3x2 PASTEL TILES (快捷记录) ==================== -->
-            <TextView
-                android:layout_width="wrap_content"
+            <!-- ==================== 2. QUICK RECORD 3x2 PASTEL TILES (快捷记录 + 隐藏待测入口) ==================== -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="4dp"
                 android:layout_marginTop="10dp"
+                android:layout_marginEnd="4dp"
                 android:layout_marginBottom="8dp"
-                android:text="@string/bf_quick_record_title"
-                android:textColor="@color/text_primary_warm"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/bf_quick_record_title"
+                    android:textColor="@color/text_primary_warm"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <!-- Subtle hidden experimental lab toggle inside the functional area -->
+                <TextView
+                    android:id="@+id/btnTogglePoseLabHidden"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:alpha="0.48"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:paddingStart="8dp"
+                    android:paddingTop="3dp"
+                    android:paddingEnd="6dp"
+                    android:paddingBottom="3dp"
+                    android:text="@string/pose_lab_hidden_toggle"
+                    android:textColor="@color/text_muted_warm"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+            <!-- Collapsible hidden experimental item (hidden by default so main display stays clean) -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/poseLabHiddenEntryCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:visibility="gone"
+                app:cardBackgroundColor="@color/card_surface"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/card_stroke"
+                app:strokeWidth="1dp"
+                tools:visibility="visible">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="12dp"
+                    android:paddingTop="10dp"
+                    android:paddingEnd="12dp"
+                    android:paddingBottom="10dp">
+
+                    <ImageView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:layout_marginEnd="10dp"
+                        android:importantForAccessibility="no"
+                        app:srcCompat="@drawable/ic_schedule_clock"
+                        app:tint="@color/bf_purple_primary" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/pose_lab_entry_title"
+                            android:textColor="@color/text_primary_warm"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="1dp"
+                            android:text="@string/pose_lab_entry_sub"
+                            android:textColor="@color/text_muted_warm"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:importantForAccessibility="no"
+                        app:srcCompat="@drawable/ic_bf_chevron_right" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
             <LinearLayout
                 android:id="@+id/newTimerButtons"

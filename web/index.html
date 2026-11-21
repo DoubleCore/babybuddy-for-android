@@ -127,7 +127,17 @@
         <section>
           <div class="flex items-center justify-between px-0.5 mb-2">
             <h3 class="text-xs font-bold tracking-wide" style="color: var(--text-secondary);">日常照护快捷记录</h3>
-            <button onclick="App.openQuickMenuSheet()" class="text-[11px] font-semibold" style="color: var(--brand-primary);">全部 12 类 ›</button>
+            <div class="flex items-center gap-2.5">
+              <button onclick="PoseWatchLab.toggleHiddenEntry()" class="text-[10.5px] opacity-50 hover:opacity-95 transition-opacity" style="color: var(--text-muted);" title="展开待测实验项目">待测 ▾</button>
+              <button onclick="App.openQuickMenuSheet()" class="text-[11px] font-semibold" style="color: var(--brand-primary);">全部 12 类 ›</button>
+            </div>
+          </div>
+          <div id="poseLabWebHiddenCard" onclick="PoseWatchLab.openConsole()" class="hidden mb-2.5 p-2.5 rounded-2xl border cursor-pointer flex items-center justify-between transition-colors" style="background-color: var(--bg-card); border-color: var(--border-card);">
+            <div class="min-w-0">
+              <div class="text-xs font-bold truncate">🧪 [待测] 婴儿姿态检测 · 闹钟与手表联动</div>
+              <div class="text-[10.5px] truncate" style="color: var(--text-muted);">摄像头远距放大 · 频变苏醒判定 · 极速闹钟与手表端访问</div>
+            </div>
+            <i data-lucide="chevron-right" class="w-4 h-4 shrink-0" style="color: var(--text-muted);"></i>
           </div>
           <div class="grid grid-cols-3 gap-2" id="dailyCareGrid"></div>
         </section>
@@ -266,5 +276,6 @@
 
   <script src="who-data.js?v=2"></script>
   <script src="app.js?v=2"></script>
+  <script src="pose-watch-lab.js?v=1"></script>
 </body>
 </html>

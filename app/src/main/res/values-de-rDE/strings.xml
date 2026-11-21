@@ -509,4 +509,11 @@
     <string name="setting_clear_all_data_confirm_1">Möchten Sie wirklich ALLE lokalen Babyprofile, Einträge und Fotos löschen? Bitte exportieren Sie vorher ein ZIP-Backup.</string>
     <string name="setting_clear_all_data_confirm_2">Letzte Bestätigung: Die lokale Datenbank wird unwiderruflich gelöscht. Jetzt alles löschen?</string>
     <string name="setting_clear_all_data_done">Alle lokalen Daten wurden gelöscht</string>
+    <string name="pose_alarm_channel_name">Baby-Haltungs-Aufwachalarm</string>
+    <string name="pose_alarm_channel_desc">Sofortiger Alarm und Smartwatch-Warnung bei häufigen Haltungsänderungen</string>
+    <string name="pose_alarm_action_dismiss">Alarm stoppen</string>
+    <string name="pose_alarm_action_snooze">3 Min. schlummern</string>
+    <string name="pose_lab_hidden_toggle">Labor ▾</string>
+    <string name="pose_lab_entry_title">[Test] Baby-Haltungs- &amp; Uhr-Monitor</string>
+    <string name="pose_lab_entry_sub">Kamera-Zoom · Haltungsanalyse · Wecker &amp; Smartwatch</string>
 </resources>

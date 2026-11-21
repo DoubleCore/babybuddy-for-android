@@ -593,4 +593,11 @@
     <string name="setting_clear_all_data_confirm_1">Are you sure you want to erase ALL local baby profiles, records, and photos? Please export a ZIP backup first if you want to keep a copy.</string>
     <string name="setting_clear_all_data_confirm_2">Final confirmation: This will permanently wipe the local database and cannot be undone. Erase everything now?</string>
     <string name="setting_clear_all_data_done">All local data has been cleared</string>
+    <string name="pose_alarm_channel_name">Baby Wake-Up Pose Alarm</string>
+    <string name="pose_alarm_channel_desc">Immediate alarm and smartwatch alert when baby posture changes frequently</string>
+    <string name="pose_alarm_action_dismiss">Dismiss Alarm</string>
+    <string name="pose_alarm_action_snooze">Snooze 3 min</string>
+    <string name="pose_lab_hidden_toggle">Lab ▾</string>
+    <string name="pose_lab_entry_title">[Beta] Baby Pose &amp; Watch Wake Monitor</string>
+    <string name="pose_lab_entry_sub">Camera zoom · Pose analysis · Fast alarm &amp; Watch link</string>
 </resources>

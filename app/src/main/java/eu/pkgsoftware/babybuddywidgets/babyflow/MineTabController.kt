@@ -303,6 +303,55 @@ class MineTabController(
         sysCard.addView(sysCol)
         col.addView(sysCard)
 
+        // Hidden Experimental Lab Section (collapsed by default so normal display remains clean)
+        val hiddenContainer = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            visibility = View.GONE
+        }
+        val hiddenLabCard = MaterialCardView(ctx).apply {
+            radius = 18.dp().toFloat()
+            cardElevation = 0f
+            setCardBackgroundColor(ContextCompat.getColor(ctx, R.color.card_surface))
+            strokeColor = ContextCompat.getColor(ctx, R.color.card_stroke)
+            strokeWidth = 1.dp()
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = 6.dp(); bottomMargin = 12.dp() }
+        }
+        hiddenLabCard.addView(
+            makeMenuRow(
+                iconRes = R.drawable.ic_schedule_clock,
+                badgeBgRes = R.color.bf_cell_sleep,
+                title = ctx.getString(R.string.pose_lab_entry_title),
+                subtitle = ctx.getString(R.string.pose_lab_entry_sub),
+                tintIcon = true
+            ) {
+                val cName = selectedChild?.fullName?.ifBlank { selectedChild?.firstName.orEmpty() }
+                eu.pkgsoftware.babybuddywidgets.posemonitor.BabyPoseMonitorDialog.show(
+                    fragment.parentFragmentManager,
+                    cName
+                )
+            }
+        )
+        hiddenContainer.addView(hiddenLabCard)
+
+        val toggleLabTv = TextView(ctx).apply {
+            text = ctx.getString(R.string.pose_lab_hidden_toggle)
+            gravity = Gravity.CENTER
+            textSize = 11.5f
+            alpha = 0.52f
+            setTextColor(ContextCompat.getColor(ctx, R.color.text_muted_warm))
+            setPadding(12.dp(), 4.dp(), 12.dp(), 8.dp())
+            setOnClickListener {
+                val expand = hiddenContainer.visibility != View.VISIBLE
+                hiddenContainer.visibility = if (expand) View.VISIBLE else View.GONE
+                alpha = if (expand) 0.9f else 0.52f
+            }
+        }
+        col.addView(toggleLabTv)
+        col.addView(hiddenContainer)
+
         scroll.addView(col)
         rootView = scroll
     }

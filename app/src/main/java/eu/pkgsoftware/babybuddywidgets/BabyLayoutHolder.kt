@@ -144,6 +144,20 @@ class BabyLayoutHolder(
         binding.timelineTagFilterButton.setOnClickListener {
             showTagFilterDialog()
         }
+
+        binding.btnTogglePoseLabHidden.setOnClickListener {
+            val nextVisible = binding.poseLabHiddenEntryCard.visibility != View.VISIBLE
+            binding.poseLabHiddenEntryCard.visibility = if (nextVisible) View.VISIBLE else View.GONE
+            binding.btnTogglePoseLabHidden.alpha = if (nextVisible) 0.9f else 0.48f
+        }
+
+        binding.poseLabHiddenEntryCard.setOnClickListener {
+            val name = child?.fullName?.ifBlank { child?.firstName.orEmpty() }
+            eu.pkgsoftware.babybuddywidgets.posemonitor.BabyPoseMonitorDialog.show(
+                baseFragment.parentFragmentManager,
+                name
+            )
+        }
     }
 
     fun currentEntriesSnapshot(): List<TimeEntry> {

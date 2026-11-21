@@ -565,4 +565,11 @@
     <string name="setting_clear_all_data_confirm_1">Weet u zeker dat u ALLE lokale babyprofielen, gegevens en foto\'s wilt wissen? Exporteer eerst een ZIP-back-up als u een kopie wilt bewaren.</string>
     <string name="setting_clear_all_data_confirm_2">Laatste bevestiging: Dit wist de lokale database definitief en kan niet ongedaan worden gemaakt. Nu alles wissen?</string>
     <string name="setting_clear_all_data_done">Alle lokale gegevens zijn gewist</string>
+    <string name="pose_alarm_channel_name">Babyhouding Wekalarm</string>
+    <string name="pose_alarm_channel_desc">Direct alarm en smartwatch-melding bij frequente houdingsveranderingen</string>
+    <string name="pose_alarm_action_dismiss">Alarm stoppen</string>
+    <string name="pose_alarm_action_snooze">3 min snoozen</string>
+    <string name="pose_lab_hidden_toggle">Lab ▾</string>
+    <string name="pose_lab_entry_title">[Test] Babyhouding &amp; Horloge-monitor</string>
+    <string name="pose_lab_entry_sub">Camerazoom · Houdingsanalyse · Wekker &amp; Smartwatch</string>
 </resources>

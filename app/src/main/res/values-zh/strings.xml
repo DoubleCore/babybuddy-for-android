@@ -561,4 +561,11 @@
     <string name="setting_clear_all_data_confirm_1">确定要清空本机上的全部宝宝档案、历史记录和照片吗？建议操作前先导出 .zip 完整备份包。</string>
     <string name="setting_clear_all_data_confirm_2">最终确认：此操作将彻底清空本地数据库且不可恢复，确定立即清空吗？</string>
     <string name="setting_clear_all_data_done">已清空全部本地数据</string>
+    <string name="pose_alarm_channel_name">婴儿姿态苏醒唤醒闹钟</string>
+    <string name="pose_alarm_channel_desc">当检测到婴儿姿态频繁变化即将醒来时，立即触发响铃与手表同步提醒</string>
+    <string name="pose_alarm_action_dismiss">关闭闹钟</string>
+    <string name="pose_alarm_action_snooze">贪睡 3 分钟</string>
+    <string name="pose_lab_hidden_toggle">待测 ▾</string>
+    <string name="pose_lab_entry_title">[待测] 婴儿姿态检测 · 闹钟与手表联动</string>
+    <string name="pose_lab_entry_sub">摄像头远距放大 · 频变苏醒判定 · 极速闹钟与手表端访问</string>
 </resources>
