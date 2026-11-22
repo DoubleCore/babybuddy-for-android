@@ -20,18 +20,18 @@ target_include_directories(babybuddy_ncnn_pose PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/ncnn-headers/${ANDROID_ABI}"
 )
 
+# IMPORTANT: Do NOT link a second static LLVM libomp here (`libncnn.so` already manages
+# its own internal OpenMP runtime; a duplicate static libomp defaults KMP_BLOCKTIME=200ms
+# and busy-spins big CPU cores at 100% between camera frames!).
 target_compile_options(babybuddy_ncnn_pose PRIVATE
     -O3
     -ffast-math
     -fno-rtti
     -fno-exceptions
-    -fopenmp
     -fvisibility=hidden
 )
 
 target_link_options(babybuddy_ncnn_pose PRIVATE
-    -fopenmp
-    -static-openmp
     -Wl,-z,max-page-size=16384
 )
 

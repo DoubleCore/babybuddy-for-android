@@ -93,7 +93,8 @@ enum class PoseEngineMode(
  */
 data class PoseDetectionConfig(
     val engineMode: PoseEngineMode = PoseEngineMode.YOLO26N_NCNN_320,
-    val preferVulkanGpu: Boolean = true,
+    val preferVulkanGpu: Boolean = false,
+    val targetAnalysisFps: Int = 10,
     val minLandmarkConfidence: Float = 0.45f,
     val angleThresholdDeg: Float = 22f,
     val rollThresholdDeg: Float = 28f,

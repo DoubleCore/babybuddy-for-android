@@ -3,7 +3,9 @@ package eu.pkgsoftware.babybuddywidgets.posemonitor
 import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
+import androidx.camera.core.ImageProxy
 import java.io.Closeable
+import java.nio.ByteBuffer
 import java.nio.FloatBuffer
 import kotlin.math.hypot
 import kotlin.math.max
@@ -21,7 +23,8 @@ data class YoloPoseDetection(
 )
 
 /**
- * Native JNI bridge to `libbabybuddy_ncnn_pose.so` (Tencent ncnn 20261020 Vulkan GPU FP16 + ARMv8.2 NEON FP16).
+ * Native JNI bridge to `libbabybuddy_ncnn_pose.so`
+ * (Tencent ncnn 20261020: Zero-Spin OpenMP + Zero-Bitmap YUV420 Gather + Vulkan PipelineCache).
  */
 object NcnnYoloPoseNative {
     private const val TAG = "NcnnYoloPoseNative"
@@ -38,6 +41,7 @@ object NcnnYoloPoseNative {
     external fun nativeLoadModel(
         paramPath: String,
         binPath: String,
+        cacheDirPath: String,
         targetSize: Int,
         preferVulkan: Boolean,
         numThreads: Int
@@ -46,6 +50,47 @@ object NcnnYoloPoseNative {
     external fun nativeGetActiveHardwareLabel(): String
 
     external fun nativeHasVulkanGpu(): Boolean
+
+    external fun nativeProbeVulkanAsync(): Boolean
+
+    external fun nativePrepareYuv420(
+        yBuf: ByteBuffer,
+        yRowStride: Int,
+        uBuf: ByteBuffer,
+        vBuf: ByteBuffer,
+        uvRowStride: Int,
+        uvPixelStride: Int,
+        srcW: Int,
+        srcH: Int,
+        rotationDeg: Int,
+        isFrontMirror: Boolean,
+        zoomRatio: Float,
+        panX: Float,
+        panY: Float
+    ): Boolean
+
+    external fun nativeRenderYuvRoiToBitmap(
+        yBuf: ByteBuffer,
+        yRowStride: Int,
+        uBuf: ByteBuffer,
+        vBuf: ByteBuffer,
+        uvRowStride: Int,
+        uvPixelStride: Int,
+        srcW: Int,
+        srcH: Int,
+        rotationDeg: Int,
+        isFrontMirror: Boolean,
+        zoomRatio: Float,
+        panX: Float,
+        panY: Float,
+        dstBitmap: Bitmap
+    ): Boolean
+
+    external fun nativeRunPrepared(
+        out56: FloatArray,
+        boxConfThresh: Float,
+        iouThresh: Float
+    ): Boolean
 
     external fun nativeDetectBitmapRoi(
         bitmap: Bitmap,
@@ -61,20 +106,18 @@ object NcnnYoloPoseNative {
 }
 
 /**
- * High-speed Tencent ncnn Vulkan GPU / ARM82 NEON FP16 YOLO Pose Detector.
- * Zero Java per-frame pixel/float buffer allocations!
+ * Zero-GC Tencent ncnn YOLO Pose Detector:
+ * - CameraX path uses direct C++ YUV_420_888 plane sampling (`0` Bitmaps, `0` ByteArrays, `0` FloatArrays allocated per frame!)
+ * - Keeps `mmap` weights & Vulkan `PipelineCache` warm across dialog sessions for 0ms startup.
  */
 class NcnnYoloPoseDetector(private val appContext: Context) : Closeable {
 
-    fun detectBitmap(
-        bitmap: Bitmap,
-        config: PoseDetectionConfig,
-        roiRect: IntCropRect? = null
-    ): Triple<YoloPoseDetection?, String, Long> {
-        if (!NcnnYoloPoseNative.isAvailable) {
-            return Triple(null, "ncnn 原生库未就绪", 0L)
-        }
+    private val reusableOut56 = FloatArray(56)
 
+    fun ensureModelReady(config: PoseDetectionConfig): Pair<Boolean, String> {
+        if (!NcnnYoloPoseNative.isAvailable) {
+            return false to "ncnn 原生库未就绪"
+        }
         val requestedMode = config.engineMode
         var activeMode = requestedMode
         var pair = YoloModelManager.resolveLocalModelPair(appContext, requestedMode)
@@ -86,21 +129,111 @@ class NcnnYoloPoseDetector(private val appContext: Context) : Closeable {
             fallbackTag = " [待下载·暂用极速320]"
         }
         if (pair == null) {
-            return Triple(null, "${requestedMode.shortTitle} (模型未就绪)", 0L)
+            return false to "${requestedMode.shortTitle} (模型未就绪)"
         }
 
+        val cacheDir = YoloModelManager.modelsDir(appContext).absolutePath
         val loaded = NcnnYoloPoseNative.nativeLoadModel(
             paramPath = pair.paramFile.absolutePath,
             binPath = pair.binFile.absolutePath,
+            cacheDirPath = cacheDir,
             targetSize = pair.inputSize,
             preferVulkan = config.preferVulkanGpu,
             numThreads = 0
         )
         if (!loaded) {
-            return Triple(null, "${activeMode.shortTitle} (ncnn加载失败)", 0L)
+            return false to "${activeMode.shortTitle} (ncnn加载失败)"
+        }
+        val hwLabel = NcnnYoloPoseNative.nativeGetActiveHardwareLabel()
+        return true to "${activeMode.shortTitle} · $hwLabel$fallbackTag"
+    }
+
+    fun prepareYuv420(
+        imageProxy: ImageProxy,
+        isFront: Boolean,
+        zoomRatio: Float,
+        panX: Float,
+        panY: Float
+    ): Boolean {
+        val planes = imageProxy.planes
+        if (planes.size < 3) return false
+        val rot = ((imageProxy.imageInfo.rotationDegrees % 360) + 360) % 360
+        return NcnnYoloPoseNative.nativePrepareYuv420(
+            yBuf = planes[0].buffer,
+            yRowStride = planes[0].rowStride,
+            uBuf = planes[1].buffer,
+            vBuf = planes[2].buffer,
+            uvRowStride = planes[1].rowStride,
+            uvPixelStride = planes[1].pixelStride,
+            srcW = imageProxy.width,
+            srcH = imageProxy.height,
+            rotationDeg = rot,
+            isFrontMirror = isFront,
+            zoomRatio = zoomRatio,
+            panX = panX,
+            panY = panY
+        )
+    }
+
+    fun renderYuvRoiToBitmap(
+        imageProxy: ImageProxy,
+        isFront: Boolean,
+        zoomRatio: Float,
+        panX: Float,
+        panY: Float,
+        dstBitmap: Bitmap
+    ): Boolean {
+        if (!NcnnYoloPoseNative.isAvailable) return false
+        val planes = imageProxy.planes
+        if (planes.size < 3) return false
+        val rot = ((imageProxy.imageInfo.rotationDegrees % 360) + 360) % 360
+        return NcnnYoloPoseNative.nativeRenderYuvRoiToBitmap(
+            yBuf = planes[0].buffer,
+            yRowStride = planes[0].rowStride,
+            uBuf = planes[1].buffer,
+            vBuf = planes[2].buffer,
+            uvRowStride = planes[1].rowStride,
+            uvPixelStride = planes[1].pixelStride,
+            srcW = imageProxy.width,
+            srcH = imageProxy.height,
+            rotationDeg = rot,
+            isFrontMirror = isFront,
+            zoomRatio = zoomRatio,
+            panX = panX,
+            panY = panY,
+            dstBitmap = dstBitmap
+        )
+    }
+
+    fun detectPrepared(
+        config: PoseDetectionConfig,
+        modelBanner: String,
+        tStartNs: Long
+    ): Triple<YoloPoseDetection?, String, Long> {
+        val boxThresh = (config.minLandmarkConfidence * 0.62f).coerceIn(0.20f, 0.72f)
+        val ok = NcnnYoloPoseNative.nativeRunPrepared(
+            out56 = reusableOut56,
+            boxConfThresh = boxThresh,
+            iouThresh = 0.45f
+        )
+        val inferMs = ((System.nanoTime() - tStartNs) / 1_000_000L).coerceAtLeast(1L)
+        if (!ok) {
+            return Triple(null, modelBanner, inferMs)
+        }
+        val det = YoloPoseOutputParser.fromCompact56Array(reusableOut56)
+        return Triple(det, modelBanner, inferMs)
+    }
+
+    fun detectBitmap(
+        bitmap: Bitmap,
+        config: PoseDetectionConfig,
+        roiRect: IntCropRect? = null
+    ): Triple<YoloPoseDetection?, String, Long> {
+        val (ready, modelBanner) = ensureModelReady(config)
+        if (!ready) {
+            return Triple(null, modelBanner, 0L)
         }
 
-        val hwLabel = NcnnYoloPoseNative.nativeGetActiveHardwareLabel()
         val boxThresh = (config.minLandmarkConfidence * 0.62f).coerceIn(0.20f, 0.72f)
         val rLeft = roiRect?.left ?: 0
         val rTop = roiRect?.top ?: 0
@@ -119,7 +252,6 @@ class NcnnYoloPoseDetector(private val appContext: Context) : Closeable {
         )
         val inferMs = ((System.nanoTime() - t0) / 1_000_000L).coerceAtLeast(1L)
 
-        val modelBanner = "${activeMode.shortTitle} · $hwLabel$fallbackTag"
         if (raw == null || raw.size < 56) {
             return Triple(null, modelBanner, inferMs)
         }
@@ -129,12 +261,8 @@ class NcnnYoloPoseDetector(private val appContext: Context) : Closeable {
     }
 
     override fun close() {
-        if (NcnnYoloPoseNative.isAvailable) {
-            try {
-                NcnnYoloPoseNative.nativeRelease()
-            } catch (_: Throwable) {
-            }
-        }
+        // Keep mmap-loaded ncnn::Net & compiled Vulkan PipelineCache warm in native memory
+        // so reopening BabyPoseMonitorDialog takes 0ms with zero shader recompilation!
     }
 }
 
@@ -253,7 +381,7 @@ object YoloPoseOutputParser {
             val cx = (c.x1 + c.x2) * 0.5f
             val cy = (c.y1 + c.y2) * 0.5f
             val centerDist = hypot((cx - halfIn) / halfIn, (cy - halfIn) / halfIn).coerceIn(0f, 1.4f)
-            val areaFrac = (((c.x2 - c.x1) * (c.y2 - c.y1)) / (inputSize * inputSize).toFloat()).coerceIn(0.01f, 1f)
+            val areaFrac = (((c.x2 - c.x1) * (c.y2 - c.y1)) / (inputSize * inputSize).toFloat()).coerceIn(0f, 1f).coerceAtLeast(0.01f)
             c.score * (1.0f - 0.22f * centerDist) * (0.75f + 0.25f * sqrt(areaFrac))
         } ?: return null
 

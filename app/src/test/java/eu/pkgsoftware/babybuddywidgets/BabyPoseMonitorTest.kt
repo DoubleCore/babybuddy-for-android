@@ -530,5 +530,10 @@ class BabyPoseMonitorTest {
         assertNotNull(det)
         assertEquals(0.92f, det!!.boxScore, 0.01f)
         assertEquals(0.5f, det.keypoints.nose!!.x, 0.01f)
+
+        // Verify zero-jank smooth-frame defaults (non-preempting NEON FP16 + 10 FPS pacing)
+        val defCfg = PoseDetectionConfig.PRESET_BALANCED
+        assertFalse("Default should leave GPU 100% dedicated to 60FPS PreviewView", defCfg.preferVulkanGpu)
+        assertEquals(10, defCfg.targetAnalysisFps)
     }
 }

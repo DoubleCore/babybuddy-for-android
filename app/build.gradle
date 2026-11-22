@@ -124,8 +124,8 @@ android {
         applicationId "eu.pkgsoftware.babybuddywidgets"
         minSdkVersion 29
         targetSdk 37
-        versionCode 56
-        versionName "3.2.0-standalone"
+        versionCode 57
+        versionName "3.2.1-standalone"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         ndk {
