@@ -27,7 +27,7 @@ class MlKitBabyPoseDetector(context: Context? = null) : Closeable {
     }
 
     private val appContext: Context? = context?.applicationContext
-    private val yoloDetector: OnnxYoloPoseDetector? = appContext?.let { OnnxYoloPoseDetector(it) }
+    private val yoloDetector: NcnnYoloPoseDetector? = appContext?.let { NcnnYoloPoseDetector(it) }
     private val visionAnalyzer = LightweightVisionPoseAnalyzer(GRID_SIZE, GRID_SIZE)
     private val gridPixels = IntArray(GRID_SIZE * GRID_SIZE)
     private var prevSmoothedKeypoints: PoseKeypoints? = null
@@ -57,15 +57,7 @@ class MlKitBabyPoseDetector(context: Context? = null) : Closeable {
                     val opts = AccuratePoseDetectorOptions.Builder()
                         .setDetectorMode(AccuratePoseDetectorOptions.SINGLE_IMAGE_MODE)
                         .setPreferredHardwareConfigs(AccuratePoseDetectorOptions.CPU_GPU)
-                        .build()
-                    PoseDetection.getClient(opts)
-                }
-                PoseEngineMode.ACCURATE_STREAM -> {
-                    val opts = AccuratePoseDetectorOptions.Builder()
-                        .setDetectorMode(AccuratePoseDetectorOptions.STREAM_MODE)
-                        .setPreferredHardwareConfigs(AccuratePoseDetectorOptions.CPU_GPU)
-                        .build()
-                    PoseDetection.getClient(opts)
+                    PoseDetection.getClient(opts.build())
                 }
                 else -> {
                     val opts = PoseDetectorOptions.Builder()
@@ -98,7 +90,8 @@ class MlKitBabyPoseDetector(context: Context? = null) : Closeable {
      */
     fun analyzeRoiBitmap(
         roiBitmap: Bitmap,
-        config: PoseDetectionConfig = PoseDetectionConfig.PRESET_BALANCED
+        config: PoseDetectionConfig = PoseDetectionConfig.PRESET_BALANCED,
+        roiRect: IntCropRect? = null
     ): PoseFrameResult {
         val fallbackContourResult = if (config.enableContourFallback) {
             val scaledGrid = Bitmap.createScaledBitmap(roiBitmap, GRID_SIZE, GRID_SIZE, true)
@@ -121,9 +114,9 @@ class MlKitBabyPoseDetector(context: Context? = null) : Closeable {
             )
         }
 
-        // Branch 1: Ultralytics YOLO Pose ONNX Engine (YOLO26n bundled / YOLO11s / YOLO11m / Custom)
+        // Branch 1: Tencent ncnn Vulkan GPU / ARM82 FP16 YOLO Pose Engine
         if (config.engineMode.isYolo && yoloDetector != null) {
-            val (yoloDet, activeModelLabel, inferMs) = yoloDetector.detectRoi(roiBitmap, config)
+            val (yoloDet, activeModelLabel, inferMs) = yoloDetector.detectBitmap(roiBitmap, config, roiRect)
             if (yoloDet != null) {
                 val (classified, nextSmoothed) = MlKitPoseClassifier.classifyFromKeypoints(
                     rawKeypoints = yoloDet.keypoints,

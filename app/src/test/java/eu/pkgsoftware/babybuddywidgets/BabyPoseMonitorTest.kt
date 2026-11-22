@@ -1,7 +1,5 @@
 package eu.pkgsoftware.babybuddywidgets
 
-import ai.onnxruntime.OnnxTensor
-import ai.onnxruntime.OrtEnvironment
 import eu.pkgsoftware.babybuddywidgets.posemonitor.BabyPoseLabel
 import eu.pkgsoftware.babybuddywidgets.posemonitor.BabyWakeUpTracker
 import eu.pkgsoftware.babybuddywidgets.posemonitor.LightweightVisionPoseAnalyzer
@@ -504,42 +502,33 @@ class BabyPoseMonitorTest {
     }
 
     @Test
-    fun bundledYolo26nPoseOnnx_loadsAndRunsEndToEndInOrtSession() {
-        val candidates = listOf(
-            File("src/main/assets/models/yolo26n-pose.onnx"),
-            File("app/src/main/assets/models/yolo26n-pose.onnx")
-        )
-        val modelFile = candidates.firstOrNull { it.exists() }
-        assertNotNull("Bundled yolo26n-pose.onnx must exist in app/src/main/assets/models/", modelFile)
-        assertTrue("Bundled yolo26n-pose.onnx must be > 5 MB", modelFile!!.length() > 5L * 1024L * 1024L)
+    fun bundledNcnnFp16PoseModels_haveValidMagicHeadersBlobsAndWeights() {
+        val baseDir = listOf(
+            File("src/main/assets/models"),
+            File("app/src/main/assets/models")
+        ).firstOrNull { it.exists() }
+        assertNotNull("assets/models directory must exist", baseDir)
 
-        val env = OrtEnvironment.getEnvironment()
-        env.createSession(modelFile.absolutePath).use { session ->
-            val inputName = session.inputNames.first()
-            assertEquals("images", inputName)
-            val blankBuf = FloatBuffer.allocate(3 * 640 * 640)
-            OnnxTensor.createTensor(env, blankBuf, longArrayOf(1L, 3L, 640L, 640L)).use { inTensor ->
-                session.run(mapOf(inputName to inTensor)).use { res ->
-                    val outTensor = res.get(0) as OnnxTensor
-                    val shape = outTensor.info.shape
-                    assertEquals(3, shape.size)
-                    assertEquals(1L, shape[0])
-                    assertEquals(300L, shape[1])
-                    assertEquals(57L, shape[2])
-                    // Blank gray input should produce zero false-positive person detections!
-                    val det = YoloPoseOutputParser.decodeBestPerson(
-                        outBuffer = outTensor.floatBuffer,
-                        shape = shape,
-                        inputSize = 640,
-                        padX = 0f,
-                        padY = 0f,
-                        scaledW = 640f,
-                        scaledH = 640f,
-                        boxConfThreshold = 0.25f
-                    )
-                    assertEquals(null, det)
-                }
-            }
+        for ((prefix, expectedAnchors) in listOf("yolo26n_pose_320" to "2100", "yolo26n_pose_480" to "4725")) {
+            val paramFile = File(baseDir!!, "$prefix.param")
+            val binFile = File(baseDir, "$prefix.bin")
+            assertTrue("$prefix.param must exist", paramFile.exists())
+            assertTrue("$prefix.bin must exist and be > 5 MB", binFile.exists() && binFile.length() > 5L * 1024L * 1024L)
+
+            val paramText = paramFile.readText(Charsets.UTF_8)
+            assertTrue("$prefix.param must start with ncnn magic 7767517", paramText.trimStart().startsWith("7767517"))
+            assertTrue("$prefix.param must declare Input in0", paramText.contains("in0"))
+            assertTrue("$prefix.param must declare output out0", paramText.contains("out0"))
+            assertTrue("$prefix.param must contain anchor reshape $expectedAnchors", paramText.contains("0=$expectedAnchors"))
         }
+
+        // Verify compact 56-float JNI array decoding
+        val compact = FloatArray(56)
+        compact[0] = 0.2f; compact[1] = 0.15f; compact[2] = 0.8f; compact[3] = 0.9f; compact[4] = 0.92f
+        compact[5] = 0.5f; compact[6] = 0.22f; compact[7] = 0.98f // nose
+        val det = YoloPoseOutputParser.fromCompact56Array(compact)
+        assertNotNull(det)
+        assertEquals(0.92f, det!!.boxScore, 0.01f)
+        assertEquals(0.5f, det.keypoints.nose!!.x, 0.01f)
     }
 }

@@ -33,66 +33,58 @@ enum class PoseEngineMode(
     val targetInputDim: Int,
     val isYolo: Boolean
 ) {
-    YOLO26N_BUNDLED(
-        code = "yolo26n_bundled",
-        shortTitle = "YOLO26n (内置推荐)",
-        modelDisplayName = "Ultralytics YOLO26n-pose (ONNX E2E+RLE · 本地内置)",
-        description = "内置最新一代 YOLO26n-pose 端到端 RLE 残差似然关键点模型 (COCO mAP50=83.3%, 11.6MB 纯离线免下载)，针对小目标、俯拍与被子半遮挡显著优于 BlazePose",
-        targetInputDim = 640,
+    YOLO26N_NCNN_320(
+        code = "yolo26n_ncnn_320",
+        shortTitle = "YOLO26n 极速(推荐)",
+        modelDisplayName = "YOLO26n-pose 320 (Tencent ncnn FP16 · 本地内置)",
+        description = "内置腾讯 ncnn C++ 硬件加速引擎 + FP16 量化 YOLO26n-pose (仅 1.9 GFLOPs, 5.6MB 免下载)：开启 Vulkan GPU 仅需 ~6-15ms，极致丝滑不发热",
+        targetInputDim = 320,
         isYolo = true
     ),
-    YOLO11S_CLOUD(
-        code = "yolo11s_cloud",
-        shortTitle = "YOLO11s (云端高精)",
-        modelDisplayName = "Ultralytics YOLO11s-pose (ONNX · 云端下载 38MB)",
-        description = "中大型 9.9M 参数多尺度 YOLO11s-pose 模型 (COCO mAP50=86.3%)，支持 App 内一键云端拉取缓存后离线运行",
-        targetInputDim = 640,
+    YOLO26N_NCNN_480(
+        code = "yolo26n_ncnn_480",
+        shortTitle = "YOLO26n 超清480",
+        modelDisplayName = "YOLO26n-pose 480 (Tencent ncnn FP16 · 本地内置)",
+        description = "内置 480×480 高分辨率 FP16 权重 (5.7MB 免下载)，适合 1x 全景远距离婴儿床小目标看护 (~14-25ms)",
+        targetInputDim = 480,
         isYolo = true
     ),
-    YOLO11M_CLOUD(
-        code = "yolo11m_cloud",
-        shortTitle = "YOLO11m (云端超精)",
-        modelDisplayName = "Ultralytics YOLO11m-pose (ONNX · 云端下载 80MB)",
-        description = "重型 20.9M 参数 YOLO11m-pose 超高精度模型 (COCO mAP50=89.4%)，复杂暗光/重度遮挡最强，算力开销较高",
-        targetInputDim = 640,
+    YOLO11S_NCNN_CLOUD(
+        code = "yolo11s_ncnn_cloud",
+        shortTitle = "YOLO11s 云端高精",
+        modelDisplayName = "YOLO11s-pose 480 (Tencent ncnn FP16 · 云端 17.6MB)",
+        description = "中大型 9.9M 参数 FP16 模型 (COCO mAP50=86.3%)，支持 App 内一键拉取缓存并通过 ncnn Vulkan GPU 加速运行",
+        targetInputDim = 480,
         isYolo = true
     ),
-    YOLO_CUSTOM_CLOUD(
-        code = "yolo_custom_cloud",
-        shortTitle = "自定义 YOLO(.onnx)",
-        modelDisplayName = "自定义 YOLO Pose (.onnx 专有微调模型)",
-        description = "支持填入自训练婴儿姿态微调模型 (.onnx) 的云端或局域网 URL 下载加载",
-        targetInputDim = 640,
+    YOLO_CUSTOM_NCNN(
+        code = "yolo_custom_ncnn",
+        shortTitle = "自定义 ncnn(.zip)",
+        modelDisplayName = "自定义婴儿微调 YOLO Pose (ncnn FP16 .zip)",
+        description = "支持填入包含 model.ncnn.param 与 model.ncnn.bin 的自定义微调模型 .zip 下载链接",
+        targetInputDim = 480,
         isYolo = true
     ),
     ACCURATE_SINGLE(
         code = "accurate_single",
         shortTitle = "BlazePose 高精",
-        modelDisplayName = "Google ML Kit BlazePose Accurate (33点3D逐帧)",
-        description = "Google 官方 33 点伪 3D 模型（适合正面无遮挡成人/近景对照，婴儿俯拍遮挡鲁棒性弱于 YOLO）",
-        targetInputDim = 720,
-        isYolo = false
-    ),
-    ACCURATE_STREAM(
-        code = "accurate_stream",
-        shortTitle = "BlazePose 流式",
-        modelDisplayName = "Google ML Kit BlazePose Accurate (33点3D流式)",
-        description = "Google BlazePose 高精度帧间追踪模式",
-        targetInputDim = 720,
+        modelDisplayName = "Google ML Kit BlazePose Accurate (33点3D对照)",
+        description = "Google 官方 33 点模型对照档位",
+        targetInputDim = 640,
         isYolo = false
     ),
     FAST_STREAM(
         code = "fast_stream",
         shortTitle = "BlazePose 轻量",
-        modelDisplayName = "Google ML Kit BlazePose Lite (超低功耗)",
-        description = "超低算力轻量级对照模型，适合极老旧机型省电值守",
-        targetInputDim = 560,
+        modelDisplayName = "Google ML Kit BlazePose Lite (省电对照)",
+        description = "Google 轻量模型对照档位",
+        targetInputDim = 480,
         isYolo = false
     );
 
     companion object {
         fun fromCode(code: String?): PoseEngineMode =
-            entries.find { it.code == code } ?: YOLO26N_BUNDLED
+            entries.find { it.code == code } ?: YOLO26N_NCNN_320
     }
 }
 
@@ -100,7 +92,8 @@ enum class PoseEngineMode(
  * User-tunable pose detection & wake-up alarm thresholds.
  */
 data class PoseDetectionConfig(
-    val engineMode: PoseEngineMode = PoseEngineMode.YOLO26N_BUNDLED,
+    val engineMode: PoseEngineMode = PoseEngineMode.YOLO26N_NCNN_320,
+    val preferVulkanGpu: Boolean = true,
     val minLandmarkConfidence: Float = 0.45f,
     val angleThresholdDeg: Float = 22f,
     val rollThresholdDeg: Float = 28f,

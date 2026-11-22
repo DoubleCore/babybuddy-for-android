@@ -31,6 +31,10 @@ object BabyWatchServer {
     var boundPort: Int = DEFAULT_PORT
         private set
 
+    @Volatile
+    var lastClientPollAtMs: Long = 0L
+        private set
+
     private var serverSocket: ServerSocket? = null
     private var acceptExecutor: ExecutorService? = null
     private var workerPool: ExecutorService? = null
@@ -148,9 +152,11 @@ object BabyWatchServer {
                     writeTextResponse(out, 200, "OK", "text/html; charset=utf-8", buildWatchFaceHtml())
                 }
                 path == "/api/status" -> {
+                    lastClientPollAtMs = System.currentTimeMillis()
                     writeTextResponse(out, 200, "OK", "application/json; charset=utf-8", buildStatusJson())
                 }
                 path == "/api/snapshot.jpg" -> {
+                    lastClientPollAtMs = System.currentTimeMillis()
                     val bytes = PoseMonitorHub.latestJpegSnapshot
                     if (bytes != null && bytes.isNotEmpty()) {
                         writeBinaryResponse(out, 200, "OK", "image/jpeg", bytes)
