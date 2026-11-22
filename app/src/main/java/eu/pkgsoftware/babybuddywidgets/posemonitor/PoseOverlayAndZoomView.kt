@@ -6,18 +6,21 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
+import android.graphics.Typeface
 import android.util.AttributeSet
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
 import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.roundToInt
 
 /**
- * Minimalist interactive overlay rendered above the camera preview:
- * - Supports smooth 2-finger pinch-to-zoom (1.0x - 8.0x), 1-finger pan when zoomed in,
- *   and double-tap zoom toggle
- * - Draws a clean target bounding box, minimal skeleton overlay, and a compact ROI minimap when zoomed
+ * Aspect-accurate interactive overlay rendered above the camera preview:
+ * - Aligns skeleton & bounding boxes strictly to the FIT_CENTER bitmap viewport (zero letterbox stretch!)
+ * - Supports 2-finger pinch-to-zoom (1.0x - 8.0x), 1-finger pan, and double-tap zoom toggle
+ * - Renders 17-point skeleton, confidence-graded joints, optional joint angle labels, and ROI minimap
  */
 class PoseOverlayAndZoomView @JvmOverloads constructor(
     context: Context,
@@ -25,10 +28,13 @@ class PoseOverlayAndZoomView @JvmOverloads constructor(
 ) : View(context, attrs) {
 
     var onZoomPanChanged: ((zoomRatio: Float, panX: Float, panY: Float) -> Unit)? = null
+    var showJointAngleLabels: Boolean = true
 
     private var currentZoom: Float = 1.0f
     private var currentPanX: Float = 0f
     private var currentPanY: Float = 0f
+    private var frameWidthPx: Int = 0
+    private var frameHeightPx: Int = 0
     private var frameResult: PoseFrameResult? = null
     private var snapshot: WakeDecisionSnapshot? = null
 
@@ -47,14 +53,38 @@ class PoseOverlayAndZoomView @JvmOverloads constructor(
 
     private val bonePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
-        strokeWidth = 1.8f * density
+        strokeWidth = 2.2f * density
         strokeCap = Paint.Cap.ROUND
-        color = Color.argb(210, 255, 255, 255)
+        color = Color.argb(225, 255, 255, 255)
+    }
+
+    private val headBonePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = 1.5f * density
+        strokeCap = Paint.Cap.ROUND
+        color = Color.argb(180, 147, 197, 253)
     }
 
     private val jointPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
         color = Color.parseColor("#34D399")
+    }
+
+    private val jointRingPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = 1.2f * density
+        color = Color.argb(210, 15, 23, 42)
+    }
+
+    private val angleTagBgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL
+        color = Color.argb(175, 13, 17, 23)
+    }
+
+    private val angleTagTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.parseColor("#E2E8F0")
+        textSize = 9.5f * density
+        typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
     }
 
     private val miniMapBgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -73,6 +103,8 @@ class PoseOverlayAndZoomView @JvmOverloads constructor(
         strokeWidth = 1.6f * density
         color = Color.parseColor("#38BDF8")
     }
+
+    private val contentRect = RectF()
 
     private var lastTouchX = 0f
     private var lastTouchY = 0f
@@ -134,10 +166,33 @@ class PoseOverlayAndZoomView @JvmOverloads constructor(
         invalidate()
     }
 
-    fun updateDetection(result: PoseFrameResult?, decision: WakeDecisionSnapshot?) {
+    fun updateDetection(
+        result: PoseFrameResult?,
+        decision: WakeDecisionSnapshot?,
+        bitmapW: Int = frameWidthPx,
+        bitmapH: Int = frameHeightPx
+    ) {
         frameResult = result
         snapshot = decision
+        if (bitmapW > 0 && bitmapH > 0) {
+            frameWidthPx = bitmapW
+            frameHeightPx = bitmapH
+        }
         invalidate()
+    }
+
+    private fun computeFitCenterRect(viewW: Float, viewH: Float): RectF {
+        if (frameWidthPx <= 0 || frameHeightPx <= 0) {
+            contentRect.set(0f, 0f, viewW, viewH)
+            return contentRect
+        }
+        val scale = min(viewW / frameWidthPx.toFloat(), viewH / frameHeightPx.toFloat())
+        val drawW = frameWidthPx * scale
+        val drawH = frameHeightPx * scale
+        val left = (viewW - drawW) * 0.5f
+        val top = (viewH - drawH) * 0.5f
+        contentRect.set(left, top, left + drawW, top + drawH)
+        return contentRect
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -195,19 +250,27 @@ class PoseOverlayAndZoomView @JvmOverloads constructor(
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        val w = width.toFloat()
-        val h = height.toFloat()
-        if (w <= 4f || h <= 4f) return
+        val vw = width.toFloat()
+        val vh = height.toFloat()
+        if (vw <= 4f || vh <= 4f) return
+
+        val vp = computeFitCenterRect(vw, vh)
+        val ox = vp.left
+        val oy = vp.top
+        val cw = vp.width()
+        val ch = vp.height()
 
         val res = frameResult
         val snap = snapshot
         val isAlarm = snap?.isAlarmRinging == true
+        val minConf = (snap?.minConfidenceThreshold ?: 0.45f).coerceIn(0.15f, 0.90f)
 
         if (res != null && res.targetDetected && res.targetBox != null) {
             val b = res.targetBox
-            val rect = RectF(b.left * w, b.top * h, b.right * w, b.bottom * h)
+            val rect = RectF(ox + b.left * cw, oy + b.top * ch, ox + b.right * cw, oy + b.bottom * ch)
             val strokeColor = when {
                 isAlarm -> Color.parseColor("#FB7185")
+                res.poseLabel == BabyPoseLabel.PRONE_HEAD_UP -> Color.parseColor("#F97316")
                 res.poseLabel == BabyPoseLabel.LIMB_ACTIVE || res.poseLabel == BabyPoseLabel.SITTING_AWAKE ->
                     Color.parseColor("#FBBF24")
                 else -> Color.parseColor("#34D399")
@@ -225,59 +288,83 @@ class PoseOverlayAndZoomView @JvmOverloads constructor(
             canvas.drawRoundRect(rect, r, r, boxPaint)
 
             res.keypoints?.let { kp ->
-                drawBone(canvas, kp.leftShoulder, kp.rightShoulder, w, h)
-                if (kp.leftElbow != null && kp.leftElbow.confidence >= 0.3f) {
-                    drawBone(canvas, kp.leftShoulder, kp.leftElbow, w, h)
-                    drawBone(canvas, kp.leftElbow, kp.leftWrist, w, h)
+                // Head orientation contour
+                drawBone(canvas, kp.leftEar, kp.leftEye, ox, oy, cw, ch, minConf, headBonePaint)
+                drawBone(canvas, kp.leftEye, kp.nose, ox, oy, cw, ch, minConf, headBonePaint)
+                drawBone(canvas, kp.nose, kp.rightEye, ox, oy, cw, ch, minConf, headBonePaint)
+                drawBone(canvas, kp.rightEye, kp.rightEar, ox, oy, cw, ch, minConf, headBonePaint)
+
+                // Torso & limbs
+                drawBone(canvas, kp.leftShoulder, kp.rightShoulder, ox, oy, cw, ch, minConf, bonePaint)
+                if (kp.leftElbow != null && kp.leftElbow.confidence >= minConf) {
+                    drawBone(canvas, kp.leftShoulder, kp.leftElbow, ox, oy, cw, ch, minConf, bonePaint)
+                    drawBone(canvas, kp.leftElbow, kp.leftWrist, ox, oy, cw, ch, minConf, bonePaint)
                 } else {
-                    drawBone(canvas, kp.leftShoulder, kp.leftWrist, w, h)
+                    drawBone(canvas, kp.leftShoulder, kp.leftWrist, ox, oy, cw, ch, minConf, bonePaint)
                 }
-                if (kp.rightElbow != null && kp.rightElbow.confidence >= 0.3f) {
-                    drawBone(canvas, kp.rightShoulder, kp.rightElbow, w, h)
-                    drawBone(canvas, kp.rightElbow, kp.rightWrist, w, h)
+                if (kp.rightElbow != null && kp.rightElbow.confidence >= minConf) {
+                    drawBone(canvas, kp.rightShoulder, kp.rightElbow, ox, oy, cw, ch, minConf, bonePaint)
+                    drawBone(canvas, kp.rightElbow, kp.rightWrist, ox, oy, cw, ch, minConf, bonePaint)
                 } else {
-                    drawBone(canvas, kp.rightShoulder, kp.rightWrist, w, h)
+                    drawBone(canvas, kp.rightShoulder, kp.rightWrist, ox, oy, cw, ch, minConf, bonePaint)
                 }
 
-                drawBone(canvas, kp.leftShoulder, kp.leftHip, w, h)
-                drawBone(canvas, kp.rightShoulder, kp.rightHip, w, h)
-                drawBone(canvas, kp.leftHip, kp.rightHip, w, h)
+                drawBone(canvas, kp.leftShoulder, kp.leftHip, ox, oy, cw, ch, minConf, bonePaint)
+                drawBone(canvas, kp.rightShoulder, kp.rightHip, ox, oy, cw, ch, minConf, bonePaint)
+                drawBone(canvas, kp.leftHip, kp.rightHip, ox, oy, cw, ch, minConf, bonePaint)
 
-                if (kp.leftKnee != null && kp.leftKnee.confidence >= 0.3f) {
-                    drawBone(canvas, kp.leftHip, kp.leftKnee, w, h)
-                    drawBone(canvas, kp.leftKnee, kp.leftAnkle, w, h)
+                if (kp.leftKnee != null && kp.leftKnee.confidence >= minConf) {
+                    drawBone(canvas, kp.leftHip, kp.leftKnee, ox, oy, cw, ch, minConf, bonePaint)
+                    drawBone(canvas, kp.leftKnee, kp.leftAnkle, ox, oy, cw, ch, minConf, bonePaint)
                 } else {
-                    drawBone(canvas, kp.leftHip, kp.leftAnkle, w, h)
+                    drawBone(canvas, kp.leftHip, kp.leftAnkle, ox, oy, cw, ch, minConf, bonePaint)
                 }
-                if (kp.rightKnee != null && kp.rightKnee.confidence >= 0.3f) {
-                    drawBone(canvas, kp.rightHip, kp.rightKnee, w, h)
-                    drawBone(canvas, kp.rightKnee, kp.rightAnkle, w, h)
+                if (kp.rightKnee != null && kp.rightKnee.confidence >= minConf) {
+                    drawBone(canvas, kp.rightHip, kp.rightKnee, ox, oy, cw, ch, minConf, bonePaint)
+                    drawBone(canvas, kp.rightKnee, kp.rightAnkle, ox, oy, cw, ch, minConf, bonePaint)
                 } else {
-                    drawBone(canvas, kp.rightHip, kp.rightAnkle, w, h)
+                    drawBone(canvas, kp.rightHip, kp.rightAnkle, ox, oy, cw, ch, minConf, bonePaint)
                 }
 
-                if (kp.nose != null && kp.leftShoulder != null && kp.rightShoulder != null) {
+                val headRef = kp.headReferencePoint(minConf)
+                if (headRef != null && kp.leftShoulder != null && kp.rightShoulder != null &&
+                    kp.leftShoulder.confidence >= minConf && kp.rightShoulder.confidence >= minConf
+                ) {
                     val midShoulder = NormalizedPoint(
                         (kp.leftShoulder.x + kp.rightShoulder.x) * 0.5f,
-                        (kp.leftShoulder.y + kp.rightShoulder.y) * 0.5f
+                        (kp.leftShoulder.y + kp.rightShoulder.y) * 0.5f,
+                        min(kp.leftShoulder.confidence, kp.rightShoulder.confidence)
                     )
-                    drawBone(canvas, kp.nose, midShoulder, w, h)
+                    drawBone(canvas, headRef, midShoulder, ox, oy, cw, ch, minConf, bonePaint)
                 }
 
                 for (pt in kp.allPoints()) {
-                    if (pt.confidence >= 0.3f) {
-                        canvas.drawCircle(pt.x * w, pt.y * h, 3.0f * density, jointPaint)
+                    if (pt.confidence >= minConf) {
+                        val jx = ox + pt.x * cw
+                        val jy = oy + pt.y * ch
+                        val rad = (2.8f + pt.confidence * 1.4f) * density
+                        canvas.drawCircle(jx, jy, rad, jointPaint)
+                        canvas.drawCircle(jx, jy, rad, jointRingPaint)
                     }
+                }
+
+                if (showJointAngleLabels) {
+                    val ap = res.angleProfile
+                    drawAngleTag(canvas, kp.leftElbow, ap.leftElbowDeg, ox, oy, cw, ch, minConf)
+                    drawAngleTag(canvas, kp.rightElbow, ap.rightElbowDeg, ox, oy, cw, ch, minConf)
+                    drawAngleTag(canvas, kp.leftKnee, ap.leftKneeDeg, ox, oy, cw, ch, minConf)
+                    drawAngleTag(canvas, kp.rightKnee, ap.rightKneeDeg, ox, oy, cw, ch, minConf)
                 }
             }
         }
 
-        // Compact ROI minimap in bottom-right corner when zoomed in (> 1.05x)
+        // Compact ROI minimap in top-right/bottom-right corner when zoomed in (> 1.05x)
         if (currentZoom > 1.05f) {
             val mapW = 58f * density
             val mapH = 42f * density
             val margin = 12f * density
-            val mapRect = RectF(w - mapW - margin, h - mapH - margin, w - margin, h - margin)
+            val mapTop = max(margin, oy + 44f * density)
+            val mapRect = RectF(vw - mapW - margin, mapTop, vw - margin, mapTop + mapH)
             canvas.drawRoundRect(mapRect, 8f * density, 8f * density, miniMapBgPaint)
             canvas.drawRoundRect(mapRect, 8f * density, 8f * density, miniMapBorderPaint)
 
@@ -294,10 +381,34 @@ class PoseOverlayAndZoomView @JvmOverloads constructor(
         canvas: Canvas,
         a: NormalizedPoint?,
         b: NormalizedPoint?,
-        w: Float,
-        h: Float
+        ox: Float,
+        oy: Float,
+        cw: Float,
+        ch: Float,
+        minConf: Float,
+        paint: Paint
     ) {
-        if (a == null || b == null || a.confidence < 0.3f || b.confidence < 0.3f) return
-        canvas.drawLine(a.x * w, a.y * h, b.x * w, b.y * h, bonePaint)
+        if (a == null || b == null || a.confidence < minConf || b.confidence < minConf) return
+        canvas.drawLine(ox + a.x * cw, oy + a.y * ch, ox + b.x * cw, oy + b.y * ch, paint)
+    }
+
+    private fun drawAngleTag(
+        canvas: Canvas,
+        pt: NormalizedPoint?,
+        deg: Float?,
+        ox: Float,
+        oy: Float,
+        cw: Float,
+        ch: Float,
+        minConf: Float
+    ) {
+        if (pt == null || deg == null || pt.confidence < minConf) return
+        val label = "${deg.roundToInt()}°"
+        val tw = angleTagTextPaint.measureText(label)
+        val px = (ox + pt.x * cw + 6f * density).coerceIn(ox + 2f, ox + cw - tw - 10f * density)
+        val py = (oy + pt.y * ch - 6f * density).coerceIn(oy + 14f * density, oy + ch - 4f * density)
+        val bgRect = RectF(px - 4f * density, py - 10.5f * density, px + tw + 4f * density, py + 3f * density)
+        canvas.drawRoundRect(bgRect, 5f * density, 5f * density, angleTagBgPaint)
+        canvas.drawText(label, px, py, angleTagTextPaint)
     }
 }

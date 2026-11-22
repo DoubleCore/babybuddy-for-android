@@ -171,6 +171,14 @@ android {
             }
         }
     }
+    androidResources {
+        noCompress 'onnx'
+    }
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
     namespace 'eu.pkgsoftware.babybuddywidgets'
     lint {
         abortOnError false
@@ -208,9 +216,11 @@ dependencies {
     implementation "androidx.camera:camera-lifecycle:$camerax_version"
     implementation "androidx.camera:camera-view:$camerax_version"
     implementation "com.google.mlkit:pose-detection:18.0.0-beta5"
-    implementation "com.google.mlkit:object-detection:17.0.2"
+    implementation "com.google.mlkit:pose-detection-accurate:18.0.0-beta5"
+    implementation "com.microsoft.onnxruntime:onnxruntime-android:1.23.2"
 
     testImplementation 'junit:junit:4.13.2'
+    testImplementation "com.microsoft.onnxruntime:onnxruntime:1.23.2"
     testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2"
     testImplementation 'org.json:json:20250517'
     testImplementation 'org.robolectric:robolectric:4.14.1'

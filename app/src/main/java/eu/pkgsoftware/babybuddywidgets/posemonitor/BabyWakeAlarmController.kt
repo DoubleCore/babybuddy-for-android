@@ -47,6 +47,9 @@ object PoseMonitorHub {
     private val listeners = CopyOnWriteArrayList<Listener>()
 
     @Volatile
+    var detectionConfig: PoseDetectionConfig = PoseDetectionConfig.PRESET_BALANCED
+
+    @Volatile
     var babyName: String = "宝宝"
 
     @Volatile
@@ -72,6 +75,11 @@ object PoseMonitorHub {
 
     @Volatile
     var latestJpegSnapshot: ByteArray? = null
+
+    fun updateDetectionConfig(newConfig: PoseDetectionConfig) {
+        detectionConfig = newConfig
+        wakeTracker.applyConfig(newConfig)
+    }
 
     fun addListener(l: Listener) {
         if (!listeners.contains(l)) listeners.add(l)

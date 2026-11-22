@@ -20,6 +20,7 @@ import android.os.Handler
 import android.os.Looper
 import android.text.InputType
 import android.util.Log
+import android.util.Size
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
@@ -30,6 +31,9 @@ import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ProgressBar
+import android.widget.ScrollView
+import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -38,6 +42,8 @@ import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
+import androidx.camera.core.resolutionselector.ResolutionSelector
+import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
@@ -53,13 +59,15 @@ import java.io.ByteArrayOutputStream
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.roundToInt
 
 /**
- * Minimalist full-screen camera console for baby posture monitoring:
- * - Camera-first dark viewfinder with pure 2-finger pinch-to-zoom (1.0x - 8.0x) and pan
- * - Ultra-concise live status & pose pill
- * - Advanced thresholds, watch LAN access, and test triggers neatly tucked into dialogs
+ * High-precision camera console for baby posture monitoring:
+ * - 1080p HD source capture + 1.0x–8.0x ROI pinch-to-zoom & pan
+ * - Google ML Kit BlazePose Accurate 3D (33-point GHUM) / Lite runtime model selector
+ * - Real-time HUD telemetry (model name, latency, landmark count, confidence, joint angles, Δangle vs threshold)
+ * - One-tap oblique camera roll zero-point calibration & full continuous threshold sliders
  */
 class BabyPoseMonitorDialog : DialogFragment(), PoseMonitorHub.Listener {
 
@@ -67,9 +75,20 @@ class BabyPoseMonitorDialog : DialogFragment(), PoseMonitorHub.Listener {
         private const val TAG = "BabyPoseMonitorDlg"
         private const val PREFS_NAME = "baby_pose_monitor_prefs"
         private const val KEY_ZOOM = "zoom_ratio"
+        private const val KEY_ENGINE_MODE = "engine_mode"
+        private const val KEY_MIN_CONF = "min_landmark_conf"
+        private const val KEY_ANGLE_THRESH_DEG = "angle_thresh_deg"
+        private const val KEY_ROLL_THRESH_DEG = "roll_thresh_deg"
+        private const val KEY_LIMB_DELTA_DEG = "limb_delta_deg"
+        private const val KEY_SMOOTHING = "smoothing_strength"
+        private const val KEY_CONFIRM_FRAMES = "confirm_frames"
         private const val KEY_THRESHOLD = "change_threshold"
         private const val KEY_WINDOW_SEC = "window_sec"
-        private const val KEY_ANGLE_THRESH_DEG = "angle_thresh_deg"
+        private const val KEY_MIN_INTERVAL_MS = "min_interval_ms"
+        private const val KEY_CONTOUR_FALLBACK = "enable_contour_fallback"
+        private const val KEY_BASELINE_ROLL_DEG = "baseline_roll_offset_deg"
+        private const val KEY_SHOW_HUD = "show_telemetry_hud"
+        private const val KEY_CUSTOM_YOLO_URL = "custom_yolo_url"
         private const val KEY_IP_CAM_URL = "ip_cam_url"
         private const val KEY_WEBHOOK_URL = "watch_webhook_url"
         private const val KEY_SYNC_SYS_CLOCK = "sync_sys_clock"
@@ -79,7 +98,7 @@ class BabyPoseMonitorDialog : DialogFragment(), PoseMonitorHub.Listener {
         private val VIEWPORT_BG = Color.parseColor("#05070B")
         private val PILL_BG = Color.parseColor("#18202C")
         private val PILL_STROKE = Color.parseColor("#2A3548")
-        private val GLASS_BG = Color.argb(165, 13, 17, 23)
+        private val GLASS_BG = Color.argb(182, 13, 17, 23)
         private val TEXT_LIGHT = Color.parseColor("#F1F5F9")
         private val TEXT_MUTED = Color.parseColor("#94A3B8")
         private val ACCENT_MINT = Color.parseColor("#34D399")
@@ -114,8 +133,10 @@ class BabyPoseMonitorDialog : DialogFragment(), PoseMonitorHub.Listener {
 
     private var sourceMode: CameraSourceMode = CameraSourceMode.LOCAL_BACK
     private var lastAnalyzedAtMs: Long = 0L
+    private val isAnalyzingFrame = AtomicBoolean(false)
+    private var latestRawUnadjustedRollDeg: Float? = null
 
-    // Minimal main screen views
+    // Main screen views
     private lateinit var statusDotView: View
     private lateinit var statusPillTv: TextView
     private lateinit var netCamConfigBox: LinearLayout
@@ -125,6 +146,10 @@ class BabyPoseMonitorDialog : DialogFragment(), PoseMonitorHub.Listener {
     private lateinit var cameraHintTv: TextView
     private lateinit var poseBadgeTv: TextView
     private lateinit var zoomBadgeTv: TextView
+    private lateinit var telemetryHudBox: LinearLayout
+    private lateinit var hudModelLineTv: TextView
+    private lateinit var hudAnglesLineTv: TextView
+    private lateinit var calibrateBtn: TextView
     private lateinit var alarmActionBar: LinearLayout
     private lateinit var lensBtn: TextView
 
@@ -141,6 +166,44 @@ class BabyPoseMonitorDialog : DialogFragment(), PoseMonitorHub.Listener {
     }
 
     private fun Int.dp(): Int = (this * resources.displayMetrics.density).roundToInt()
+
+    private fun loadConfigFromPrefs(prefs: SharedPreferences): PoseDetectionConfig {
+        return PoseDetectionConfig(
+            engineMode = PoseEngineMode.fromCode(prefs.getString(KEY_ENGINE_MODE, PoseEngineMode.YOLO26N_BUNDLED.code)),
+            minLandmarkConfidence = prefs.getFloat(KEY_MIN_CONF, 0.45f).coerceIn(0.20f, 0.85f),
+            angleThresholdDeg = prefs.getFloat(KEY_ANGLE_THRESH_DEG, 22f).coerceIn(8f, 60f),
+            rollThresholdDeg = prefs.getFloat(KEY_ROLL_THRESH_DEG, 28f).coerceIn(15f, 55f),
+            limbDeltaThresholdDeg = prefs.getFloat(KEY_LIMB_DELTA_DEG, 26f).coerceIn(12f, 55f),
+            smoothingStrength = prefs.getFloat(KEY_SMOOTHING, 0.55f).coerceIn(0f, 0.90f),
+            confirmFrames = prefs.getInt(KEY_CONFIRM_FRAMES, 2).coerceIn(1, 5),
+            changeThreshold = prefs.getInt(KEY_THRESHOLD, 4).coerceIn(1, 12),
+            windowSec = prefs.getInt(KEY_WINDOW_SEC, 30).coerceIn(10, 120),
+            minChangeIntervalMs = prefs.getLong(KEY_MIN_INTERVAL_MS, 1_500L).coerceIn(500L, 5_000L),
+            enableContourFallback = prefs.getBoolean(KEY_CONTOUR_FALLBACK, false),
+            baselineRollOffsetDeg = prefs.getFloat(KEY_BASELINE_ROLL_DEG, 0f).coerceIn(-65f, 65f),
+            showTelemetryHud = prefs.getBoolean(KEY_SHOW_HUD, true),
+            customYoloUrl = prefs.getString(KEY_CUSTOM_YOLO_URL, "") ?: ""
+        )
+    }
+
+    private fun saveConfigToPrefs(prefs: SharedPreferences, cfg: PoseDetectionConfig) {
+        prefs.edit()
+            .putString(KEY_ENGINE_MODE, cfg.engineMode.code)
+            .putFloat(KEY_MIN_CONF, cfg.minLandmarkConfidence)
+            .putFloat(KEY_ANGLE_THRESH_DEG, cfg.angleThresholdDeg)
+            .putFloat(KEY_ROLL_THRESH_DEG, cfg.rollThresholdDeg)
+            .putFloat(KEY_LIMB_DELTA_DEG, cfg.limbDeltaThresholdDeg)
+            .putFloat(KEY_SMOOTHING, cfg.smoothingStrength)
+            .putInt(KEY_CONFIRM_FRAMES, cfg.confirmFrames)
+            .putInt(KEY_THRESHOLD, cfg.changeThreshold)
+            .putInt(KEY_WINDOW_SEC, cfg.windowSec)
+            .putLong(KEY_MIN_INTERVAL_MS, cfg.minChangeIntervalMs)
+            .putBoolean(KEY_CONTOUR_FALLBACK, cfg.enableContourFallback)
+            .putFloat(KEY_BASELINE_ROLL_DEG, cfg.baselineRollOffsetDeg)
+            .putBoolean(KEY_SHOW_HUD, cfg.showTelemetryHud)
+            .putString(KEY_CUSTOM_YOLO_URL, cfg.customYoloUrl)
+            .apply()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -171,15 +234,14 @@ class BabyPoseMonitorDialog : DialogFragment(), PoseMonitorHub.Listener {
         val babyName = arguments?.getString(ARG_BABY_NAME) ?: "宝宝"
         PoseMonitorHub.babyName = babyName
         PoseMonitorHub.currentZoomRatio = prefs.getFloat(KEY_ZOOM, 1.0f).coerceIn(1.0f, 8.0f)
-        PoseMonitorHub.wakeTracker.changeThreshold = prefs.getInt(KEY_THRESHOLD, 5).coerceIn(2, 12)
-        PoseMonitorHub.wakeTracker.windowMs = prefs.getInt(KEY_WINDOW_SEC, 30).coerceIn(10, 120) * 1000L
-        PoseMonitorHub.wakeTracker.angleThresholdDeg = prefs.getFloat(KEY_ANGLE_THRESH_DEG, 25f).coerceIn(12f, 60f)
+        val loadedCfg = loadConfigFromPrefs(prefs)
+        PoseMonitorHub.updateDetectionConfig(loadedCfg)
         PoseMonitorHub.ipCameraStreamUrl = prefs.getString(KEY_IP_CAM_URL, "http://192.168.1.88:81/stream") ?: ""
         PoseMonitorHub.watchWebhookUrl = prefs.getString(KEY_WEBHOOK_URL, "") ?: ""
         PoseMonitorHub.syncSystemAlarmApp = prefs.getBoolean(KEY_SYNC_SYS_CLOCK, false)
 
         analysisExecutor = Executors.newSingleThreadExecutor()
-        poseDetector = MlKitBabyPoseDetector()
+        poseDetector = MlKitBabyPoseDetector(ctx)
         PoseMonitorHub.addListener(this)
         BabyWatchServer.start(ctx, BabyWatchServer.DEFAULT_PORT)
 
@@ -204,14 +266,14 @@ class BabyPoseMonitorDialog : DialogFragment(), PoseMonitorHub.Listener {
             insets
         }
 
-        // 1. Minimal Top Bar: [Status Pill]  ...  [Close]
+        // 1. Top Bar: [Status Pill]  ... [Model Chip] [Close]
         val topBar = LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply { bottomMargin = 12.dp() }
+            ).apply { bottomMargin = 10.dp() }
         }
 
         val statusPill = LinearLayout(ctx).apply {
@@ -237,6 +299,20 @@ class BabyPoseMonitorDialog : DialogFragment(), PoseMonitorHub.Listener {
             layoutParams = LinearLayout.LayoutParams(0, 1, 1f)
         }
 
+        calibrateBtn = TextView(ctx).apply {
+            text = formatCalibrateBadge(loadedCfg.baselineRollOffsetDeg)
+            textSize = 11.5f
+            setTypeface(typeface, Typeface.BOLD)
+            setTextColor(ACCENT_BLUE)
+            background = makePillDrawable(PILL_BG, PILL_STROKE, 999f)
+            setPadding(11.dp(), 7.dp(), 11.dp(), 7.dp())
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { marginEnd = 8.dp() }
+            setOnClickListener { calibrateOrResetRollZero(ctx, prefs) }
+        }
+
         val closeBtn = TextView(ctx).apply {
             text = "✕"
             textSize = 15f
@@ -249,6 +325,7 @@ class BabyPoseMonitorDialog : DialogFragment(), PoseMonitorHub.Listener {
 
         topBar.addView(statusPill)
         topBar.addView(spacer)
+        topBar.addView(calibrateBtn)
         topBar.addView(closeBtn)
         root.addView(topBar)
 
@@ -295,7 +372,7 @@ class BabyPoseMonitorDialog : DialogFragment(), PoseMonitorHub.Listener {
         netCamConfigBox.addView(connectBtn)
         root.addView(netCamConfigBox)
 
-        // 3. Hero Camera Viewport (Pure 2-finger pinch-to-zoom + pan)
+        // 3. Hero Camera Viewport (1080p HD + 2-finger pinch-to-zoom + aspect-accurate skeleton + live HUD)
         val viewportFrame = FrameLayout(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -323,6 +400,7 @@ class BabyPoseMonitorDialog : DialogFragment(), PoseMonitorHub.Listener {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
             )
+            showJointAngleLabels = loadedCfg.showTelemetryHud
             setZoomAndPanState(PoseMonitorHub.currentZoomRatio, PoseMonitorHub.panX, PoseMonitorHub.panY)
             onZoomPanChanged = { z, px, py ->
                 applyZoomAndPan(z, px, py, prefs)
@@ -330,7 +408,7 @@ class BabyPoseMonitorDialog : DialogFragment(), PoseMonitorHub.Listener {
         }
 
         cameraHintTv = TextView(ctx).apply {
-            text = "正在开启相机..."
+            text = "正在加载高精度姿态模型与相机..."
             textSize = 13f
             gravity = Gravity.CENTER
             setTextColor(TEXT_MUTED)
@@ -347,7 +425,7 @@ class BabyPoseMonitorDialog : DialogFragment(), PoseMonitorHub.Listener {
             textSize = 12f
             setTypeface(typeface, Typeface.BOLD)
             setTextColor(TEXT_LIGHT)
-            background = makePillDrawable(GLASS_BG, Color.argb(60, 255, 255, 255), 999f)
+            background = makePillDrawable(GLASS_BG, Color.argb(65, 255, 255, 255), 999f)
             setPadding(11.dp(), 5.dp(), 11.dp(), 5.dp())
             layoutParams = FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -364,7 +442,7 @@ class BabyPoseMonitorDialog : DialogFragment(), PoseMonitorHub.Listener {
             textSize = 12f
             setTypeface(typeface, Typeface.BOLD)
             setTextColor(TEXT_LIGHT)
-            background = makePillDrawable(GLASS_BG, Color.argb(60, 255, 255, 255), 999f)
+            background = makePillDrawable(GLASS_BG, Color.argb(65, 255, 255, 255), 999f)
             setPadding(10.dp(), 5.dp(), 10.dp(), 5.dp())
             visibility = if (PoseMonitorHub.currentZoomRatio > 1.05f) View.VISIBLE else View.GONE
             layoutParams = FrameLayout.LayoutParams(
@@ -380,11 +458,47 @@ class BabyPoseMonitorDialog : DialogFragment(), PoseMonitorHub.Listener {
             }
         }
 
+        // Bottom Live Telemetry HUD inside viewport
+        telemetryHudBox = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            background = makePillDrawable(GLASS_BG, Color.argb(55, 148, 163, 184), 14.dp().toFloat())
+            setPadding(12.dp(), 8.dp(), 12.dp(), 8.dp())
+            visibility = if (loadedCfg.showTelemetryHud) View.VISIBLE else View.GONE
+            layoutParams = FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                Gravity.BOTTOM
+            ).apply {
+                marginStart = 10.dp()
+                marginEnd = 10.dp()
+                bottomMargin = 10.dp()
+            }
+            setOnClickListener { showSettingsDialog(ctx, prefs) }
+        }
+        hudModelLineTv = TextView(ctx).apply {
+            text = "模型: ${loadedCfg.engineMode.modelDisplayName}"
+            textSize = 10.5f
+            setTypeface(Typeface.MONOSPACE, Typeface.BOLD)
+            setTextColor(Color.parseColor("#93C5FD"))
+            maxLines = 1
+        }
+        hudAnglesLineTv = TextView(ctx).apply {
+            text = "等待骨骼关键点... (点击此处可直接调阈值)"
+            textSize = 10.5f
+            setTypeface(Typeface.MONOSPACE, Typeface.NORMAL)
+            setTextColor(Color.parseColor("#CBD5E1"))
+            maxLines = 2
+            setPadding(0, 2.dp(), 0, 0)
+        }
+        telemetryHudBox.addView(hudModelLineTv)
+        telemetryHudBox.addView(hudAnglesLineTv)
+
         viewportFrame.addView(zoomedFeedImageView)
         viewportFrame.addView(overlayView)
         viewportFrame.addView(cameraHintTv)
         viewportFrame.addView(poseBadgeTv)
         viewportFrame.addView(zoomBadgeTv)
+        viewportFrame.addView(telemetryHudBox)
         root.addView(viewportFrame)
 
         // 4. Contextual Alarm Bar (only shown when alarm is ringing)
@@ -431,7 +545,7 @@ class BabyPoseMonitorDialog : DialogFragment(), PoseMonitorHub.Listener {
         alarmActionBar.addView(snoozeBtn)
         root.addView(alarmActionBar)
 
-        // 5. Minimal Bottom Dock: [镜头] [手表] [设置]
+        // 5. Bottom Dock: [镜头] [手表] [模型与阈值设置]
         val bottomDock = LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
@@ -441,31 +555,31 @@ class BabyPoseMonitorDialog : DialogFragment(), PoseMonitorHub.Listener {
             ).apply { topMargin = 12.dp() }
         }
 
-        lensBtn = makeDockPill(ctx, sourceMode.shortLabel).apply {
+        lensBtn = makeDockPill(ctx, "镜头:${sourceMode.shortLabel}").apply {
             setOnClickListener {
                 sourceMode = when (sourceMode) {
                     CameraSourceMode.LOCAL_BACK -> CameraSourceMode.LOCAL_FRONT
                     CameraSourceMode.LOCAL_FRONT -> CameraSourceMode.NETWORK_STREAM
                     CameraSourceMode.NETWORK_STREAM -> CameraSourceMode.LOCAL_BACK
                 }
-                text = sourceMode.shortLabel
+                text = "镜头:${sourceMode.shortLabel}"
                 netCamConfigBox.visibility = if (sourceMode == CameraSourceMode.NETWORK_STREAM) View.VISIBLE else View.GONE
                 poseDetector?.reset()
                 startSelectedCameraSource()
             }
         }
 
-        val watchBtn = makeDockPill(ctx, "手表").apply {
+        val watchBtn = makeDockPill(ctx, "手表联动").apply {
             setOnClickListener { showWatchDialog(ctx, prefs) }
         }
 
-        val settingsBtn = makeDockPill(ctx, "设置").apply {
+        val settingsBtn = makeDockPill(ctx, "模型与阈值").apply {
             setOnClickListener { showSettingsDialog(ctx, prefs) }
         }
 
         bottomDock.addView(lensBtn, LinearLayout.LayoutParams(0, 44.dp(), 1f).apply { marginEnd = 8.dp() })
         bottomDock.addView(watchBtn, LinearLayout.LayoutParams(0, 44.dp(), 1f).apply { marginEnd = 8.dp() })
-        bottomDock.addView(settingsBtn, LinearLayout.LayoutParams(0, 44.dp(), 1f))
+        bottomDock.addView(settingsBtn, LinearLayout.LayoutParams(0, 44.dp(), 1.15f))
         root.addView(bottomDock)
 
         return root
@@ -521,6 +635,38 @@ class BabyPoseMonitorDialog : DialogFragment(), PoseMonitorHub.Listener {
             val prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             applyZoomAndPan(newZoom, PoseMonitorHub.panX, PoseMonitorHub.panY, prefs)
         }
+    }
+
+    private fun formatCalibrateBadge(offsetDeg: Float): String {
+        return if (kotlin.math.abs(offsetDeg) >= 1f) {
+            "🎯 已校准(${offsetDeg.roundToInt()}°)"
+        } else {
+            "🎯 零点校准"
+        }
+    }
+
+    private fun calibrateOrResetRollZero(ctx: Context, prefs: SharedPreferences) {
+        val curCfg = PoseMonitorHub.detectionConfig
+        if (kotlin.math.abs(curCfg.baselineRollOffsetDeg) >= 1f) {
+            val resetCfg = curCfg.copy(baselineRollOffsetDeg = 0f)
+            PoseMonitorHub.updateDetectionConfig(resetCfg)
+            saveConfigToPrefs(prefs, resetCfg)
+            calibrateBtn.text = formatCalibrateBadge(0f)
+            Toast.makeText(ctx, "已重置侧翻零点校准为 0°", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val rawRoll = latestRawUnadjustedRollDeg
+        if (rawRoll == null) {
+            Toast.makeText(ctx, "请先让画面检出婴儿骨架后再点击校准", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val clampedOffset = rawRoll.coerceIn(-65f, 65f)
+        val nextCfg = curCfg.copy(baselineRollOffsetDeg = clampedOffset)
+        PoseMonitorHub.updateDetectionConfig(nextCfg)
+        PoseMonitorHub.wakeTracker.reset()
+        saveConfigToPrefs(prefs, nextCfg)
+        calibrateBtn.text = formatCalibrateBadge(clampedOffset)
+        Toast.makeText(ctx, "已将当前机位睡姿标定为平躺零点 (${clampedOffset.roundToInt()}°)，再次点击可清除", Toast.LENGTH_SHORT).show()
     }
 
     private fun hasCameraPermission(): Boolean {
@@ -618,7 +764,18 @@ class BabyPoseMonitorDialog : DialogFragment(), PoseMonitorHub.Listener {
                 }
 
                 val exec = analysisExecutor ?: return@addListener
+                // Request 1080p HD frames so digital ROI zoom (2x-6x) preserves crisp infant limb features!
+                val resSelector = ResolutionSelector.Builder()
+                    .setResolutionStrategy(
+                        ResolutionStrategy(
+                            Size(1920, 1080),
+                            ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER
+                        )
+                    )
+                    .build()
+
                 val analysis = ImageAnalysis.Builder()
+                    .setResolutionSelector(resSelector)
                     .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                     .build()
 
@@ -637,13 +794,14 @@ class BabyPoseMonitorDialog : DialogFragment(), PoseMonitorHub.Listener {
     }
 
     private fun handleCameraXFrame(imageProxy: ImageProxy, isFront: Boolean) {
-        try {
-            val now = System.currentTimeMillis()
-            if (now - lastAnalyzedAtMs < 120L) {
-                return
-            }
-            lastAnalyzedAtMs = now
+        val now = System.currentTimeMillis()
+        if (now - lastAnalyzedAtMs < 95L || !isAnalyzingFrame.compareAndSet(false, true)) {
+            imageProxy.close()
+            return
+        }
+        lastAnalyzedAtMs = now
 
+        try {
             val rawBitmap = imageProxy.toBitmap()
             val rot = imageProxy.imageInfo.rotationDegrees
             val uprightBitmap = if (rot != 0 || isFront) {
@@ -656,15 +814,21 @@ class BabyPoseMonitorDialog : DialogFragment(), PoseMonitorHub.Listener {
             } else {
                 rawBitmap
             }
+            imageProxy.close()
             processIncomingBitmap(uprightBitmap, recycleSource = true)
         } catch (t: Throwable) {
             Log.d(TAG, "Frame analysis skipped: ${t.message}")
+            try {
+                imageProxy.close()
+            } catch (_: Throwable) {
+            }
         } finally {
-            imageProxy.close()
+            isAnalyzingFrame.set(false)
         }
     }
 
     private fun processIncomingBitmap(uprightBitmap: Bitmap, recycleSource: Boolean) {
+        val cfg = PoseMonitorHub.detectionConfig
         val zoom = PoseMonitorHub.currentZoomRatio
         val px = PoseMonitorHub.panX
         val py = PoseMonitorHub.panY
@@ -674,21 +838,24 @@ class BabyPoseMonitorDialog : DialogFragment(), PoseMonitorHub.Listener {
             zoomRatio = zoom,
             panX = px,
             panY = py,
-            targetMaxDim = 540
+            targetMaxDim = cfg.engineMode.targetInputDim
         )
         if (recycleSource && roiBitmap !== uprightBitmap) {
             uprightBitmap.recycle()
         }
 
         try {
-            val baos = ByteArrayOutputStream(24 * 1024)
-            roiBitmap.compress(Bitmap.CompressFormat.JPEG, 68, baos)
+            val baos = ByteArrayOutputStream(28 * 1024)
+            roiBitmap.compress(Bitmap.CompressFormat.JPEG, 70, baos)
             PoseMonitorHub.latestJpegSnapshot = baos.toByteArray()
         } catch (_: Throwable) {
         }
 
         val detector = poseDetector ?: return
-        val frameResult = detector.analyzeRoiBitmap(roiBitmap)
+        val frameResult = detector.analyzeRoiBitmap(roiBitmap, cfg)
+        if (frameResult.targetDetected && frameResult.angleProfile.bodyRollDeg != null) {
+            latestRawUnadjustedRollDeg = frameResult.angleProfile.bodyRollDeg + cfg.baselineRollOffsetDeg
+        }
         val decision = PoseMonitorHub.wakeTracker.onFrame(frameResult)
 
         if (decision.justTriggeredWake && isAdded) {
@@ -704,6 +871,8 @@ class BabyPoseMonitorDialog : DialogFragment(), PoseMonitorHub.Listener {
             }
         }
 
+        val bmpW = roiBitmap.width
+        val bmpH = roiBitmap.height
         mainHandler.post {
             if (!isAdded) {
                 roiBitmap.recycle()
@@ -711,7 +880,8 @@ class BabyPoseMonitorDialog : DialogFragment(), PoseMonitorHub.Listener {
             }
             cameraHintTv.visibility = View.GONE
             zoomedFeedImageView.setImageBitmap(roiBitmap)
-            overlayView.updateDetection(frameResult, decision)
+            overlayView.showJointAngleLabels = PoseMonitorHub.detectionConfig.showTelemetryHud
+            overlayView.updateDetection(frameResult, decision, bmpW, bmpH)
             refreshTelemetryUi(frameResult, decision)
         }
     }
@@ -728,6 +898,7 @@ class BabyPoseMonitorDialog : DialogFragment(), PoseMonitorHub.Listener {
         PoseMonitorHub.panY = panY.coerceIn(-1f, 1f)
         prefs.edit().putFloat(KEY_ZOOM, clamped).apply()
 
+        // Reset stream smoother when zoomed sharply so skeleton adapts cleanly
         overlayView.setZoomAndPanState(clamped, PoseMonitorHub.panX, PoseMonitorHub.panY)
         zoomBadgeTv.text = formatZoomBadge(clamped)
         zoomBadgeTv.visibility = if (clamped > 1.05f) View.VISIBLE else View.GONE
@@ -736,30 +907,49 @@ class BabyPoseMonitorDialog : DialogFragment(), PoseMonitorHub.Listener {
     private fun formatZoomBadge(zoom: Float): String = "${"%.1f".format(Locale.US, zoom)}x"
 
     private fun shortPoseText(label: BabyPoseLabel): String = when (label) {
-        BabyPoseLabel.NONE -> "检测中"
-        BabyPoseLabel.SUPINE_CALM -> "仰卧"
+        BabyPoseLabel.NONE -> "未检出骨架"
+        BabyPoseLabel.SUPINE_CALM -> "仰卧平放"
         BabyPoseLabel.SIDE_LEFT -> "左侧卧"
         BabyPoseLabel.SIDE_RIGHT -> "右侧卧"
-        BabyPoseLabel.PRONE_HEAD_UP -> "趴卧"
-        BabyPoseLabel.LIMB_ACTIVE -> "体动"
-        BabyPoseLabel.SITTING_AWAKE -> "坐起"
+        BabyPoseLabel.PRONE_HEAD_UP -> "趴卧/俯睡"
+        BabyPoseLabel.LIMB_ACTIVE -> "屈臂/蹬腿"
+        BabyPoseLabel.SITTING_AWAKE -> "撑起/坐立"
     }
 
-    private fun refreshTelemetryUi(@Suppress("UNUSED_PARAMETER") result: PoseFrameResult?, snap: WakeDecisionSnapshot) {
+    private fun refreshTelemetryUi(result: PoseFrameResult?, snap: WakeDecisionSnapshot) {
+        val cfg = PoseMonitorHub.detectionConfig
         val poseShort = shortPoseText(snap.currentPose)
-        poseBadgeTv.text = if (snap.currentPose == BabyPoseLabel.NONE) {
-            poseShort
+        val confPct = (snap.confidence * 100f).roundToInt()
+
+        poseBadgeTv.text = if (!snap.targetDetected || snap.currentPose == BabyPoseLabel.NONE) {
+            "$poseShort · 阈值≥${(cfg.minLandmarkConfidence * 100).roundToInt()}%"
         } else {
-            "$poseShort · ${snap.changeCount}/${snap.changeThreshold}"
+            "$poseShort (${confPct}%) · ${snap.changeCount}/${snap.changeThreshold}"
         }
 
+        telemetryHudBox.visibility = if (cfg.showTelemetryHud) View.VISIBLE else View.GONE
+        if (cfg.showTelemetryHud) {
+            val modelTag = snap.modelName.ifBlank { cfg.engineMode.modelDisplayName }
+            val latencyStr = if (snap.inferenceTimeMs > 0) " · ${snap.inferenceTimeMs}ms" else ""
+            val ptsStr = if (snap.landmarkCount > 0) " · ${snap.landmarkCount}关键点" else ""
+            hudModelLineTv.text = "$modelTag$latencyStr$ptsStr"
+
+            hudAnglesLineTv.text = if (snap.targetDetected) {
+                "Δ角 ${snap.lastAngleDeltaDeg.roundToInt()}°/阈值${snap.angleThresholdDeg.roundToInt()}° | ${snap.angleProfile.summaryText()}"
+            } else {
+                val fbHint = if (cfg.enableContourFallback) "色块兜底已开" else "仅真实3D骨架(防误报)"
+                "未检出有效骨骼关键点 · $fbHint · 点击调低置信度或放大画面"
+            }
+        }
+
+        calibrateBtn.text = formatCalibrateBadge(cfg.baselineRollOffsetDeg)
         alarmActionBar.visibility = if (snap.isAlarmRinging) View.VISIBLE else View.GONE
 
         when {
             snap.isAlarmRinging -> {
                 statusDotView.background = makeCircleDrawable(ACCENT_ROSE)
                 statusPillTv.setTextColor(Color.parseColor("#FDA4AF"))
-                statusPillTv.text = "醒来"
+                statusPillTv.text = "醒来告警"
             }
             snap.snoozedRemainingSec > 0 -> {
                 statusDotView.background = makeCircleDrawable(ACCENT_BLUE)
@@ -771,112 +961,382 @@ class BabyPoseMonitorDialog : DialogFragment(), PoseMonitorHub.Listener {
                 statusPillTv.setTextColor(Color.parseColor("#FDE68A"))
                 statusPillTv.text = "体动 ${snap.changeCount}/${snap.changeThreshold}"
             }
-            else -> {
+            snap.targetDetected -> {
                 statusDotView.background = makeCircleDrawable(ACCENT_MINT)
                 statusPillTv.setTextColor(TEXT_LIGHT)
-                statusPillTv.text = "安睡"
+                statusPillTv.text = "安睡监控"
+            }
+            else -> {
+                statusDotView.background = makeCircleDrawable(TEXT_MUTED)
+                statusPillTv.setTextColor(TEXT_MUTED)
+                statusPillTv.text = "待检出目标"
             }
         }
     }
 
     private fun showSettingsDialog(ctx: Context, prefs: SharedPreferences) {
+        var workingCfg = PoseMonitorHub.detectionConfig
+
+        val scroll = ScrollView(ctx)
         val container = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(20.dp(), 12.dp(), 20.dp(), 8.dp())
+            setPadding(20.dp(), 10.dp(), 20.dp(), 12.dp())
         }
+        scroll.addView(container)
 
-        // Angle threshold
-        container.addView(makeDialogLabel(ctx, "角度灵敏度"))
-        val angleGroup = ChipGroup(ctx).apply {
-            isSingleSelection = true
-            isSelectionRequired = true
+        // 1. Model Selection & Cloud YOLO Download Section
+        container.addView(makeDialogLabel(ctx, "1. 检测模型与云端 YOLO 权重管理"))
+        val modelDescTv = TextView(ctx).apply {
+            text = workingCfg.engineMode.description
+            textSize = 11.5f
+            setTextColor(Color.parseColor("#64748B"))
+            setPadding(0, 2.dp(), 0, 4.dp())
         }
-        val curAngle = PoseMonitorHub.wakeTracker.angleThresholdDeg.roundToInt()
-        listOf(15, 25, 35, 45).forEach { deg ->
-            angleGroup.addView(Chip(ctx).apply {
-                text = "≥${deg}°"
-                isCheckable = true
-                isChecked = (curAngle == deg)
-                setOnClickListener {
-                    PoseMonitorHub.wakeTracker.angleThresholdDeg = deg.toFloat()
-                    prefs.edit().putFloat(KEY_ANGLE_THRESH_DEG, deg.toFloat()).apply()
-                    refreshTelemetryUi(null, PoseMonitorHub.wakeTracker.currentSnapshot())
-                }
-            })
+        val modelStatusTv = TextView(ctx).apply {
+            text = YoloModelManager.modelStatusText(ctx, workingCfg.engineMode)
+            textSize = 11.5f
+            setTypeface(Typeface.MONOSPACE, Typeface.BOLD)
+            setTextColor(Color.parseColor("#059669"))
+            setPadding(0, 0, 0, 6.dp())
         }
-        container.addView(angleGroup)
-
-        // Change count threshold
-        val countRow = LinearLayout(ctx).apply {
+        val customUrlEdit = EditText(ctx).apply {
+            hint = "输入自定义婴儿 YOLO Pose .onnx 下载 URL (http/https)"
+            setText(workingCfg.customYoloUrl)
+            textSize = 12f
+            isSingleLine = true
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
+            visibility = if (workingCfg.engineMode == PoseEngineMode.YOLO_CUSTOM_CLOUD) View.VISIBLE else View.GONE
+        }
+        val dlProgressBar = ProgressBar(ctx, null, android.R.attr.progressBarStyleHorizontal).apply {
+            max = 100
+            progress = 0
+            visibility = View.GONE
+            setPadding(0, 4.dp(), 0, 4.dp())
+        }
+        val cloudBtnRow = LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(0, 10.dp(), 0, 6.dp())
+            setPadding(0, 2.dp(), 0, 8.dp())
         }
-        countRow.addView(makeDialogLabel(ctx, "唤醒次数").apply {
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-        })
-        val countTv = TextView(ctx).apply {
-            text = "${PoseMonitorHub.wakeTracker.changeThreshold}"
-            textSize = 15f
-            setTypeface(typeface, Typeface.BOLD)
-            setPadding(14.dp(), 0, 14.dp(), 0)
+        val downloadModelBtn = MaterialButton(ctx).apply {
+            text = "⬇️ 云端下载该 YOLO 模型"
+            textSize = 11.5f
+            isAllCaps = false
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.4f).apply {
+                marginEnd = 6.dp()
+            }
         }
-        countRow.addView(MaterialButton(ctx, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
-            text = "−"
-            minimumWidth = 0
-            minWidth = 38.dp()
-            setPadding(8.dp(), 2.dp(), 8.dp(), 2.dp())
-            setOnClickListener {
-                val next = (PoseMonitorHub.wakeTracker.changeThreshold - 1).coerceIn(2, 12)
-                PoseMonitorHub.wakeTracker.changeThreshold = next
-                prefs.edit().putInt(KEY_THRESHOLD, next).apply()
-                countTv.text = "$next"
-                refreshTelemetryUi(null, PoseMonitorHub.wakeTracker.currentSnapshot())
-            }
-        })
-        countRow.addView(countTv)
-        countRow.addView(MaterialButton(ctx, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
-            text = "+"
-            minimumWidth = 0
-            minWidth = 38.dp()
-            setPadding(8.dp(), 2.dp(), 8.dp(), 2.dp())
-            setOnClickListener {
-                val next = (PoseMonitorHub.wakeTracker.changeThreshold + 1).coerceIn(2, 12)
-                PoseMonitorHub.wakeTracker.changeThreshold = next
-                prefs.edit().putInt(KEY_THRESHOLD, next).apply()
-                countTv.text = "$next"
-                refreshTelemetryUi(null, PoseMonitorHub.wakeTracker.currentSnapshot())
-            }
-        })
-        container.addView(countRow)
+        val deleteModelBtn = MaterialButton(ctx, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
+            text = "清理缓存"
+            textSize = 11.5f
+            isAllCaps = false
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 0.8f)
+        }
+        cloudBtnRow.addView(downloadModelBtn)
+        cloudBtnRow.addView(deleteModelBtn)
 
-        // Window duration
-        container.addView(makeDialogLabel(ctx, "检测窗口"))
-        val winGroup = ChipGroup(ctx).apply {
+        fun refreshCloudModelWidgets() {
+            val m = workingCfg.engineMode
+            modelDescTv.text = m.description
+            modelStatusTv.text = YoloModelManager.modelStatusText(ctx, m)
+            customUrlEdit.visibility = if (m == PoseEngineMode.YOLO_CUSTOM_CLOUD) View.VISIBLE else View.GONE
+            val isCloudMode = m == PoseEngineMode.YOLO11S_CLOUD ||
+                m == PoseEngineMode.YOLO11M_CLOUD ||
+                m == PoseEngineMode.YOLO_CUSTOM_CLOUD
+            cloudBtnRow.visibility = if (isCloudMode) View.VISIBLE else View.GONE
+            if (isCloudMode) {
+                val ready = YoloModelManager.isModelReady(ctx, m)
+                downloadModelBtn.text = if (ready) "🔄 重新拉取更新" else "⬇️ 一键云端下载模型"
+                deleteModelBtn.isEnabled = ready
+            }
+        }
+
+        downloadModelBtn.setOnClickListener {
+            val targetMode = workingCfg.engineMode
+            val customUrl = customUrlEdit.text?.toString()?.trim().orEmpty()
+            if (targetMode == PoseEngineMode.YOLO_CUSTOM_CLOUD) {
+                workingCfg = workingCfg.copy(customYoloUrl = customUrl)
+                PoseMonitorHub.updateDetectionConfig(workingCfg)
+                saveConfigToPrefs(prefs, workingCfg)
+            }
+            downloadModelBtn.isEnabled = false
+            deleteModelBtn.isEnabled = false
+            dlProgressBar.visibility = View.VISIBLE
+            dlProgressBar.isIndeterminate = true
+
+            val appCtx = ctx.applicationContext
+            Thread {
+                val res = YoloModelManager.downloadCloudModelBlocking(
+                    context = appCtx,
+                    mode = targetMode,
+                    customUrl = customUrl
+                ) { pct, dlMb, totMb, host ->
+                    mainHandler.post {
+                        if (!isAdded) return@post
+                        if (pct >= 0) {
+                            dlProgressBar.isIndeterminate = false
+                            dlProgressBar.progress = pct
+                            modelStatusTv.text = "⬇️ 正在从 $host 下载: $pct% (${"%.1f".format(Locale.US, dlMb)}/${"%.1f".format(Locale.US, totMb)} MB)"
+                        } else {
+                            dlProgressBar.isIndeterminate = true
+                            modelStatusTv.text = "⬇️ 正在从 $host 下载 (${"%.1f".format(Locale.US, dlMb)} MB)..."
+                        }
+                    }
+                }
+                mainHandler.post {
+                    if (!isAdded) return@post
+                    dlProgressBar.visibility = View.GONE
+                    downloadModelBtn.isEnabled = true
+                    res.onSuccess { file ->
+                        poseDetector?.reset()
+                        refreshCloudModelWidgets()
+                        refreshTelemetryUi(null, PoseMonitorHub.wakeTracker.currentSnapshot())
+                        Toast.makeText(ctx, "YOLO 模型下载完成 (${file.name})，已自动切换激活！", Toast.LENGTH_SHORT).show()
+                    }.onFailure { err ->
+                        modelStatusTv.text = "❌ 下载失败: ${err.message} (当前自动使用内置 YOLO26n 兜底)"
+                        deleteModelBtn.isEnabled = YoloModelManager.isModelReady(ctx, targetMode)
+                    }
+                }
+            }.start()
+        }
+
+        deleteModelBtn.setOnClickListener {
+            if (YoloModelManager.deleteDownloadedModel(ctx, workingCfg.engineMode)) {
+                poseDetector?.reset()
+                refreshCloudModelWidgets()
+                Toast.makeText(ctx, "已清理该云端模型本地缓存", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        val engineGroup = ChipGroup(ctx).apply {
             isSingleSelection = true
             isSelectionRequired = true
         }
-        val curWin = (PoseMonitorHub.wakeTracker.windowMs / 1000L).toInt()
-        listOf(15, 30, 60).forEach { sec ->
-            winGroup.addView(Chip(ctx).apply {
-                text = "${sec}s"
+
+        // Forward references to slider views so presets can refresh all UI controls cleanly
+        lateinit var refreshAllControls: () -> Unit
+
+        val modeChips = LinkedHashMap<PoseEngineMode, Chip>()
+        PoseEngineMode.entries.forEach { mode ->
+            val chip = Chip(ctx).apply {
+                text = mode.shortTitle
                 isCheckable = true
-                isChecked = (curWin == sec)
+                isChecked = (workingCfg.engineMode == mode)
                 setOnClickListener {
-                    PoseMonitorHub.wakeTracker.windowMs = sec * 1000L
-                    prefs.edit().putInt(KEY_WINDOW_SEC, sec).apply()
+                    val urlText = customUrlEdit.text?.toString()?.trim().orEmpty()
+                    workingCfg = workingCfg.copy(engineMode = mode, customYoloUrl = urlText)
+                    refreshCloudModelWidgets()
+                    PoseMonitorHub.updateDetectionConfig(workingCfg)
+                    poseDetector?.reset()
+                    saveConfigToPrefs(prefs, workingCfg)
                     refreshTelemetryUi(null, PoseMonitorHub.wakeTracker.currentSnapshot())
                 }
+            }
+            modeChips[mode] = chip
+            engineGroup.addView(chip)
+        }
+        container.addView(engineGroup)
+        container.addView(modelDescTv)
+        container.addView(modelStatusTv)
+        container.addView(customUrlEdit)
+        container.addView(dlProgressBar)
+        container.addView(cloudBtnRow)
+        refreshCloudModelWidgets()
+
+        // 2. Quick Sensitivity Presets
+        container.addView(makeDialogLabel(ctx, "2. 一键灵敏度预设"))
+        val presetRow = LinearLayout(ctx).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(0, 2.dp(), 0, 8.dp())
+        }
+        fun applyPreset(preset: PoseDetectionConfig, toastMsg: String) {
+            workingCfg = preset.copy(
+                engineMode = workingCfg.engineMode,
+                baselineRollOffsetDeg = workingCfg.baselineRollOffsetDeg,
+                showTelemetryHud = workingCfg.showTelemetryHud,
+                enableContourFallback = workingCfg.enableContourFallback,
+                customYoloUrl = workingCfg.customYoloUrl
+            )
+            PoseMonitorHub.updateDetectionConfig(workingCfg)
+            saveConfigToPrefs(prefs, workingCfg)
+            refreshAllControls()
+            refreshTelemetryUi(null, PoseMonitorHub.wakeTracker.currentSnapshot())
+            Toast.makeText(ctx, toastMsg, Toast.LENGTH_SHORT).show()
+        }
+        listOf(
+            Triple("高灵敏", PoseDetectionConfig.PRESET_SENSITIVE, "已应用「高灵敏」阈值"),
+            Triple("标准推荐", PoseDetectionConfig.PRESET_BALANCED, "已恢复「标准均衡」推荐阈值"),
+            Triple("严苛防误报", PoseDetectionConfig.PRESET_STRICT, "已应用「严苛防误报」阈值")
+        ).forEachIndexed { idx, (title, preset, msg) ->
+            presetRow.addView(MaterialButton(ctx, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
+                text = title
+                textSize = 11.5f
+                isAllCaps = false
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                    if (idx < 2) marginEnd = 6.dp()
+                }
+                setOnClickListener { applyPreset(preset, msg) }
             })
         }
-        container.addView(winGroup)
+        container.addView(presetRow)
 
-        // System clock switch
+        // Helper for building labeled SeekBar rows
+        fun addSliderControl(
+            title: String,
+            minVal: Int,
+            maxVal: Int,
+            initialVal: () -> Int,
+            formatter: (Int) -> String,
+            onChanged: (Int) -> Unit
+        ): () -> Unit {
+            val header = LinearLayout(ctx).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(0, 6.dp(), 0, 2.dp())
+            }
+            val labelTv = TextView(ctx).apply {
+                text = title
+                textSize = 12.5f
+                setTypeface(typeface, Typeface.BOLD)
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            }
+            val valTv = TextView(ctx).apply {
+                text = formatter(initialVal())
+                textSize = 12.5f
+                setTypeface(Typeface.MONOSPACE, Typeface.BOLD)
+                setTextColor(Color.parseColor("#2563EB"))
+            }
+            header.addView(labelTv)
+            header.addView(valTv)
+            container.addView(header)
+
+            val seek = SeekBar(ctx).apply {
+                max = maxVal - minVal
+                progress = (initialVal() - minVal).coerceIn(0, maxVal - minVal)
+                setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                    override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                        val v = minVal + progress
+                        valTv.text = formatter(v)
+                        if (fromUser) {
+                            onChanged(v)
+                            PoseMonitorHub.updateDetectionConfig(workingCfg)
+                            saveConfigToPrefs(prefs, workingCfg)
+                            refreshTelemetryUi(null, PoseMonitorHub.wakeTracker.currentSnapshot())
+                        }
+                    }
+                    override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+                    override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+                })
+            }
+            container.addView(seek)
+            return {
+                val cur = initialVal()
+                valTv.text = formatter(cur)
+                seek.progress = (cur - minVal).coerceIn(0, maxVal - minVal)
+            }
+        }
+
+        container.addView(makeDialogLabel(ctx, "3. 核心检测与报警阈值微调"))
+
+        val syncMinConf = addSliderControl(
+            title = "关键点最低置信度 (防被子误检)",
+            minVal = 20, maxVal = 85,
+            initialVal = { (workingCfg.minLandmarkConfidence * 100f).roundToInt() },
+            formatter = { "$it%" },
+            onChanged = { workingCfg = workingCfg.copy(minLandmarkConfidence = it / 100f) }
+        )
+
+        val syncAngleThresh = addSliderControl(
+            title = "体动计数最小关节角度变化",
+            minVal = 8, maxVal = 60,
+            initialVal = { workingCfg.angleThresholdDeg.roundToInt() },
+            formatter = { "≥${it}°" },
+            onChanged = { workingCfg = workingCfg.copy(angleThresholdDeg = it.toFloat()) }
+        )
+
+        val syncRollThresh = addSliderControl(
+            title = "左右翻身/侧卧判定角阈值",
+            minVal = 15, maxVal = 55,
+            initialVal = { workingCfg.rollThresholdDeg.roundToInt() },
+            formatter = { "±${it}°" },
+            onChanged = { workingCfg = workingCfg.copy(rollThresholdDeg = it.toFloat()) }
+        )
+
+        val syncSmooth = addSliderControl(
+            title = "关键点自适应防抖滤波强度",
+            minVal = 0, maxVal = 90,
+            initialVal = { (workingCfg.smoothingStrength * 100f).roundToInt() },
+            formatter = { "$it%" },
+            onChanged = { workingCfg = workingCfg.copy(smoothingStrength = it / 100f) }
+        )
+
+        val syncConfirm = addSliderControl(
+            title = "姿态切换确认帧数 (防单帧闪烁)",
+            minVal = 1, maxVal = 5,
+            initialVal = { workingCfg.confirmFrames },
+            formatter = { "${it}帧" },
+            onChanged = { workingCfg = workingCfg.copy(confirmFrames = it) }
+        )
+
+        val syncCount = addSliderControl(
+            title = "触发唤醒闹钟所需体动次数",
+            minVal = 1, maxVal = 12,
+            initialVal = { workingCfg.changeThreshold },
+            formatter = { "${it}次" },
+            onChanged = { workingCfg = workingCfg.copy(changeThreshold = it) }
+        )
+
+        val syncWindow = addSliderControl(
+            title = "累计体动统计时间窗口",
+            minVal = 10, maxVal = 120,
+            initialVal = { workingCfg.windowSec },
+            formatter = { "${it}秒" },
+            onChanged = { workingCfg = workingCfg.copy(windowSec = it) }
+        )
+
+        val syncCooldown = addSliderControl(
+            title = "两次体动最小冷却间隔",
+            minVal = 5, maxVal = 50,
+            initialVal = { (workingCfg.minChangeIntervalMs / 100L).toInt() },
+            formatter = { "${"%.1f".format(Locale.US, it / 10f)}秒" },
+            onChanged = { workingCfg = workingCfg.copy(minChangeIntervalMs = it * 100L) }
+        )
+
+        // Switches
+        val hudSwitch = SwitchMaterial(ctx).apply {
+            text = "取景器显示实时模型耗时与关节角遥测 HUD"
+            textSize = 12.5f
+            isChecked = workingCfg.showTelemetryHud
+            setPadding(0, 8.dp(), 0, 4.dp())
+            setOnCheckedChangeListener { _, checked ->
+                workingCfg = workingCfg.copy(showTelemetryHud = checked)
+                PoseMonitorHub.updateDetectionConfig(workingCfg)
+                overlayView.showJointAngleLabels = checked
+                overlayView.invalidate()
+                saveConfigToPrefs(prefs, workingCfg)
+                refreshTelemetryUi(null, PoseMonitorHub.wakeTracker.currentSnapshot())
+            }
+        }
+        container.addView(hudSwitch)
+
+        val fallbackSwitch = SwitchMaterial(ctx).apply {
+            text = "无3D骨架时启用色块轮廓兜底 (易受暖色床品干扰，建议关闭)"
+            textSize = 12f
+            isChecked = workingCfg.enableContourFallback
+            setPadding(0, 4.dp(), 0, 4.dp())
+            setOnCheckedChangeListener { _, checked ->
+                workingCfg = workingCfg.copy(enableContourFallback = checked)
+                PoseMonitorHub.updateDetectionConfig(workingCfg)
+                saveConfigToPrefs(prefs, workingCfg)
+                refreshTelemetryUi(null, PoseMonitorHub.wakeTracker.currentSnapshot())
+            }
+        }
+        container.addView(fallbackSwitch)
+
         val sysSwitch = SwitchMaterial(ctx).apply {
-            text = "同步系统时钟闹钟"
-            textSize = 13f
+            text = "触发报警时同步写入系统时钟闹钟"
+            textSize = 12.5f
             isChecked = PoseMonitorHub.syncSystemAlarmApp
-            setPadding(0, 8.dp(), 0, 8.dp())
+            setPadding(0, 4.dp(), 0, 8.dp())
             setOnCheckedChangeListener { _, checked ->
                 PoseMonitorHub.syncSystemAlarmApp = checked
                 prefs.edit().putBoolean(KEY_SYNC_SYS_CLOCK, checked).apply()
@@ -884,17 +1344,32 @@ class BabyPoseMonitorDialog : DialogFragment(), PoseMonitorHub.Listener {
         }
         container.addView(sysSwitch)
 
-        // Quick test actions
+        refreshAllControls = {
+            modeChips.forEach { (m, ch) -> ch.isChecked = (workingCfg.engineMode == m) }
+            refreshCloudModelWidgets()
+            syncMinConf()
+            syncAngleThresh()
+            syncRollThresh()
+            syncSmooth()
+            syncConfirm()
+            syncCount()
+            syncWindow()
+            syncCooldown()
+            hudSwitch.isChecked = workingCfg.showTelemetryHud
+            fallbackSwitch.isChecked = workingCfg.enableContourFallback
+        }
+
+        // Quick test & calibration actions
         val testRow = LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL
             setPadding(0, 6.dp(), 0, 0)
         }
         testRow.addView(MaterialButton(ctx, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
-            text = "模拟一次"
-            textSize = 12f
+            text = "模拟动作"
+            textSize = 11.5f
             isAllCaps = false
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
-                marginEnd = 8.dp()
+                marginEnd = 6.dp()
             }
             setOnClickListener {
                 val snap = PoseMonitorHub.wakeTracker.simulateSinglePoseStep()
@@ -911,8 +1386,22 @@ class BabyPoseMonitorDialog : DialogFragment(), PoseMonitorHub.Listener {
             }
         })
         testRow.addView(MaterialButton(ctx, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
+            text = "清零计数"
+            textSize = 11.5f
+            isAllCaps = false
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                marginEnd = 6.dp()
+            }
+            setOnClickListener {
+                PoseMonitorHub.wakeTracker.reset()
+                poseDetector?.reset()
+                refreshTelemetryUi(null, PoseMonitorHub.wakeTracker.currentSnapshot())
+                Toast.makeText(ctx, "已重置骨骼平滑器与计数", Toast.LENGTH_SHORT).show()
+            }
+        })
+        testRow.addView(MaterialButton(ctx, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
             text = "测试闹钟"
-            textSize = 12f
+            textSize = 11.5f
             isAllCaps = false
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
             setOnClickListener {
@@ -923,8 +1412,8 @@ class BabyPoseMonitorDialog : DialogFragment(), PoseMonitorHub.Listener {
         container.addView(testRow)
 
         AlertDialog.Builder(ctx)
-            .setTitle("检测设置")
-            .setView(container)
+            .setTitle("姿态模型与阈值调优")
+            .setView(scroll)
             .setPositiveButton("完成", null)
             .show()
     }
@@ -1020,7 +1509,7 @@ class BabyPoseMonitorDialog : DialogFragment(), PoseMonitorHub.Listener {
     private fun makeDockPill(ctx: Context, label: String): TextView {
         return TextView(ctx).apply {
             text = label
-            textSize = 13.5f
+            textSize = 13f
             setTypeface(typeface, Typeface.BOLD)
             setTextColor(TEXT_LIGHT)
             gravity = Gravity.CENTER
@@ -1031,9 +1520,9 @@ class BabyPoseMonitorDialog : DialogFragment(), PoseMonitorHub.Listener {
     private fun makeDialogLabel(ctx: Context, label: String): TextView {
         return TextView(ctx).apply {
             text = label
-            textSize = 13f
+            textSize = 13.5f
             setTypeface(typeface, Typeface.BOLD)
-            setPadding(0, 6.dp(), 0, 4.dp())
+            setPadding(0, 8.dp(), 0, 4.dp())
         }
     }
 

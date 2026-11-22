@@ -207,6 +207,7 @@ object BabyWatchServer {
         val snap = PoseMonitorHub.wakeTracker.currentSnapshot()
         val safeBaby = PoseMonitorHub.babyName.replace("\"", "\\\"")
         val safeAngles = snap.angleProfile.summaryText().replace("\"", "\\\"")
+        val safeModel = snap.modelName.replace("\"", "\\\"")
         val historyJson = snap.recentPoseHistory.joinToString(",") {
             "\"${it.replace("\"", "\\\"")}\""
         }
@@ -218,6 +219,10 @@ object BabyWatchServer {
               "targetDetected": ${snap.targetDetected},
               "poseCode": "${snap.currentPose.code}",
               "poseLabel": "${snap.currentPose.zhLabel}",
+              "modelName": "$safeModel",
+              "confidence": ${"%.2f".format(java.util.Locale.US, snap.confidence)},
+              "inferenceTimeMs": ${snap.inferenceTimeMs},
+              "landmarkCount": ${snap.landmarkCount},
               "anglesSummary": "$safeAngles",
               "lastAngleDeltaDeg": ${"%.1f".format(java.util.Locale.US, snap.lastAngleDeltaDeg)},
               "angleThresholdDeg": ${"%.1f".format(java.util.Locale.US, snap.angleThresholdDeg)},
